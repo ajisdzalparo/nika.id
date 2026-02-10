@@ -8,37 +8,37 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  name          String?
-  image         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Wedding-specific fields
-  role           String    @default("USER")
-  invitationSlug String?   @unique
+  id             String         @id @default(cuid())
+  email          String         @unique
+  emailVerified  Boolean        @default(false)
+  name           String?
+  image          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  invitationSlug String?        @unique
   partnerName    String?
   weddingDate    DateTime?
-
-  // Better-auth relations
-  sessions Session[]
-  accounts Account[]
+  role           String         @default("USER")
+  templateId     String?
+  accounts       Account[]
+  guests         Guest[]
+  messages       GuestMessage[]
+  invitation     Invitation?
+  rsvps          RSVP[]
+  sessions       Session[]
+  template       Template?      @relation(fields: [templateId], references: [id])
 }
 
 model Session {
   id        String   @id @default(cuid())
   userId    String
   expiresAt DateTime
-  token     String   @unique
   ipAddress String?
   userAgent String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  token     String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -53,11 +53,9 @@ model Account {
   idToken      String?
   expiresAt    DateTime?
   password     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
   @@index([userId])
@@ -68,9 +66,68 @@ model Verification {
   identifier String
   value      String
   expiresAt  DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([identifier, value])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  category    String
+  type        String   @default("Gratis")
+  thumbnail   String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  description String?
+  users       User[]
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  isPublic  Boolean  @default(true)
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Guest {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RSVP {
+  id         String   @id @default(cuid())
+  userId     String
+  guestName  String
+  attendance String
+  guests     Int      @default(1)
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model GuestMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  guestName String
+  message   String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }

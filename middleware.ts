@@ -32,10 +32,6 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
     }
-
-    // TODO: Add role-based check here
-    // For now, all authenticated users can access admin
-    // In production, check if user has ADMIN role
   }
 
   return NextResponse.next();
@@ -43,14 +39,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api/auth (auth API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public assets)
-     */
     "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)  ",
   ],
 };

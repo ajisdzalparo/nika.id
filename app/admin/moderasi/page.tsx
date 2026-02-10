@@ -1,10 +1,21 @@
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { auth } from "@/lib/auth";
+import type { Session } from "@/lib/auth";
 
-// Mock guest messages
+type AdminSession = Session & {
+  user: Session["user"] & {
+    role?: string;
+  };
+};
+
+// Masih menggunakan data mock untuk ucapan tamu.
 const guestMessages = [
   {
     id: "1",
@@ -24,7 +35,17 @@ const guestMessages = [
   },
 ];
 
-export default function ModerasiPage() {
+export default async function ModerasiPage() {
+  const rawHeaders = await headers();
+  const session = (await auth.api.getSession({
+    headers: Object.fromEntries(rawHeaders),
+  })) as AdminSession | null;
+
+  const role = session?.user.role;
+  if (!session || role !== "ADMIN") {
+    redirect("/login");
+  }
+
   return (
     <>
       <SiteHeader />

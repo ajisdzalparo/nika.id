@@ -1,38 +1,45 @@
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import type { Session } from "@/lib/auth";
 
-// Mock user data
-const users = [
-  {
-    id: "1",
-    name: "Budi & Ani",
-    email: "budi@email.com",
-    subscription: "Pro",
-    registeredAt: "2024-01-15",
-    invitationSlug: "budi-ani",
-  },
-  {
-    id: "2",
-    name: "Chandra & Dewi",
-    email: "chandra@email.com",
-    subscription: "Free",
-    registeredAt: "2024-02-01",
-    invitationSlug: "chandra-dewi",
-  },
-  {
-    id: "3",
-    name: "Eko & Fitri",
-    email: "eko@email.com",
-    subscription: "Pro",
-    registeredAt: "2024-02-05",
-    invitationSlug: "eko-fitri",
-  },
-];
+type AdminSession = Session & {
+  user: Session["user"] & {
+    role?: string;
+  };
+};
 
-export default function UsersPage() {
+export default async function UsersPage() {
+  // Proteksi: hanya ADMIN yang boleh akses halaman admin
+  const rawHeaders = await headers();
+  const session = (await auth.api.getSession({
+    headers: Object.fromEntries(rawHeaders),
+  })) as AdminSession | null;
+
+  const role = session?.user.role;
+  if (!session || role !== "ADMIN") {
+    redirect("/login");
+  }
+
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      invitationSlug: true,
+      role: true,
+    },
+  });
+
   return (
     <>
       <SiteHeader />
@@ -50,14 +57,14 @@ export default function UsersPage() {
             <Input placeholder="Cari user..." />
           </div>
 
-          {/* Users Table */}
+          {/* Users Table - data dari database */}
           <div className="rounded-lg border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nama</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Subscription</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Tgl Daftar</TableHead>
                   <TableHead>Slug</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
@@ -66,13 +73,13 @@ export default function UsersPage() {
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="font-medium">{user.name ?? "-"}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <Badge variant={user.subscription === "Pro" ? "default" : "secondary"}>{user.subscription}</Badge>
+                      <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
                     </TableCell>
-                    <TableCell>{user.registeredAt}</TableCell>
-                    <TableCell className="font-mono text-sm">/{user.invitationSlug}</TableCell>
+                    <TableCell>{user.createdAt.toLocaleDateString()}</TableCell>
+                    <TableCell className="font-mono text-sm">{user.invitationSlug ? `/${user.invitationSlug}` : "-"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button variant="outline" size="sm">
                         Login As

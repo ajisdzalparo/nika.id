@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { signIn } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -33,8 +35,22 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect to dashboard on success
-      router.push("/dashboard");
+      // Determine user role from the result (better-auth adds `role` to user)
+      const data: any = result?.data ?? result;
+      const role: string | undefined =
+        data?.session?.user?.role ?? data?.user?.role ?? data?.user?.additionalFields?.role;
+
+      // If user was redirected from a protected page, go back there
+      const from = searchParams.get("from");
+      const target =
+        from && from.length > 0
+          ? from
+          : role === "ADMIN"
+            ? "/templates"
+            : "/dashboard";
+
+      router.push(target);
+
       router.refresh();
     } catch {
       setError("An unexpected error occurred");

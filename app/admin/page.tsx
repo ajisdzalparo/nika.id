@@ -1,34 +1,47 @@
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+
 import { SiteHeader } from "@/components/site-header";
 import { SectionCards } from "@/components/section-cards";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { DataTable } from "@/components/data-table";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import type { Session } from "@/lib/auth";
 
-// Mock data for admin dashboard
-const recentActivity = [
-  {
-    id: "1",
-    user: "Budi & Ani",
-    action: "Membuat undangan baru",
-    timestamp: "2 menit yang lalu",
-    status: "success",
-  },
-  {
-    id: "2",
-    user: "Chandra & Dewi",
-    action: "Upgrade ke paket Pro",
-    timestamp: "15 menit yang lalu",
-    status: "success",
-  },
-  {
-    id: "3",
-    user: "Eko & Fitri",
-    action: "Publish undangan",
-    timestamp: "1 jam yang lalu",
-    status: "success",
-  },
-];
+type AdminSession = Session & {
+  user: Session["user"] & {
+    role?: string;
+  };
+};
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  // Hanya ADMIN yang boleh akses dashboard admin
+  const rawHeaders = await headers();
+  const session = (await auth.api.getSession({
+    headers: Object.fromEntries(rawHeaders),
+  })) as AdminSession | null;
+
+  const role = session?.user.role;
+  if (!session || role !== "ADMIN") {
+    redirect("/login");
+  }
+
+  const [userCount, adminCount, latestUsers] = await Promise.all([
+    prisma.user.count(),
+    prisma.user.count({ where: { role: "ADMIN" } }),
+    prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+      },
+    }),
+  ]);
+
   return (
     <>
       <SiteHeader />
@@ -51,19 +64,19 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Recent Activity Log */}
+            {/* Recent Activity Log - data dari user terbaru */}
             <div className="px-4 lg:px-6">
               <div className="rounded-lg border bg-card p-4">
                 <h2 className="text-xl font-semibold mb-4">Log Aktivitas Sistem Terbaru</h2>
                 <div className="space-y-3">
-                  {recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  {latestUsers.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
-                        <p className="font-medium">{activity.user}</p>
-                        <p className="text-sm text-muted-foreground">{activity.action}</p>
+                        <p className="font-medium">{user.name ?? user.email}</p>
+                        <p className="text-sm text-muted-foreground">User baru terdaftar</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-muted-foreground">{activity.timestamp}</p>
+                        <p className="text-sm text-muted-foreground">{user.createdAt.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}

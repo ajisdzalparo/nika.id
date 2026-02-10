@@ -18,32 +18,32 @@ const data = {
   navMain: [
     {
       title: "Dashboard Overview",
-      url: "/",
+      url: "/admin",
       icon: IconDashboard,
     },
     {
       title: "Template Forge",
-      url: "/templates",
+      url: "/admin/templates",
       icon: IconTemplate,
     },
     {
       title: "User Management",
-      url: "/users",
+      url: "/admin/users",
       icon: IconUser,
     },
     {
       title: "Moderasi Ucapan",
-      url: "/moderasi",
+      url: "/admin/moderasi",
       icon: IconMessage,
     },
     {
       title: "Transaksi",
-      url: "/transaksi",
+      url: "/admin/transaksi",
       icon: IconCurrencyDollar,
     },
     {
       title: "Pengaturan Sistem",
-      url: "/pengaturan-admin",
+      url: "/admin/pengaturan-admin",
       icon: IconSettings,
     },
   ],
@@ -70,7 +70,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild size="lg" className="data-[slot=sidebar-menu-button]:p-1.5!" tooltip="nika.id Admin">
-              <Link href="/" className="flex items-center gap-2">
+              <Link href="/admin" className="flex items-center gap-2">
                 <div className="flex aspect-square size-28 items-center justify-center rounded-lg overflow-hidden">
                   <Image src="/logo-transparan.png" alt="Logo" width={120} height={120} />
                 </div>

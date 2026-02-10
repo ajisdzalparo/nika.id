@@ -1,11 +1,31 @@
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
+import { auth } from "@/lib/auth";
+import type { Session } from "@/lib/auth";
 
-export default function PengaturanPage() {
+type AdminSession = Session & {
+  user: Session["user"] & {
+    role?: string;
+  };
+};
+
+export default async function PengaturanPage() {
+  const rawHeaders = await headers();
+  const session = (await auth.api.getSession({
+    headers: Object.fromEntries(rawHeaders),
+  })) as AdminSession | null;
+
+  const role = session?.user.role;
+  if (!session || role !== "ADMIN") {
+    redirect("/login");
+  }
   return (
     <>
       <SiteHeader />
@@ -29,7 +49,7 @@ export default function PengaturanPage() {
                     <p className="font-medium">Status Maintenance</p>
                     <p className="text-sm text-muted-foreground">Saat aktif, user tidak dapat mengakses sistem</p>
                   </div>
-                  <Switch />
+                  <Toggle />
                 </div>
               </CardContent>
             </Card>
