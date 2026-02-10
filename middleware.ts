@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 // Define protected routes
 const protectedRoutes = ["/dashboard", "/editor", "/pilih-template", "/buku-tamu", "/manajemen-tamu", "/pengaturan"];
-const adminRoutes = ["/templates", "/users", "/moderasi", "/transaksi", "/pengaturan-admin"];
+const adminRoutes = ["/admin", "/templates", "/users", "/moderasi", "/transaksi", "/pengaturan-admin"];
 const authRoutes = ["/login", "/register"];
 
 export async function middleware(request: NextRequest) {
@@ -38,7 +38,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)  ",
-  ],
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)  "],
 };

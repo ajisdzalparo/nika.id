@@ -19,6 +19,7 @@ model User {
   partnerName    String?
   weddingDate    DateTime?
   role           String         @default("USER")
+  views          Int            @default(0)
   templateId     String?
   accounts       Account[]
   guests         Guest[]
@@ -81,6 +82,7 @@ model Template {
   type        String   @default("Gratis")
   thumbnail   String
   isActive    Boolean  @default(true)
+  config      Json? // Configuration for dynamic fields
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   description String?
