@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import { SiteHeader } from "@/components/site-header";
 import { SectionCards } from "@/components/section-cards";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import type { Session } from "@/lib/auth";
@@ -27,9 +26,12 @@ export default async function AdminDashboardPage() {
     redirect("/login");
   }
 
-  const [userCount, adminCount, latestUsers] = await Promise.all([
+  const [userCount, adminCount, templateCount, messageCount, transactionCount, latestUsers] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { role: "ADMIN" } }),
+    prisma.template.count(),
+    prisma.guestMessage.count(),
+    prisma.transaction.count(),
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
@@ -41,6 +43,14 @@ export default async function AdminDashboardPage() {
       },
     }),
   ]);
+
+  const stats = {
+    totalUsers: userCount,
+    totalTemplates: templateCount,
+    totalMessages: messageCount,
+    totalTransactions: transactionCount,
+    totalAdmins: adminCount,
+  };
 
   return (
     <>
@@ -54,7 +64,7 @@ export default async function AdminDashboardPage() {
             </div>
 
             {/* Stats Cards */}
-            <SectionCards />
+            <SectionCards stats={stats} />
 
             {/* Traffic Chart */}
             <div className="px-4 lg:px-6">
@@ -69,7 +79,7 @@ export default async function AdminDashboardPage() {
               <div className="rounded-lg border bg-card p-4">
                 <h2 className="text-xl font-semibold mb-4">Log Aktivitas Sistem Terbaru</h2>
                 <div className="space-y-3">
-                  {latestUsers.map((user) => (
+                  {latestUsers.map((user: { id: string; name: string | null; email: string; createdAt: Date }) => (
                     <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div>
                         <p className="font-medium">{user.name ?? user.email}</p>

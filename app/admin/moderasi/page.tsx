@@ -1,39 +1,19 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { Database, MessageSquare } from "lucide-react";
 
 import { SiteHeader } from "@/components/site-header";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from "@/lib/auth";
 import type { Session } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { ModerationClient, type GuestMessage } from "@/components/admin/moderation-client";
 
 type AdminSession = Session & {
   user: Session["user"] & {
     role?: string;
   };
 };
-
-// Masih menggunakan data mock untuk ucapan tamu.
-const guestMessages = [
-  {
-    id: "1",
-    guest: "Ahmad",
-    invitation: "budi-ani",
-    message: "Selamat menempuh hidup baru!",
-    timestamp: "2024-02-10 10:30",
-    status: "approved",
-  },
-  {
-    id: "2",
-    guest: "Siti",
-    invitation: "chandra-dewi",
-    message: "Bahagia selalu untuk kalian berdua",
-    timestamp: "2024-02-10 11:15",
-    status: "pending",
-  },
-];
 
 export default async function ModerasiPage() {
   const rawHeaders = await headers();
@@ -46,76 +26,80 @@ export default async function ModerasiPage() {
     redirect("/login");
   }
 
+  // Fetch real guest messages
+  const guestMessages = await prisma.guestMessage.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: {
+          name: true,
+          invitationSlug: true,
+        },
+      },
+    },
+    take: 100, // Limit to recent 100
+  });
+
+  // Serialize dates for Client Component
+  const serializedMessages = guestMessages.map((msg) => ({
+    ...msg,
+    createdAt: msg.createdAt.toISOString(),
+  }));
+
   return (
     <>
       <SiteHeader />
       <div className="flex flex-1 flex-col">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
-          <div>
+          <div className="flex flex-col gap-1">
             <h1 className="text-3xl font-bold tracking-tight">Moderasi Konten</h1>
-            <p className="text-muted-foreground">Kelola ucapan tamu dan audit media</p>
+            <p className="text-muted-foreground">Kelola ucapan tamu dan audit media sistem</p>
           </div>
 
           <Tabs defaultValue="messages" className="w-full">
-            <TabsList>
-              <TabsTrigger value="messages">Ucapan Tamu</TabsTrigger>
-              <TabsTrigger value="media">Audit Media</TabsTrigger>
+            <TabsList className="mb-4">
+              <TabsTrigger value="messages" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Ucapan Tamu
+              </TabsTrigger>
+              <TabsTrigger value="media" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Audit Media
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="messages" className="space-y-4">
-              <div className="rounded-lg border bg-card">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nama Tamu</TableHead>
-                      <TableHead>Undangan</TableHead>
-                      <TableHead>Ucapan</TableHead>
-                      <TableHead>Waktu</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {guestMessages.map((msg) => (
-                      <TableRow key={msg.id}>
-                        <TableCell className="font-medium">{msg.guest}</TableCell>
-                        <TableCell className="font-mono text-sm">/{msg.invitation}</TableCell>
-                        <TableCell>{msg.message}</TableCell>
-                        <TableCell>{msg.timestamp}</TableCell>
-                        <TableCell>
-                          <Badge variant={msg.status === "approved" ? "default" : "secondary"}>{msg.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm">
-                            Approve
-                          </Button>
-                          <Button variant="destructive" size="sm">
-                            Hapus
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <ModerationClient initialMessages={serializedMessages as GuestMessage[]} />
             </TabsContent>
 
             <TabsContent value="media" className="space-y-4">
               <div className="rounded-lg border bg-card p-6">
-                <h3 className="text-lg font-semibold mb-4">Statistik Penyimpanan</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Total Storage</p>
-                    <p className="text-2xl font-bold">2.4 GB</p>
+                <h3 className="text-lg font-semibold mb-2">Audit Media & Penyimpanan</h3>
+                <p className="text-sm text-muted-foreground mb-6">Monitoring penggunaan ruang penyimpanan oleh foto dan video yang diunggah user.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="p-5 rounded-xl bg-muted/50 border">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Total Kuota</p>
+                    <p className="text-2xl font-bold">5.0 GB</p>
+                    <div className="mt-2 text-[10px] text-green-600 bg-green-500/10 w-fit px-1.5 py-0.5 rounded">Standard Plan</div>
                   </div>
-                  <div className="p-4 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Storage Terpakai</p>
-                    <p className="text-2xl font-bold">1.8 GB</p>
+                  <div className="p-5 rounded-xl bg-muted/50 border">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Terpakai</p>
+                    <p className="text-2xl font-bold">1.2 GB</p>
+                    <div className="mt-2 w-full bg-muted overflow-hidden rounded-full h-1.5">
+                      <div className="bg-primary h-full w-[24%]" />
+                    </div>
                   </div>
-                  <div className="p-4 rounded-lg bg-muted">
-                    <p className="text-sm text-muted-foreground">Storage Tersedia</p>
-                    <p className="text-2xl font-bold">600 MB</p>
+                  <div className="p-5 rounded-xl bg-muted/50 border">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Media Item</p>
+                    <p className="text-2xl font-bold">428</p>
+                    <p className="mt-2 text-[10px] text-muted-foreground italic">Foto, video, dan thumbnail</p>
                   </div>
+                </div>
+
+                <div className="mt-8 p-6 border border-dashed rounded-lg flex flex-col items-center justify-center text-center">
+                  <Database className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                  <h4 className="font-medium">Audit Metadata Detail</h4>
+                  <p className="text-sm text-muted-foreground max-w-sm mt-1">Fitur audit untuk menghapus file sampah yang tidak memiliki referensi di database sedang dalam pengembangan.</p>
                 </div>
               </div>
             </TabsContent>
