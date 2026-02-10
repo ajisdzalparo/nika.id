@@ -4,6 +4,7 @@
 import React, { useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { IconMapPin, IconCalendar, IconClock, IconGift } from "@tabler/icons-react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -161,7 +162,7 @@ export default function ModernDark({ data }: { data: WeddingData }) {
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-32">
           <div className="space-y-8 flex flex-col items-center md:items-start reveal-card">
             <motion.div whileHover={{ scale: 1.02 }} className="w-72 h-[450px] bg-white/5 rounded-2xl overflow-hidden border border-white/10 relative group">
-              <img src={data.groom.photo || "https://images.unsplash.com/photo-1550246140-5119ae4790b8?q=80&w=2070"} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt="Groom" />
+              <Image src={data.groom.photo || "https://images.unsplash.com/photo-1550246140-5119ae4790b8?q=80&w=2070"} fill className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt="Groom" />
               <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent" />
               <div className="absolute bottom-8 left-8">
                 <p className="text-xs uppercase tracking-widest opacity-50 mb-1">Groom</p>
@@ -175,7 +176,7 @@ export default function ModernDark({ data }: { data: WeddingData }) {
 
           <div className="space-y-8 flex flex-col items-center md:items-end md:text-right reveal-card">
             <motion.div whileHover={{ scale: 1.02 }} className="w-72 h-[450px] bg-white/5 rounded-2xl overflow-hidden border border-white/10 relative group">
-              <img src={data.bride.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt="Bride" />
+              <Image src={data.bride.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"} fill className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt="Bride" />
               <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent" />
               <div className="absolute bottom-8 right-8">
                 <p className="text-xs uppercase tracking-widest opacity-50 mb-1">Bride</p>
@@ -254,8 +255,8 @@ export default function ModernDark({ data }: { data: WeddingData }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 gallery-grid">
             {data.gallery &&
               data.gallery.slice(0, 8).map((img, i) => (
-                <motion.div key={i} whileHover={{ scale: 1.05, zIndex: 10 }} className={`gallery-item overflow-hidden rounded-3xl bg-gray-100 ${i % 3 === 0 ? "col-span-2 row-span-2" : ""}`}>
-                  <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" />
+                <motion.div key={i} whileHover={{ scale: 1.05, zIndex: 10 }} className={`gallery-item relative overflow-hidden rounded-3xl bg-gray-100 ${i % 3 === 0 ? "col-span-2 row-span-2" : ""}`}>
+                  <Image src={img} alt={`Gallery ${i}`} fill className="object-cover grayscale hover:grayscale-0 transition-all duration-700" />
                 </motion.div>
               ))}
           </div>

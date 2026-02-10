@@ -5,6 +5,7 @@ import React, { useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { IconHeart, IconMapPin, IconCalendar, IconClock, IconGift, IconPhoto } from "@tabler/icons-react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -105,7 +106,7 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
 
         {/* Animated Floral Elements with GSAP */}
         <div ref={floralRef} className="absolute -top-20 -right-20 w-80 h-80 opacity-10 pointer-events-none">
-          <img src="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?q=80&w=2000" className="w-full h-full object-contain rounded-full" alt="decoration" />
+          <Image src="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?q=80&w=2000" fill className="object-contain rounded-full" alt="decoration" />
         </div>
 
         <motion.div className="z-10 space-y-8" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.2, ease: "easeOut" }}>
@@ -134,9 +135,9 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-20">
           <motion.div whileInView={{ x: 0, opacity: 1 }} initial={{ x: -100, opacity: 0 }} viewport={{ once: true }} transition={{ duration: 1 }} className="text-center space-y-6">
             <div className="relative inline-block">
-              <div className="w-56 h-72 bg-[#FDF8F5] rounded-t-full border-8 border-white shadow-2xl overflow-hidden group">
+              <div className="relative w-56 h-72 bg-[#FDF8F5] rounded-t-full border-8 border-white shadow-2xl overflow-hidden group">
                 {data.groom.photo ? (
-                  <img src={data.groom.photo} alt={data.groom.fullName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <Image src={data.groom.photo} alt={data.groom.fullName} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100 text-[#C4A484]">Groom Photo</div>
                 )}
@@ -157,11 +158,11 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
 
           <motion.div whileInView={{ x: 0, opacity: 1 }} initial={{ x: 100, opacity: 0 }} viewport={{ once: true }} transition={{ duration: 1 }} className="text-center space-y-6">
             <div className="relative inline-block">
-              <div className="w-56 h-72 bg-[#FDF8F5] rounded-t-full border-8 border-white shadow-2xl overflow-hidden group">
+              <div className="relative w-56 h-72 bg-[#FDF8F5] rounded-t-full border-8 border-white shadow-2xl overflow-hidden group">
                 {data.bride.photo ? (
-                  <img src={data.bride.photo} alt={data.bride.fullName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <Image src={data.bride.photo} alt={data.bride.fullName} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-[#C4A484]">Bride Photo</div>
+                  <div className="w-full h-full f flex items-center justify-center bg-gray-100 text-[#C4A484]">Bride Photo</div>
                 )}
               </div>
               <motion.div initial={{ scale: 0 }} whileInView={{ scale: 1 }} className="absolute -bottom-4 -left-4 w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
@@ -252,9 +253,9 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.1 }}
                   viewport={{ once: true }}
-                  className="rounded-2xl overflow-hidden shadow-lg hover:opacity-90 transition-opacity"
+                  className="relative aspect-square rounded-2xl overflow-hidden shadow-lg hover:opacity-90 transition-opacity"
                 >
-                  <img src={photo} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
+                  <Image src={photo} alt={`Gallery ${i}`} fill className="object-cover" />
                 </motion.div>
               ))}
             </div>

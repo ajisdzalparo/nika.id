@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { IconHeart, IconMapPin, IconCalendar, IconGift, IconMusic, IconMusicOff, IconChevronDown, IconHeartFilled } from "@tabler/icons-react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -162,7 +163,7 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
           {/* Section: Hero */}
           <section className="relative h-[80vh] flex flex-col items-center justify-center p-8 text-center bg-[#FFF5F7]">
             <div className="absolute inset-0 opacity-20">
-              <img src={data.gallery?.[0] || data.bride?.photo || "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2069"} className="w-full h-full object-cover" alt="Hero" />
+              <Image src={data.gallery?.[0] || data.bride?.photo || "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2069"} fill className="object-cover" alt="Hero" />
               <div className="absolute inset-0 bg-linear-to-b from-transparent to-[#FFF5F7]" />
             </div>
 
@@ -201,8 +202,8 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
               {/* Groom */}
               <div className="text-center space-y-8 romantic-reveal">
                 <div className="relative inline-block">
-                  <div className="w-64 h-64 rounded-full border-8 border-[#FFF5F7] overflow-hidden shadow-xl mx-auto">
-                    <img src={data.groom?.photo || "https://images.unsplash.com/photo-1549439602-43ebca2327af?q=80&w=2070"} className="w-full h-full object-cover" alt="Groom" />
+                  <div className="relative w-64 h-64 rounded-full border-8 border-[#FFF5F7] overflow-hidden shadow-xl mx-auto">
+                    <Image src={data.groom?.photo || "https://images.unsplash.com/photo-1549439602-43ebca2327af?q=80&w=2070"} fill className="object-cover" alt="Groom" />
                   </div>
                   <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white px-6 py-2 rounded-full shadow-lg border border-[#FCE2E6] font-bold text-xs text-[#A67B7B]">GROOM</div>
                 </div>
@@ -224,8 +225,8 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
               {/* Bride */}
               <div className="text-center space-y-8 romantic-reveal">
                 <div className="relative inline-block">
-                  <div className="w-64 h-64 rounded-full border-8 border-[#FFF5F7] overflow-hidden shadow-xl mx-auto">
-                    <img src={data.bride?.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"} className="w-full h-full object-cover" alt="Bride" />
+                  <div className="relative w-64 h-64 rounded-full border-8 border-[#FFF5F7] overflow-hidden shadow-xl mx-auto">
+                    <Image src={data.bride?.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"} fill className="object-cover" alt="Bride" />
                   </div>
                   <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white px-6 py-2 rounded-full shadow-lg border border-[#FCE2E6] font-bold text-xs text-[#A67B7B]">BRIDE</div>
                 </div>
@@ -321,8 +322,8 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
 
               <div className="grid grid-cols-2 gap-3">
                 {data.gallery.slice(0, 6).map((img, i) => (
-                  <motion.div key={i} whileHover={{ scale: 1.02 }} className={`overflow-hidden rounded-2xl shadow-lg border-2 border-white ${i % 3 === 0 ? "col-span-2 aspect-video" : "aspect-square"}`}>
-                    <img src={img} className="w-full h-full object-cover" alt={`Gallery ${i}`} />
+                  <motion.div key={i} whileHover={{ scale: 1.02 }} className={`relative overflow-hidden rounded-2xl shadow-lg border-2 border-white ${i % 3 === 0 ? "col-span-2 aspect-video" : "aspect-square"}`}>
+                    <Image src={img} fill className="object-cover" alt={`Gallery ${i}`} />
                   </motion.div>
                 ))}
               </div>

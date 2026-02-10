@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { format, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { IconHeart, IconMapPin, IconCalendar, IconGift, IconMusic, IconMusicOff, IconPlayerPlay, IconChevronDown } from "@tabler/icons-react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -121,8 +122,8 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
             {/* Background elements for cover */}
             <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/gold-dust.png')]" />
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1.5 }} className="z-10 space-y-8">
-              <div className="w-32 h-32 mx-auto border-2 border-[#D4AF37] rounded-full flex items-center justify-center p-4">
-                <img src={data.groom?.photo || data.bride?.photo || "https://images.unsplash.com/photo-1549439602-43ebca2327af?q=80&w=2070"} className="w-full h-full object-cover rounded-full" alt="Icon" />
+              <div className="relative w-32 h-32 mx-auto border-2 border-[#D4AF37] rounded-full flex items-center justify-center p-4 overflow-hidden">
+                <Image src={data.groom?.photo || data.bride?.photo || "https://images.unsplash.com/photo-1549439602-43ebca2327af?q=80&w=2070"} fill className="object-cover rounded-full" alt="Icon" />
               </div>
               <div className="space-y-2">
                 <p className="tracking-[0.5em] text-xs uppercase text-white/60">Wedding Invitation</p>
@@ -156,7 +157,7 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
         <section className="relative h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden">
           {/* Parallax Background */}
           <motion.div style={{ y: 0 }} className="absolute inset-0 z-0 opacity-20">
-            <img src={data.gallery?.[0] || data.bride?.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"} className="w-full h-full object-cover" alt="bg" />
+            <Image src={data.gallery?.[0] || data.bride?.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"} fill className="object-cover" alt="bg" />
           </motion.div>
 
           <div className="z-10 space-y-12 luxury-reveal">
@@ -206,12 +207,8 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
             {/* Groom */}
             <div className="flex flex-col items-center space-y-8 reveal-section">
               <div className="relative group">
-                <div className="w-72 h-[450px] bg-[#FFF9EA] rounded-full border-[12px] border-[#FFF9EA] shadow-2xl overflow-hidden">
-                  <img
-                    src={data.groom?.photo || "https://images.unsplash.com/photo-1549439602-43ebca2327af?q=80&w=2070"}
-                    className="w-full h-full object-cover grayscale-50 group-hover:grayscale-0 transition-all duration-1000"
-                    alt="Groom"
-                  />
+                <div className="relative w-72 h-[450px] bg-[#FFF9EA] rounded-full border-[12px] border-[#FFF9EA] shadow-2xl overflow-hidden">
+                  <Image src={data.groom?.photo || "https://images.unsplash.com/photo-1549439602-43ebca2327af?q=80&w=2070"} fill className="object-cover grayscale-50 group-hover:grayscale-0 transition-all duration-1000" alt="Groom" />
                 </div>
                 <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white text-[#D4AF37] px-10 py-3 rounded-full shadow-xl border border-[#D4AF37]/20 font-bold tracking-widest uppercase">Groom</div>
               </div>
@@ -228,12 +225,8 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
             {/* Bride */}
             <div className="flex flex-col items-center space-y-8 reveal-section" style={{ transitionDelay: "200ms" }}>
               <div className="relative group">
-                <div className="w-72 h-[450px] bg-[#FFF9EA] rounded-full border-[12px] border-[#FFF9EA] shadow-2xl overflow-hidden">
-                  <img
-                    src={data.bride?.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"}
-                    className="w-full h-full object-cover grayscale-50 group-hover:grayscale-0 transition-all duration-1000"
-                    alt="Bride"
-                  />
+                <div className="relative w-72 h-[450px] bg-[#FFF9EA] rounded-full border-[12px] border-[#FFF9EA] shadow-2xl overflow-hidden">
+                  <Image src={data.bride?.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"} fill className="object-cover grayscale-50 group-hover:grayscale-0 transition-all duration-1000" alt="Bride" />
                 </div>
                 <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white text-[#D4AF37] px-10 py-3 rounded-full shadow-xl border border-[#D4AF37]/20 font-bold tracking-widest uppercase">Bride</div>
               </div>
@@ -343,9 +336,9 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.1 }}
-                    className={`overflow-hidden rounded-2xl shadow-lg border-4 border-[#FFFDF9] ${i % 5 === 0 ? "md:col-span-2 md:row-span-2" : ""}`}
+                    className={`relative overflow-hidden rounded-2xl shadow-lg border-4 border-[#FFFDF9] ${i % 5 === 0 ? "md:col-span-2 md:row-span-2" : "aspect-square md:aspect-auto"}`}
                   >
-                    <img src={img} className="w-full h-full object-cover transition-transform duration-1000 hover:scale-110" alt={`Gallery ${i}`} />
+                    <Image src={img} fill className="object-cover transition-transform duration-1000 hover:scale-110" alt={`Gallery ${i}`} />
                   </motion.div>
                 ))}
               </div>

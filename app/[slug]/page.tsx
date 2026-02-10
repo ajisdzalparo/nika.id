@@ -2,10 +2,51 @@
 import { notFound } from "next/navigation";
 import { TemplateRenderer } from "@/components/template-renderer";
 import { prisma } from "@/lib/prisma";
+import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ to?: string }>;
+}
+
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const { to } = await searchParams;
+
+  const user = await prisma.user.findUnique({
+    where: { invitationSlug: slug },
+    include: { invitation: true },
+  });
+
+  if (!user) {
+    return {
+      title: "Invitation Not Found - Nika.id",
+    };
+  }
+
+  const invitationData = (user.invitation?.data as any) || {};
+  const groomName = invitationData.groom?.name?.split(" ")[0] || "Pria";
+  const brideName = invitationData.bride?.name?.split(" ")[0] || "Wanita";
+  const title = `Undangan Pernikahan ${groomName} & ${brideName}`;
+  const description = `The Wedding Celebration of ${invitationData.groom?.name} & ${invitationData.bride?.name}. Klik untuk melihat detail acara.`;
+
+  return {
+    title: to ? `${to}, Anda diundang! | ${title}` : title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [invitationData.groom?.photo || invitationData.bride?.photo || "/og-image.jpg"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [invitationData.groom?.photo || invitationData.bride?.photo || "/og-image.jpg"],
+    },
+  };
 }
 
 export default async function PublicInvitationPage({ params, searchParams }: PageProps) {
@@ -39,41 +80,35 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
     );
   }
 
-  const invitationData = (user.invitation?.data as any) || {};
-
   // Map the JSON data from Editor to the format expected by templates
-  const weddingData = {
-    guestName: to || "Tamu Undangan",
-    groom: {
-      nickname: invitationData.groom?.name?.split(" ")[0] || "Pria",
-      fullName: invitationData.groom?.name || "Nama Mempelai Pria",
-      fatherName: invitationData.groom?.parents?.split("&")[0]?.trim() || "Ayah",
-      motherName: invitationData.groom?.parents?.split("&")[1]?.trim() || "Ibu",
-      instagram: invitationData.groom?.instagram,
-      photo: invitationData.groom?.photo,
+  const weddingData = mapInvitationToWeddingData(user.invitation?.data, to, user.weddingDate || undefined);
+
+  const eventDate = weddingData.event?.date ? new Date(weddingData.event.date) : new Date();
+  const eventName = `Pernikahan ${weddingData.groom.fullName} & ${weddingData.bride.fullName}`;
+  const eventVenue = weddingData.event?.venue || "Venue";
+  const eventAddress = weddingData.event?.address || "Address";
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: eventName,
+    description: `Undangan Pernikahan ${weddingData.groom.fullName} & ${weddingData.bride.fullName}`,
+    startDate: eventDate.toISOString(),
+    location: {
+      "@type": "Place",
+      name: eventVenue,
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: eventAddress,
+      },
     },
-    bride: {
-      nickname: invitationData.bride?.name?.split(" ")[0] || "Wanita",
-      fullName: invitationData.bride?.name || "Nama Mempelai Wanita",
-      fatherName: invitationData.bride?.parents?.split("&")[0]?.trim() || "Ayah",
-      motherName: invitationData.bride?.parents?.split("&")[1]?.trim() || "Ibu",
-      instagram: invitationData.bride?.instagram,
-      photo: invitationData.bride?.photo,
-    },
-    event: {
-      date: invitationData.event?.date ? new Date(invitationData.event.date) : user.weddingDate || new Date(),
-      time: invitationData.event?.time || "08:00",
-      venue: invitationData.event?.venue || "Nama Tempat Acara",
-      address: invitationData.event?.address || "Alamat Lengkap Lokasi",
-      mapUrl: invitationData.event?.maps || "https://maps.google.com",
-    },
-    gallery: invitationData.gallery?.photos || [],
-    video: invitationData.gallery?.video,
-    story: {
-      title: invitationData.story?.title || "Kisah Kami",
-      content: invitationData.story?.content || "",
-    },
+    image: [weddingData.groom.photo || weddingData.bride.photo || ""],
   };
 
-  return <TemplateRenderer slug={user.template.slug} data={weddingData} />;
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <TemplateRenderer slug={user.template.slug} data={weddingData} />
+    </>
+  );
 }
