@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { admin } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
 
 export const auth = betterAuth({
@@ -27,6 +28,7 @@ export const auth = betterAuth({
       },
     },
   },
+  plugins: [admin()],
 });
 
 export type Session = typeof auth.$Infer.Session;
