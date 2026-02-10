@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { IconTemplate, IconDashboard, IconMessage, IconUser, IconTransactionDollar } from "@tabler/icons-react";
+import { IconDashboard, IconTemplate, IconUser, IconMessage, IconSettings, IconCurrencyDollar } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -11,46 +11,65 @@ import Link from "next/link";
 
 const data = {
   user: {
-    name: "Nika",
-    email: "nika@nika.id",
+    name: "Admin",
+    email: "admin@nika.id",
     avatar: "/logo",
   },
   navMain: [
     {
-      title: "Ringkasan",
+      title: "Dashboard Overview",
       url: "/",
       icon: IconDashboard,
     },
     {
-      title: "Kelola Template",
-      url: "/template",
+      title: "Template Forge",
+      url: "/templates",
       icon: IconTemplate,
     },
     {
-      title: "Daftar User",
-      url: "/user",
+      title: "User Management",
+      url: "/users",
       icon: IconUser,
     },
     {
       title: "Moderasi Ucapan",
-      url: "#",
+      url: "/moderasi",
       icon: IconMessage,
     },
     {
       title: "Transaksi",
-      url: "#",
-      icon: IconTransactionDollar,
+      url: "/transaksi",
+      icon: IconCurrencyDollar,
+    },
+    {
+      title: "Pengaturan Sistem",
+      url: "/pengaturan-admin",
+      icon: IconSettings,
     },
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+import { useSession } from "@/lib/auth-client";
+
+// ... (keep imports)
+
+export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: session } = useSession();
+
+  const user = session?.user
+    ? {
+        name: session.user.name || "Admin",
+        email: session.user.email || "",
+        avatar: session.user.image || "/logo",
+      }
+    : data.user;
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" className="data-[slot=sidebar-menu-button]:p-1.5!" tooltip="nika.id">
+            <SidebarMenuButton asChild size="lg" className="data-[slot=sidebar-menu-button]:p-1.5!" tooltip="nika.id Admin">
               <Link href="/" className="flex items-center gap-2">
                 <div className="flex aspect-square size-28 items-center justify-center rounded-lg overflow-hidden">
                   <Image src="/logo-transparan.png" alt="Logo" width={120} height={120} />
@@ -63,6 +82,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
+      <SidebarFooter>
+        <NavUser user={user} />
+      </SidebarFooter>
     </Sidebar>
   );
 }
