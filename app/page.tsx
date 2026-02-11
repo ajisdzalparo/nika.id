@@ -1,47 +1,76 @@
-import Link from "next/link";
+"use client";
+
+import { useEffect, useRef } from "react";
+import { Navbar } from "@/components/layout/navbar";
+import { HeroSection } from "@/components/home/hero-section";
+import { FeaturesGrid } from "@/components/home/features-grid";
+import { TemplateShowcase } from "@/components/home/template-showcase";
+import { HowItWorks } from "@/components/home/how-it-works";
+import { PricingSection } from "@/components/home/pricing-section";
+import { Testimonials } from "@/components/home/testimonials";
+import { FAQSection } from "@/components/home/faq-section";
+import { Footer } from "@/components/layout/footer";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@/components/ui/button";
-import { IconHeart, IconTemplate, IconUsers, IconSparkles } from "@tabler/icons-react";
+import Link from "next/link";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Home() {
-  return (
-    <div className="min-h-screen bg-linear-to-b from-pink-50 via-white to-purple-50">
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 py-20">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <IconHeart className="w-20 h-20 mx-auto text-pink-500" />
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-            nika<span className="text-pink-500">.id</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">Platform undangan pernikahan digital yang modern, elegan, dan mudah digunakan</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-            <Button asChild size="lg" className="text-lg px-8">
-              <Link href="/register">Buat Undangan Gratis</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8">
-              <Link href="/login">Masuk</Link>
-            </Button>
-          </div>
-        </div>
+  const mainRef = useRef<HTMLDivElement>(null);
 
-        {/* Features */}
-        <div className="max-w-6xl mx-auto mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center space-y-4 p-6">
-            <IconTemplate className="w-12 h-12 mx-auto text-pink-500" />
-            <h3 className="text-xl font-semibold">Template Cantik</h3>
-            <p className="text-muted-foreground">Pilihan desain undangan yang modern dan elegan untuk pernikahan Anda</p>
+  useEffect(() => {
+    // Page level animations can be added here if needed
+  }, []);
+
+  return (
+    <div ref={mainRef} className="min-h-screen bg-white">
+      <Navbar />
+
+      <main>
+        <HeroSection />
+
+        <FeaturesGrid />
+
+        <TemplateShowcase />
+
+        <HowItWorks />
+
+        <PricingSection />
+
+        <Testimonials />
+
+        <FAQSection />
+
+        {/* Call to Action Section */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="bg-gradient-to-br from-pink-500 to-purple-600 rounded-[3rem] p-12 md:p-20 text-center text-white shadow-2xl shadow-pink-200 relative overflow-hidden">
+              {/* Decorative circles */}
+              <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
+              <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-400/20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
+
+              <div className="relative z-10 max-w-3xl mx-auto">
+                <h2 className="text-4xl md:text-6xl font-bold mb-8 capitalize">
+                  Siap untuk merayakan <br /> momen spesial Anda?
+                </h2>
+                <p className="text-pink-50 text-xl mb-12 leading-relaxed">Gabung bersama ribuan pasangan lainnya yang telah menggunakan nika.id untuk hari bahagia mereka.</p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button asChild size="lg" variant="secondary" className="text-lg px-8 h-14 rounded-2xl">
+                    <Link href="/register">Buat Undangan Sekarang</Link>
+                  </Button>
+                  <Button asChild size="lg" className="text-lg px-8 h-14 bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-sm rounded-2xl">
+                    <Link href="/login">Masuk ke Dashboard</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="text-center space-y-4 p-6">
-            <IconUsers className="w-12 h-12 mx-auto text-pink-500" />
-            <h3 className="text-xl font-semibold">Kelola Tamu</h3>
-            <p className="text-muted-foreground">Manajemen tamu, RSVP, dan ucapan yang mudah dan terintegrasi</p>
-          </div>
-          <div className="text-center space-y-4 p-6">
-            <IconSparkles className="w-12 h-12 mx-auto text-pink-500" />
-            <h3 className="text-xl font-semibold">Mudah Digunakan</h3>
-            <p className="text-muted-foreground">Interface yang intuitif dan mudah untuk membuat undangan dalam hitungan menit</p>
-          </div>
-        </div>
-      </div>
+        </section>
+      </main>
+
+      <Footer />
     </div>
   );
 }

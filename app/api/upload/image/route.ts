@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import path from "path";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { uploadFile } from "@/lib/storage";
 
 export async function POST(request: Request) {
   try {
@@ -22,18 +21,8 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create unique filename
-    const timestamp = Date.now();
-    const safeFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "");
-    const filename = `${timestamp}-${safeFilename}`;
-
-    // Save to public/thumbnails
-    const uploadDir = path.join(process.cwd(), "public", "thumbnails");
-    const filePath = path.join(uploadDir, filename);
-
-    await writeFile(filePath, buffer);
-
-    const url = `/thumbnails/${filename}`;
+    // Upload to MinIO
+    const url = await uploadFile(file.name, buffer, file.type);
 
     return NextResponse.json({ url });
   } catch (error) {
