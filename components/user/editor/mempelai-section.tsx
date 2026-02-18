@@ -1,123 +1,119 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IconPlus } from "@tabler/icons-react";
-import { WeddingData } from "@/types/wedding";
+import { Button } from "@/components/ui/button";
+import { IconUpload } from "@tabler/icons-react";
+import Image from "next/image";
 
 interface MempelaiSectionProps {
-  data: WeddingData;
-  handleUpdate: (section: "groom" | "bride" | "extra", field: string, value: any) => void;
-  handleFileUpload: (section: "groom" | "bride", file: File) => void;
+  data: any;
+  handleUpdate: (section: "groom" | "bride", field: string, value: any) => void;
+  handleFileUpload: (section: "groom" | "bride", file: File) => Promise<unknown>;
   renderExtraFields: (section: string) => React.ReactNode;
 }
 
 export function MempelaiSection({ data, handleUpdate, handleFileUpload, renderExtraFields }: MempelaiSectionProps) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card className="border-none shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-500">👨‍💼</div>
-            Mempelai Pria
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Nama Lengkap</Label>
-            <Input value={data.groom.fullName || ""} onChange={(e) => handleUpdate("groom", "fullName", e.target.value)} placeholder="Budi Santoso" />
-          </div>
-          <div className="space-y-2">
-            <Label>Nama Panggilan</Label>
-            <Input value={data.groom.nickname || ""} onChange={(e) => handleUpdate("groom", "nickname", e.target.value)} placeholder="Budi" />
-          </div>
-          <div className="space-y-2">
-            <Label>Instagram (Tanpa @)</Label>
-            <Input value={data.groom.instagram || ""} onChange={(e) => handleUpdate("groom", "instagram", e.target.value)} placeholder="budisantoso" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Nama Ayah</Label>
-              <Input value={data.groom.fatherName || ""} onChange={(e) => handleUpdate("groom", "fatherName", e.target.value)} placeholder="Bpk. Harto" />
-            </div>
-            <div className="space-y-2">
-              <Label>Nama Ibu</Label>
-              <Input value={data.groom.motherName || ""} onChange={(e) => handleUpdate("groom", "motherName", e.target.value)} placeholder="Ibu Siti" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Upload Foto</Label>
-            <div className="flex gap-2">
-              <Input value={data.groom.photo || ""} onChange={(e) => handleUpdate("groom", "photo", e.target.value)} placeholder="Link URL Foto" />
-              <Label className="cursor-pointer bg-gray-100 p-2 rounded-xl border hover:bg-gray-200 transition-colors">
-                <IconPlus className="h-5 w-5" />
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload("groom", file);
-                  }}
-                />
-              </Label>
-            </div>
-          </div>
-          {renderExtraFields("mempelai")}
-        </CardContent>
-      </Card>
+  const renderMempelaiForm = (type: "groom" | "bride", label: string) => {
+    const sectionData = data[type];
+    const isGroom = type === "groom";
 
-      <Card className="border-none shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-pink-50 text-pink-500">👩‍💼</div>
-            Mempelai Wanita
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Nama Lengkap</Label>
-            <Input value={data.bride.fullName || ""} onChange={(e) => handleUpdate("bride", "fullName", e.target.value)} placeholder="Ani Wijaya" />
+    return (
+      <div className="bg-zinc-50 dark:bg-zinc-950/50 rounded-[2rem] p-6 border border-zinc-100 dark:border-zinc-800/50">
+        <div className="flex items-center gap-4 mb-6">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm ${isGroom ? "bg-blue-100 text-blue-500" : "bg-pink-100 text-pink-500"}`}>{isGroom ? "👨‍⚖️" : "👰‍♀️"}</div>
+          <div>
+            <h3 className="font-serif text-xl font-medium text-zinc-900 dark:text-zinc-100">{label}</h3>
+            <p className="text-xs text-zinc-500 uppercase tracking-widest">Data Utama</p>
           </div>
-          <div className="space-y-2">
-            <Label>Nama Panggilan</Label>
-            <Input value={data.bride.nickname || ""} onChange={(e) => handleUpdate("bride", "nickname", e.target.value)} placeholder="Ani" />
-          </div>
-          <div className="space-y-2">
-            <Label>Instagram (Tanpa @)</Label>
-            <Input value={data.bride.instagram || ""} onChange={(e) => handleUpdate("bride", "instagram", e.target.value)} placeholder="aniwijaya" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Nama Ayah</Label>
-              <Input value={data.bride.fatherName || ""} onChange={(e) => handleUpdate("bride", "fatherName", e.target.value)} placeholder="Bpk. Agus" />
+              <Label className="text-xs font-bold text-zinc-500 uppercase">Nama Panggilan</Label>
+              <Input
+                value={sectionData.nickname}
+                onChange={(e) => handleUpdate(type, "nickname", e.target.value)}
+                placeholder={`Contoh: ${isGroom ? "Romeo" : "Juliet"}`}
+                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
+              />
             </div>
+
             <div className="space-y-2">
-              <Label>Nama Ibu</Label>
-              <Input value={data.bride.motherName || ""} onChange={(e) => handleUpdate("bride", "motherName", e.target.value)} placeholder="Ibu Rina" />
+              <Label className="text-xs font-bold text-zinc-500 uppercase">Nama Lengkap</Label>
+              <Input
+                value={sectionData.fullName}
+                onChange={(e) => handleUpdate(type, "fullName", e.target.value)}
+                placeholder="Nama lengkap beserta gelar"
+                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-zinc-500 uppercase">Nama Ayah</Label>
+              <Input
+                value={sectionData.fatherName}
+                onChange={(e) => handleUpdate(type, "fatherName", e.target.value)}
+                placeholder="Nama Ayah"
+                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-zinc-500 uppercase">Nama Ibu</Label>
+              <Input
+                value={sectionData.motherName}
+                onChange={(e) => handleUpdate(type, "motherName", e.target.value)}
+                placeholder="Nama Ibu"
+                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-zinc-500 uppercase">Username Instagram</Label>
+              <Input
+                value={sectionData.instagram}
+                onChange={(e) => handleUpdate(type, "instagram", e.target.value)}
+                placeholder="@username"
+                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
+              />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Upload Foto</Label>
-            <div className="flex gap-2">
-              <Input value={data.bride.photo || ""} onChange={(e) => handleUpdate("bride", "photo", e.target.value)} placeholder="Link URL Foto" />
-              <Label className="cursor-pointer bg-gray-100 p-2 rounded-xl border hover:bg-gray-200 transition-colors">
-                <IconPlus className="h-5 w-5" />
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload("bride", file);
-                  }}
-                />
-              </Label>
+
+          <div className="space-y-4">
+            <Label className="text-xs font-bold text-zinc-500 uppercase">Foto {label}</Label>
+            <div className="aspect-square relative rounded-[1.5rem] overflow-hidden border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 group transition-all hover:border-primary/50">
+              {sectionData.photo ? (
+                <Image src={sectionData.photo} alt={label} fill className="object-cover" />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-400">
+                  <div className="w-16 h-16 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center mb-2">
+                    <IconUpload size={24} />
+                  </div>
+                  <span className="text-sm font-medium">Upload Foto</span>
+                </div>
+              )}
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
+                <Button variant="secondary" size="sm" className="relative cursor-pointer rounded-full" asChild>
+                  <label>
+                    Ganti Foto
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(type, e.target.files[0])} />
+                  </label>
+                </Button>
+              </div>
             </div>
+            <p className="text-[10px] text-zinc-400 text-center">Disarankan rasio 1:1 (Persegi). Max 2MB.</p>
           </div>
-          {renderExtraFields("mempelai")}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="grid gap-8">
+      {renderMempelaiForm("groom", "Mempelai Pria")}
+      {renderMempelaiForm("bride", "Mempelai Wanita")}
+      {renderExtraFields("mempelai")}
     </div>
   );
 }

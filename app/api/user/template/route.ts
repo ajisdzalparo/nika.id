@@ -1,30 +1,32 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import { getTemplateBySlug } from "@/lib/templates";
 
-// POST /api/user/template - set user's template
+// POST /api/user/template - set user's template by slug
 export async function POST(request: Request) {
   try {
     const session = await requireAuth(request);
     const body = await request.json();
-    const { templateId } = body;
+    const { templateSlug } = body;
 
-    if (!templateId || typeof templateId !== "string") {
-      return NextResponse.json({ error: "TEMPLATE_ID_REQUIRED" }, { status: 400 });
+    if (!templateSlug || typeof templateSlug !== "string") {
+      return NextResponse.json({ error: "TEMPLATE_SLUG_REQUIRED" }, { status: 400 });
     }
 
-    // Check if template exists
-    const template = await prisma.template.findUnique({
-      where: { id: templateId },
-    });
-
+    // Validate slug exists in source code registry
+    const template = getTemplateBySlug(templateSlug);
     if (!template) {
       return NextResponse.json({ error: "TEMPLATE_NOT_FOUND" }, { status: 404 });
     }
 
+    if (!template.isActive) {
+      return NextResponse.json({ error: "TEMPLATE_NOT_ACTIVE" }, { status: 400 });
+    }
+
     const user = await prisma.user.update({
       where: { id: session.user.id },
-      data: { templateId },
+      data: { templateSlug },
     });
 
     return NextResponse.json(user);

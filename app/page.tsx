@@ -25,7 +25,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-screen bg-white">
+    <div ref={mainRef} className="min-h-screen bg-background">
       <Navbar />
 
       <main>
@@ -44,18 +44,18 @@ export default function Home() {
         <FAQSection />
 
         {/* Call to Action Section */}
-        <section className="py-24 bg-white">
+        <section className="py-24 bg-background">
           <div className="container mx-auto px-4">
-            <div className="bg-gradient-to-br from-pink-500 to-purple-600 rounded-[3rem] p-12 md:p-20 text-center text-white shadow-2xl shadow-pink-200 relative overflow-hidden">
+            <div className="bg-primary rounded-[3rem] p-12 md:p-20 text-center text-primary-foreground shadow-2xl relative overflow-hidden">
               {/* Decorative circles */}
               <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
-              <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-400/20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
+              <div className="absolute bottom-0 right-0 w-96 h-96 bg-black/10 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
 
               <div className="relative z-10 max-w-3xl mx-auto">
                 <h2 className="text-4xl md:text-6xl font-bold mb-8 capitalize">
                   Siap untuk merayakan <br /> momen spesial Anda?
                 </h2>
-                <p className="text-pink-50 text-xl mb-12 leading-relaxed">Gabung bersama ribuan pasangan lainnya yang telah menggunakan nika.id untuk hari bahagia mereka.</p>
+                <p className="text-primary-foreground/80 text-xl mb-12 leading-relaxed">Gabung bersama ribuan pasangan lainnya yang telah menggunakan nika.id untuk hari bahagia mereka.</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button asChild size="lg" variant="secondary" className="text-lg px-8 h-14 rounded-2xl">
                     <Link href="/register">Buat Undangan Sekarang</Link>

@@ -2,18 +2,18 @@
 "use client";
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { IconHeart, IconCalendar, IconPhoto, IconSparkles } from "@tabler/icons-react";
+import { IconHeart, IconCalendar, IconPhoto, IconSparkles, IconDeviceFloppy } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { WeddingData } from "@/types/wedding";
 import { MempelaiSection } from "./editor/mempelai-section";
 import { AcaraSection } from "./editor/acara-section";
 import { GaleriSection } from "./editor/galeri-section";
 import { FiturSection } from "./editor/fitur-section";
+import { cn } from "@/lib/utils";
 
 interface TemplateConfig {
   extraFields?: {
@@ -32,8 +32,17 @@ interface EditorFormProps {
   templateConfig?: TemplateConfig | null;
 }
 
+const SECTIONS = [
+  { id: "mempelai", label: "Mempelai", icon: IconHeart },
+  { id: "acara", label: "Acara", icon: IconCalendar },
+  { id: "galeri", label: "Galeri", icon: IconPhoto },
+  { id: "fitur", label: "Fitur", icon: IconSparkles },
+] as const;
+
 export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
   const [loading, setLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState<(typeof SECTIONS)[number]["id"]>("mempelai");
+
   const [data, setData] = useState<WeddingData & { extra?: Record<string, string> }>(() => {
     const defaults: WeddingData = {
       groom: { nickname: "", fullName: "", instagram: "", fatherName: "", motherName: "", photo: "" },
@@ -54,12 +63,9 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
     };
 
     const initial = initialData?.data || {};
-
-    // Ensure gallery is array and event has mapUrl
     const initialGallery = Array.isArray(initial.gallery) ? initial.gallery : initial.gallery?.photos || [];
     const initialVideo = initial.video || initial.gallery?.video || "";
 
-    // Deep merge to ensure all nested fields exist
     return {
       ...defaults,
       ...initial,
@@ -122,11 +128,22 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
       ?.filter((f) => f.section === section)
       .map((field) => (
         <div key={field.id} className="space-y-2">
-          <Label>{field.label}</Label>
+          <Label className="uppercase tracking-wider text-[10px] font-bold text-muted-foreground">{field.label}</Label>
           {field.type === "textarea" ? (
-            <Textarea value={(data.extra?.[field.id] as string) || ""} onChange={(e) => handleUpdate("extra", field.id, e.target.value)} placeholder={field.placeholder} />
+            <Textarea
+              className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-primary rounded-xl"
+              value={(data.extra?.[field.id] as string) || ""}
+              onChange={(e) => handleUpdate("extra", field.id, e.target.value)}
+              placeholder={field.placeholder}
+            />
           ) : (
-            <Input type={field.type} value={(data.extra?.[field.id] as string) || ""} onChange={(e) => handleUpdate("extra", field.id, e.target.value)} placeholder={field.placeholder} />
+            <Input
+              className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-primary rounded-xl"
+              type={field.type}
+              value={(data.extra?.[field.id] as string) || ""}
+              onChange={(e) => handleUpdate("extra", field.id, e.target.value)}
+              placeholder={field.placeholder}
+            />
           )}
         </div>
       ));
@@ -153,49 +170,76 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10 py-4 border-b">
-        <div>
-          <h1 className="text-2xl font-bold">Editor Undangan</h1>
-          <p className="text-sm text-muted-foreground">Kustomisasi momen spesial Anda</p>
+    <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] relative">
+      {/* Sidebar Navigation */}
+      <aside className="lg:w-64 shrink-0 lg:sticky lg:top-24 self-start space-y-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <h2 className="px-4 mb-2 text-xs font-bold text-zinc-400 uppercase tracking-widest">Navigasi</h2>
+          <nav className="flex flex-col gap-2">
+            {SECTIONS.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={cn(
+                  "flex items-center gap-4 px-6 py-4 rounded-lg text-sm font-medium transition-all text-left relative overflow-hidden group border",
+                  activeSection === section.id
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-zinc-900 dark:border-white shadow-xl"
+                    : "bg-white/50 dark:bg-white/5 border-transparent hover:bg-white hover:border-zinc-200 dark:hover:bg-white/10 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                )}
+              >
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
+                    activeSection === section.id ? "bg-white/20 text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-white/5 text-zinc-400 group-hover:scale-110 group-hover:text-primary",
+                  )}
+                >
+                  <section.icon size={20} strokeWidth={1.5} />
+                </div>
+                <span className="tracking-wide relative z-10">{section.label}</span>
+
+                {activeSection === section.id && <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent pointer-events-none" />}
+              </button>
+            ))}
+          </nav>
         </div>
-        <Button onClick={onSave} disabled={loading} className="rounded-full px-8 bg-pink-500 hover:bg-pink-600">
-          {loading ? "Menyimpan..." : "Simpan Perubahan"}
-        </Button>
-      </div>
 
-      <Tabs defaultValue="mempelai" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-gray-100 rounded-2xl mb-8">
-          <TabsTrigger value="mempelai" className="rounded-xl py-3 gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <IconHeart className="h-4 w-4" /> Mempelai
-          </TabsTrigger>
-          <TabsTrigger value="acara" className="rounded-xl py-3 gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <IconCalendar className="h-4 w-4" /> Acara
-          </TabsTrigger>
-          <TabsTrigger value="galeri" className="rounded-xl py-3 gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <IconPhoto className="h-4 w-4" /> Galeri
-          </TabsTrigger>
-          <TabsTrigger value="fitur" className="rounded-xl py-3 gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
-            <IconSparkles className="h-4 w-4" /> Fitur
-          </TabsTrigger>
-        </TabsList>
+        <div className="bg-zinc-900 dark:bg-zinc-800 rounded-xl p-6 text-white shadow-xl relative overflow-hidden group">
+          {/* Ambient Gold Glow */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
 
-        <TabsContent value="mempelai">
-          <MempelaiSection data={data} handleUpdate={handleUpdate} handleFileUpload={handleFileUpload} renderExtraFields={renderExtraFields} />
-        </TabsContent>
+          <h3 className="font-serif text-lg font-medium mb-1 relative z-10 text-primary">Sudah Selesai?</h3>
+          <p className="text-zinc-400 text-sm mb-4 relative z-10">Simpan perubahan untuk memperbarui undangan.</p>
+          <Button onClick={onSave} disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg font-bold shadow-none relative z-10">
+            {loading ? <span className="animate-spin mr-2">⏳</span> : <IconDeviceFloppy className="w-4 h-4 mr-2" />}
+            Simpan
+          </Button>
+        </div>
+      </aside>
 
-        <TabsContent value="acara">
-          <AcaraSection data={data} setData={setData} />
-        </TabsContent>
+      {/* Main Content Area */}
+      <main className="flex-1 min-w-0">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 md:p-8 border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-[600px] relative overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-zinc-50 dark:bg-zinc-800 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-        <TabsContent value="galeri">
-          <GaleriSection data={data} setData={setData} renderExtraFields={renderExtraFields} />
-        </TabsContent>
+          <div className="relative z-10">
+            <div className="mb-8">
+              <h1 className="font-serif text-3xl font-medium text-zinc-900 dark:text-zinc-100">{SECTIONS.find((s) => s.id === activeSection)?.label}</h1>
+              <p className="text-zinc-500 dark:text-zinc-400">
+                {activeSection === "mempelai" && "Informasi data kedua mempelai."}
+                {activeSection === "acara" && "Jadwal dan lokasi acara pernikahan."}
+                {activeSection === "galeri" && "Foto, video, dan cerita cinta."}
+                {activeSection === "fitur" && "Pengaturan musik, hadiah, dan lainnya."}
+              </p>
+            </div>
 
-        <TabsContent value="fitur">
-          <FiturSection data={data} setData={setData} handleUpdate={handleUpdate} renderExtraFields={renderExtraFields} />
-        </TabsContent>
-      </Tabs>
+            {activeSection === "mempelai" && <MempelaiSection data={data} handleUpdate={handleUpdate} handleFileUpload={handleFileUpload} renderExtraFields={renderExtraFields} />}
+            {activeSection === "acara" && <AcaraSection data={data} setData={setData} />}
+            {activeSection === "galeri" && <GaleriSection data={data} setData={setData} renderExtraFields={renderExtraFields} />}
+            {activeSection === "fitur" && <FiturSection data={data} setData={setData} handleUpdate={handleUpdate} renderExtraFields={renderExtraFields} />}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

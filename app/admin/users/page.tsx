@@ -19,13 +19,6 @@ export default async function UsersPage(props: { searchParams: Promise<{ q?: str
     prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      include: {
-        template: {
-          select: {
-            name: true,
-          },
-        },
-      },
       skip,
       take: limit,
     }),

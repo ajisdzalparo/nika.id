@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { TemplateRenderer } from "@/components/template-renderer";
 import { prisma } from "@/lib/prisma";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
+import { getTemplateBySlug } from "@/lib/templates";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -56,7 +57,6 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
   const user = await prisma.user.findUnique({
     where: { invitationSlug: slug },
     include: {
-      template: true,
       invitation: true,
     },
   });
@@ -65,8 +65,8 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
     notFound();
   }
 
-  // If user hasn't selected a template, show status page
-  if (!user.templateId || !user.template) {
+  // Check if user has selected a template
+  if (!user.templateSlug) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-pink-50/30">
         <div className="text-center p-8 bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-md mx-4">
@@ -75,6 +75,19 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
           </div>
           <h1 className="text-2xl font-black text-gray-900 mb-2">Undangan Sedang Disiapkan</h1>
           <p className="text-gray-600">Mempelai sedang merangkai momen indah untuk Anda. Silakan cek kembali beberapa saat lagi!</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Validate the slug exists in our template registry
+  const template = getTemplateBySlug(user.templateSlug);
+  if (!template) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-pink-50/30">
+        <div className="text-center p-8 bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-md mx-4">
+          <h1 className="text-2xl font-black text-gray-900 mb-2">Template Tidak Ditemukan</h1>
+          <p className="text-gray-600">Template yang dipilih tidak tersedia.</p>
         </div>
       </div>
     );
@@ -108,7 +121,7 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <TemplateRenderer slug={user.template.slug} data={weddingData} />
+      <TemplateRenderer slug={user.templateSlug} data={weddingData} />
     </>
   );
 }

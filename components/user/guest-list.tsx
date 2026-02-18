@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { IconCopy, IconTrash, IconBrandWhatsapp, IconPlus, IconUsers } from "@tabler/icons-react";
+import { IconCopy, IconTrash, IconBrandWhatsapp, IconUsers, IconShare, IconSearch, IconUserPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 interface Guest {
   id: string;
@@ -23,6 +21,7 @@ export function GuestList({ initialGuests, invitationSlug }: GuestListProps) {
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
   const [newName, setNewName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
 
   const baseUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${invitationSlug}`;
 
@@ -85,101 +84,105 @@ export function GuestList({ initialGuests, invitationSlug }: GuestListProps) {
     toast.success("Link umum berhasil disalin!");
   };
 
+  const filteredGuests = guests.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()));
+
   return (
-    <div className="space-y-6">
-      {/* Group Actions */}
-      <Card className="border-none shadow-lg bg-linear-to-r from-pink-500 to-purple-600 text-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconUsers className="h-6 w-6" />
-            Aksi Grup
-          </CardTitle>
-          <CardDescription className="text-white/80">Bagikan undangan ke grup WhatsApp atau salin link umum.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Button onClick={shareGroupWA} className="bg-white text-pink-600 hover:bg-white/90 rounded-xl gap-2 font-bold">
-            <IconBrandWhatsapp className="h-5 w-5" />
-            Share ke Grup WhatsApp
-          </Button>
-          <Button onClick={copyGeneralLink} variant="outline" className="border-white text-white hover:bg-white/10 rounded-xl gap-2">
-            <IconCopy className="h-5 w-5" />
-            Salin Link Umum
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Add Guest Form */}
-      <Card className="border-none shadow-lg">
-        <CardHeader>
-          <CardTitle>Tambah Tamu Baru</CardTitle>
-          <CardDescription>Input nama tamu untuk generate link personal</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={addGuest} className="flex gap-4">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="guest-name">Nama Tamu</Label>
-              <Input id="guest-name" placeholder="Contoh: Ahmad Wijaya" value={newName} onChange={(e) => setNewName(e.target.value)} />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      {/* Sidebar: Add Guest & Group Actions */}
+      <div className="space-y-6 lg:sticky lg:top-24">
+        {/* Add Guest Form */}
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-zinc-200/50 dark:shadow-black/20">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <IconUserPlus size={20} />
             </div>
-            <div className="flex items-end">
-              <Button type="submit" disabled={loading} className="gap-2 bg-pink-500 hover:bg-pink-600 rounded-xl px-6">
-                <IconPlus className="h-4 w-4" />
-                Tambah
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Guest List */}
-      <Card className="border-none shadow-lg">
-        <CardHeader>
-          <CardTitle>Daftar Tamu ({guests.length})</CardTitle>
-          <CardDescription>Link personal dan opsi pengiriman</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-2xl border overflow-hidden">
-            <Table>
-              <TableHeader className="bg-gray-50/50">
-                <TableRow>
-                  <TableHead className="font-bold text-gray-900">Nama Tamu</TableHead>
-                  <TableHead className="font-bold text-gray-900">Personal Link</TableHead>
-                  <TableHead className="text-right font-bold text-gray-900">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {guests.map((guest) => (
-                  <TableRow key={guest.id} className="hover:bg-gray-50/50 transition-colors">
-                    <TableCell className="font-medium text-gray-900">{guest.name}</TableCell>
-                    <TableCell>
-                      <code className="text-[10px] bg-pink-50 text-pink-600 px-2 py-1 rounded-lg border border-pink-100 truncate max-w-[200px] block">
-                        {invitationSlug}?to={guest.name}
-                      </code>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => copyLink(guest.name)} className="h-9 w-9 rounded-xl hover:bg-gray-100" title="Copy Link">
-                        <IconCopy className="h-4 w-4 text-gray-600" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => shareWA(guest.name)} className="h-9 w-9 rounded-xl hover:bg-green-50 hover:text-green-600" title="Kirim WhatsApp">
-                        <IconBrandWhatsapp className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => deleteGuest(guest.id)} className="h-9 w-9 rounded-xl hover:bg-red-50 hover:text-red-500" title="Hapus">
-                        <IconTrash className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {guests.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-10 text-muted-foreground">
-                      Belum ada tamu. Silakan tambah tamu baru di atas.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <h3 className="font-serif text-lg font-medium">Tambah Tamu</h3>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-zinc-500 uppercase">Nama Tamu</label>
+              <Input placeholder="Cth: Budi Santoso" value={newName} onChange={(e) => setNewName(e.target.value)} className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus:ring-primary rounded-lg" />
+            </div>
+
+            <Button onClick={addGuest} disabled={loading} className="w-full h-12 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 hover:dark:bg-zinc-100 shadow-lg">
+              {loading ? "Menyimpan..." : "Tambahkan ke Daftar"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Group Actions */}
+        <div className="bg-zinc-900 dark:bg-zinc-800 rounded-xl p-6 shadow-xl text-white relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+            <IconShare size={100} className="text-primary" />
+          </div>
+
+          <h3 className="font-serif text-xl font-medium mb-1 relative z-10 text-primary">Bagikan Undangan</h3>
+          <p className="text-zinc-400 text-sm mb-6 relative z-10">Untuk grup WA atau sosial media.</p>
+
+          <div className="space-y-3 relative z-10">
+            <Button onClick={copyGeneralLink} variant="secondary" className="w-full justify-start h-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-white backdrop-blur-sm">
+              <IconCopy className="w-5 h-5 mr-3" />
+              Salin Link Umum
+            </Button>
+            <Button onClick={shareGroupWA} className="w-full justify-start h-12 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
+              <IconBrandWhatsapp className="w-5 h-5 mr-3" />
+              Share ke Grup
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content: Guest List */}
+      {/* Main Content: Guest List */}
+      <div className="lg:col-span-2 space-y-4">
+        {/* Search Bar */}
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md rounded-xl p-2 border border-zinc-200 dark:border-zinc-800 flex items-center gap-2 shadow-sm">
+          <div className="w-10 h-10 flex items-center justify-center text-zinc-400">
+            <IconSearch size={20} />
+          </div>
+          <input type="text" placeholder="Cari nama tamu..." className="flex-1 bg-transparent border-none outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+
+        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden min-h-[400px]">
+          {filteredGuests.length > 0 ? (
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {filteredGuests.map((guest) => (
+                <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={guest.id} className="p-5 flex items-center justify-between hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 group transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 font-serif font-bold text-lg border border-zinc-200 dark:border-zinc-700">{guest.name.charAt(0)}</div>
+                    <div>
+                      <p className="font-medium text-zinc-900 dark:text-zinc-100 text-lg">{guest.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">Personal Link</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" onClick={() => copyLink(guest.name)} className="h-10 w-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Salin Link">
+                      <IconCopy size={18} className="text-zinc-600 dark:text-zinc-300" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => shareWA(guest.name)} className="h-10 w-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Kirim WA">
+                      <IconBrandWhatsapp size={18} className="text-zinc-600 dark:text-zinc-300" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteGuest(guest.id)} className="h-10 w-10 rounded-full hover:bg-red-50 hover:text-red-500" title="Hapus">
+                      <IconTrash size={18} />
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[400px] text-zinc-400">
+              <div className="w-20 h-20 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
+                <IconUsers size={40} className="opacity-50" />
+              </div>
+              <p>Belum ada tamu yang ditemukan.</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

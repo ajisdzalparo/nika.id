@@ -13,7 +13,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
-        template: true,
         invitation: true,
         _count: {
           select: {

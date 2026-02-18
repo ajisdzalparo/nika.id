@@ -1,62 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
-
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
+import { getActiveTemplates } from "@/lib/templates";
+import { IconCheck, IconEye } from "@tabler/icons-react";
 
-type Template = {
-  id: string;
-  name: string;
-  category: string;
-  type: string;
-  thumbnail: string;
-};
+const templates = getActiveTemplates();
 
 export default function PilihTemplatePage() {
   const router = useRouter();
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [submittingSlug, setSubmittingSlug] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch("/api/templates");
-        if (!res.ok) throw new Error("Gagal memuat template");
-        const data = await res.json();
-        setTemplates(data);
-      } catch (err) {
-        console.error(err);
-        setError("Tidak dapat memuat daftar template");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, []);
-
-  const handleSelect = async (templateId: string) => {
+  const handleSelect = async (templateSlug: string) => {
     setError("");
-    setSubmittingId(templateId);
+    setSubmittingSlug(templateSlug);
     try {
       const res = await fetch("/api/user/template", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ templateId }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateSlug }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Gagal memilih template");
-        setSubmittingId(null);
+        setSubmittingSlug(null);
         return;
       }
 
@@ -65,51 +38,64 @@ export default function PilihTemplatePage() {
     } catch (err) {
       console.error(err);
       setError("Terjadi kesalahan tak terduga");
-      setSubmittingId(null);
+      setSubmittingSlug(null);
     }
   };
+
   return (
     <>
       <SiteHeader />
-      <div className="flex flex-1 flex-col">
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Pilih Template</h1>
-            <p className="text-muted-foreground">Pilih desain undangan yang sesuai dengan tema pernikahan Anda</p>
+      <div className="flex flex-1 flex-col bg-[#FAFAFA] dark:bg-zinc-950 min-h-screen">
+        <div className="flex flex-col gap-8 py-10 px-4 lg:px-8 w-full">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <Badge variant="outline" className="mb-4 bg-primary/5 text-primary border-primary/20 px-3 py-1 rounded-full text-xs uppercase tracking-wider font-semibold">
+              Koleksi Eksklusif
+            </Badge>
+            <h1 className="font-serif text-4xl md:text-5xl font-medium text-zinc-900 dark:text-zinc-50 tracking-tight mb-4">Pilih Tema Undangan</h1>
+            <p className="text-zinc-500 dark:text-zinc-400 text-lg">Temukan desain yang mencerminkan kisah cinta Anda. Semua template dapat dikustomisasi sepenuhnya.</p>
           </div>
 
-          {/* Template Catalog */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {templates.map((template) => (
-              <div key={template.id} className="rounded-lg border bg-card overflow-hidden hover:shadow-lg transition-shadow group">
-                <div className="relative aspect-3/4 bg-muted">
-                  <Image src={template.thumbnail} alt={template.name} fill className="object-cover" />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Button variant="secondary">Live Preview</Button>
-                  </div>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div>
-                    <h3 className="font-semibold text-lg">{template.name}</h3>
-                    <p className="text-sm text-muted-foreground">{template.category}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Badge variant={template.type === "Premium" ? "default" : "secondary"}>{template.type}</Badge>
-                    <Button
-                      size="sm"
-                      onClick={() => handleSelect(template.id)}
-                      disabled={submittingId === template.id}
-                    >
-                      {submittingId === template.id ? "Memilih..." : "Pilih Template"}
-                    </Button>
+              <div
+                key={template.slug}
+                className="group relative bg-white dark:bg-zinc-900 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-zinc-200/50 dark:shadow-black/20 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300"
+              >
+                <div className="relative aspect-[3/4] overflow-hidden">
+                  <Image src={template.thumbnail} alt={template.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+
+                  {/* Content Overlay */}
+                  <div className="absolute inset-x-0 bottom-0 p-8 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                    <div className="mb-4">
+                      <Badge className={`${template.type === "Premium" ? "bg-amber-400 text-amber-950" : "bg-white/20 text-white backdrop-blur-md"} border-none mb-2`}>{template.type}</Badge>
+                      <h3 className="font-serif text-2xl font-bold text-white mb-1">{template.name}</h3>
+                      <p className="text-white/80 text-sm hidden group-hover:block transition-all animate-in fade-in slide-in-from-bottom-2">{template.category} Style</p>
+                    </div>
+
+                    <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                      <Button className="flex-1 rounded-xl bg-white text-zinc-900 hover:bg-zinc-100" onClick={() => handleSelect(template.slug)} disabled={submittingSlug === template.slug}>
+                        {submittingSlug === template.slug ? (
+                          "Memproses..."
+                        ) : (
+                          <>
+                            <IconCheck className="w-4 h-4 mr-2" /> Pilih
+                          </>
+                        )}
+                      </Button>
+                      <Button variant="secondary" className="w-12 h-10 rounded-xl bg-white/20 hover:bg-white/30 text-white backdrop-blur-md px-0">
+                        <IconEye className="w-5 h-5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {loading && <p className="text-sm text-muted-foreground">Memuat template...</p>}
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-red-50 text-red-600 px-6 py-3 rounded-full shadow-lg border border-red-200 animate-in fade-in slide-in-from-bottom-4">{error}</div>}
         </div>
       </div>
     </>

@@ -1,21 +1,26 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Montserrat } from "next/font/google";
+import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const playfair = Playfair_Display({
+  variable: "--font-serif",
+  subsets: ["latin"],
+});
+
+const mono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Nika.id - Professional Digital Wedding Invitation",
-  description: "Create your beautiful, elegant, and professional digital wedding invitation with Nika.id. Fast, easy, and premium designs.",
-  keywords: ["undangan digital", "wedding invitation", "nika.id", "undangan online", "pernikahan"],
+  title: "Nika.id - Platform Undangan Digital",
+  description: "Buat undangan pernikahan digital impianmu dengan mudah dan cepat.",
 };
 
 export default function RootLayout({
@@ -24,8 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${montserrat.variable} ${geistMono.variable} antialiased`}>{children}</body>
+    <html lang="id">
+      <body className={`${inter.variable} ${playfair.variable} ${mono.variable} antialiased bg-background text-foreground`}>
+        {children}
+        <Toaster position="top-center" richColors />
+      </body>
     </html>
   );
 }

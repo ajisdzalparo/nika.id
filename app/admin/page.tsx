@@ -1,19 +1,16 @@
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-
 import { SiteHeader } from "@/components/site-header";
 import { SectionCards } from "@/components/section-cards";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getAllTemplates } from "@/lib/templates";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default async function AdminDashboardPage() {
-  const [userCount, adminCount, templateCount, messageCount, transactionCount, latestUsers] = await Promise.all([
+  const allTemplates = getAllTemplates();
+  const [userCount, adminCount, messageCount, transactionCount, latestUsers] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { role: "admin" } }),
-    prisma.template.count(),
     prisma.guestMessage.count(),
     prisma.transaction.count(),
     prisma.user.findMany({
@@ -31,7 +28,7 @@ export default async function AdminDashboardPage() {
 
   const stats = {
     totalUsers: userCount,
-    totalTemplates: templateCount,
+    totalTemplates: allTemplates.length,
     totalMessages: messageCount,
     totalTransactions: transactionCount,
     totalAdmins: adminCount,

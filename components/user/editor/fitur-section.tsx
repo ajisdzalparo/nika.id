@@ -60,7 +60,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
             {data.gifts.enabled && (
               <div className="space-y-4">
                 {data.gifts.bankAccounts.map((account, index) => (
-                  <div key={index} className="p-4 border rounded-2xl space-y-3 relative bg-gray-50/50">
+                  <div key={index} className="p-4 border rounded-xl space-y-3 relative bg-gray-50/50">
                     <Button
                       variant="ghost"
                       size="icon"

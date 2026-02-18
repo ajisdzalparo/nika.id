@@ -20,9 +20,7 @@ export interface User {
   invitationSlug: string | null;
   partnerName: string | null;
   weddingDate: string | null;
-  template: {
-    name: string;
-  } | null;
+  templateSlug: string | null;
 }
 
 interface UsersClientProps {
@@ -201,7 +199,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount 
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <Badge variant="outline" className="w-fit font-normal text-[10px] px-1.5 py-0">
-                        {user.template?.name ?? "No Template"}
+                        {user.templateSlug ?? "No Template"}
                       </Badge>
                       {user.invitationSlug && (
                         <a href={`/${user.invitationSlug}`} target="_blank" rel="noreferrer" className="text-[10px] text-blue-500 hover:underline flex items-center gap-0.5">

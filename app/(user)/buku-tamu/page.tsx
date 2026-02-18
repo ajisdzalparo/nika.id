@@ -3,13 +3,13 @@ import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { IconMessage, IconUsers, IconCheck, IconX, IconQuestionMark, IconQuote } from "@tabler/icons-react";
 
 export default async function BukuTamuPage() {
   const rawHeaders = await headers();
@@ -17,9 +17,7 @@ export default async function BukuTamuPage() {
     headers: Object.fromEntries(rawHeaders),
   });
 
-  if (!session) {
-    redirect("/login");
-  }
+  if (!session) redirect("/login");
 
   const [attendees, messages] = await Promise.all([
     prisma.rSVP.findMany({
@@ -41,107 +39,114 @@ export default async function BukuTamuPage() {
   return (
     <>
       <SiteHeader />
-      <div className="flex flex-1 flex-col bg-gray-50/50">
-        <div className="max-w-5xl mx-auto w-full px-4 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-1 flex-col bg-[#FAFAFA] dark:bg-zinc-950 min-h-screen">
+        <div className="flex flex-col gap-8 py-10 px-4 lg:px-8 w-full">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Buku Tamu & RSVP</h1>
-              <p className="text-muted-foreground">Monitor kehadiran dan kumpulan doa dari tamu Anda.</p>
+              <h1 className="font-serif text-3xl md:text-4xl font-medium text-zinc-900 dark:text-zinc-50 tracking-tight">Komentar & Kehadiran</h1>
+              <p className="text-zinc-500 dark:text-zinc-400 mt-1">Pantau siapa saja yang akan hadir di hari bahagiamu.</p>
             </div>
-            <Button className="rounded-xl px-6 bg-pink-500 hover:bg-pink-600 shadow-lg shadow-pink-100">Ekspor Data</Button>
+            <Button className="rounded-full px-6 shadow-none bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200">Download Data</Button>
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="border-none shadow-lg">
-              <CardHeader className="pb-3 px-6 pt-6">
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Respon</CardTitle>
-              </CardHeader>
-              <CardContent className="px-6 pb-6 mt-[-4px]">
-                <div className="text-3xl font-black text-gray-900">{stats.total}</div>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-lg border-l-4 border-l-green-500">
-              <CardHeader className="pb-3 px-6 pt-6">
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Konfirmasi Hadir</CardTitle>
-              </CardHeader>
-              <CardContent className="px-6 pb-6 mt-[-4px]">
-                <div className="text-3xl font-black text-green-600">{stats.present}</div>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-lg border-l-4 border-l-red-500">
-              <CardHeader className="pb-3 px-6 pt-6">
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Berhalangan Hadir</CardTitle>
-              </CardHeader>
-              <CardContent className="px-6 pb-6 mt-[-4px]">
-                <div className="text-3xl font-black text-red-600">{stats.absent}</div>
-              </CardContent>
-            </Card>
+          {/* Stats Cards - Glass & Minimalist */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-6 rounded-xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Total Respon</span>
+              <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.total}</span>
+            </div>
+            <div className="p-6 rounded-xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Hadir</span>
+              <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.present}</span>
+            </div>
+            <div className="p-6 rounded-xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
+              <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Berhalangan</span>
+              <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.absent}</span>
+            </div>
           </div>
 
           <Tabs defaultValue="attendance" className="w-full">
-            <TabsList className="bg-gray-100 p-1 rounded-2xl h-auto mb-6">
-              <TabsTrigger value="attendance" className="rounded-xl py-3 px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">
-                Konfirmasi Kehadiran
+            <TabsList className="bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-full h-auto mb-8 w-fit mx-auto md:mx-0">
+              <TabsTrigger value="attendance" className="rounded-full py-2.5 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm font-medium transition-all">
+                <IconUsers className="w-4 h-4 mr-2" />
+                Daftar Kehadiran
               </TabsTrigger>
-              <TabsTrigger value="messages" className="rounded-xl py-3 px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm font-bold">
-                Kumpulan Doa & Ucapan
+              <TabsTrigger value="messages" className="rounded-full py-2.5 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm font-medium transition-all">
+                <IconMessage className="w-4 h-4 mr-2" />
+                Ucapan Doa
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="attendance" className="space-y-4">
-              <div className="rounded-2xl border bg-white overflow-hidden shadow-sm">
-                <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow>
-                      <TableHead className="font-bold text-gray-900 px-6 h-12">Nama Tamu</TableHead>
-                      <TableHead className="font-bold text-gray-900 h-12">Status</TableHead>
-                      <TableHead className="font-bold text-gray-900 h-12">Jumlah Tamu</TableHead>
-                      <TableHead className="font-bold text-gray-900 h-12 text-right px-6">Waktu Konfirmasi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {attendees.map((attendee) => (
-                      <TableRow key={attendee.id} className="hover:bg-gray-50/50 transition-colors">
-                        <TableCell className="font-semibold text-gray-900 px-6 py-4">{attendee.guestName}</TableCell>
-                        <TableCell>
-                          <Badge variant={attendee.attendance === "Hadir" ? "default" : "secondary"} className={attendee.attendance === "Hadir" ? "bg-green-500 hover:bg-green-600" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}>
-                            {attendee.attendance}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-gray-600">{attendee.guests} orang</TableCell>
-                        <TableCell className="text-right text-sm text-muted-foreground px-6">{format(new Date(attendee.createdAt), "dd MMM yyyy, HH:mm", { locale: idLocale })}</TableCell>
-                      </TableRow>
-                    ))}
-                    {attendees.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-20 text-muted-foreground">
-                          Belum ada konfirmasi kehadiran masuk.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+            <TabsContent value="attendance">
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm overflow-hidden shadow-sm">
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {attendees.map((attendee) => (
+                    <div key={attendee.id} className="p-5 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center border ${
+                            attendee.attendance === "Hadir" ? "bg-primary/10 border-primary/20 text-primary" : "bg-zinc-100 border-zinc-200 text-zinc-400 dark:bg-zinc-800 dark:border-zinc-700"
+                          }`}
+                        >
+                          {attendee.attendance === "Hadir" ? <IconCheck size={18} /> : <IconX size={18} />}
+                        </div>
+                        <div>
+                          <p className="font-bold text-zinc-900 dark:text-zinc-100">{attendee.guestName}</p>
+                          <p className="text-xs text-zinc-500">{format(new Date(attendee.createdAt), "dd MMM, HH:mm", { locale: idLocale })}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge
+                          variant="outline"
+                          className={`rounded-full px-3 py-0.5 border ${
+                            attendee.attendance === "Hadir" ? "border-primary/20 bg-primary/5 text-primary" : "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+                          }`}
+                        >
+                          {attendee.guests} Orang
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                  {attendees.length === 0 && (
+                    <div className="p-16 text-center">
+                      <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
+                        <IconUsers size={32} />
+                      </div>
+                      <p className="text-zinc-500">Belum ada konfirmasi kehadiran tamu.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="messages" className="space-y-4">
+            <TabsContent value="messages">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {messages.map((msg) => (
-                  <Card key={msg.id} className="border-none shadow-md overflow-hidden group">
-                    <div className="h-1 bg-pink-100 group-hover:bg-pink-400 transition-colors" />
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base font-bold text-gray-900">{msg.guestName}</CardTitle>
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground">{format(new Date(msg.createdAt), "dd MMM yyyy", { locale: idLocale })}</span>
+                  <Card key={msg.id} className="border-none shadow-sm hover:shadow-md transition-all bg-white/70 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-100 dark:border-zinc-800 rounded-xl overflow-hidden group">
+                    <CardContent className="p-6 relative">
+                      <IconQuote className="absolute top-6 right-6 text-primary/10 w-10 h-10 rotate-180" />
+                      <p className="text-zinc-600 dark:text-zinc-300 italic mb-6 relative z-10 leading-relaxed min-h-[60px]">&rdquo;{msg.message}&rdquo;</p>
+                      <div className="flex items-center gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-500 text-xs font-bold font-serif">
+                          {msg.guestName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{msg.guestName}</p>
+                          <p className="text-[10px] text-zinc-400 uppercase tracking-wider">{format(new Date(msg.createdAt), "dd MMM yyyy", { locale: idLocale })}</p>
+                        </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600 italic leading-relaxed">&#34;{msg.message}&rdquo;</p>
                     </CardContent>
                   </Card>
                 ))}
-                {messages.length === 0 && <div className="col-span-2 text-center py-20 bg-white rounded-2xl border border-dashed text-muted-foreground">Belum ada ucapan dan doa dari tamu.</div>}
+                {messages.length === 0 && (
+                  <div className="col-span-2 p-16 text-center bg-white dark:bg-zinc-900 rounded-[2rem] border border-dashed border-zinc-200 dark:border-zinc-800">
+                    <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
+                      <IconMessage size={32} />
+                    </div>
+                    <p className="text-zinc-500">Belum ada ucapan doa dari tamu.</p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
