@@ -1,32 +1,11 @@
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { Database, MessageSquare } from "lucide-react";
 
 import { SiteHeader } from "@/components/site-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { auth } from "@/lib/auth";
-import type { Session } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ModerationClient, type GuestMessage } from "@/components/admin/moderation-client";
 
-type AdminSession = Session & {
-  user: Session["user"] & {
-    role?: string;
-  };
-};
-
 export default async function ModerasiPage() {
-  const rawHeaders = await headers();
-  const session = (await auth.api.getSession({
-    headers: Object.fromEntries(rawHeaders),
-  })) as AdminSession | null;
-
-  const role = session?.user.role;
-  if (!session || role !== "ADMIN") {
-    redirect("/login");
-  }
-
-  // Fetch real guest messages
   const guestMessages = await prisma.guestMessage.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -37,10 +16,9 @@ export default async function ModerasiPage() {
         },
       },
     },
-    take: 100, // Limit to recent 100
+    take: 100,
   });
 
-  // Serialize dates for Client Component
   const serializedMessages = guestMessages.map((msg) => ({
     ...msg,
     createdAt: msg.createdAt.toISOString(),

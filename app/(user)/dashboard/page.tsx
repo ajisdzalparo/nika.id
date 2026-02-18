@@ -60,7 +60,7 @@ export default async function UserDashboardPage() {
             </div>
             <div className="flex items-center gap-3">
               <Badge variant="secondary" className="px-4 py-1.5 rounded-full text-sm font-semibold bg-pink-50 text-pink-600 border-pink-100 italic">
-                {user.role === "ADMIN" ? "Admin Access" : "Standard Plan"}
+                {user.role === "admin" ? "Admin Access" : "Standard Plan"}
               </Badge>
               <Button asChild variant="outline" size="sm" className="rounded-full shadow-xs">
                 <Link href="/pengaturan">Pengaturan Akun</Link>

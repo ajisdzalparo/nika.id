@@ -20,13 +20,12 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
   })) as AdminSession | null;
 
   const role = session?.user.role;
-  if (!session || role !== "ADMIN") {
+  if (!session || role !== "admin") {
     redirect("/login");
   }
 
   const { id } = await params;
 
-  // @ts-expect-error - Template model is available at runtime
   const template = await prisma.template.findUnique({
     where: { id },
   });
@@ -45,7 +44,12 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
             <p className="text-muted-foreground">Perbarui detail template {template.name}</p>
           </div>
 
-          <EditTemplateForm template={template} />
+          <EditTemplateForm
+            template={{
+              ...template,
+              description: template.description ?? undefined,
+            }}
+          />
         </div>
       </div>
     </>

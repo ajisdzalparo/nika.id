@@ -6,29 +6,13 @@ import { SectionCards } from "@/components/section-cards";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import type { Session } from "@/lib/auth";
-
-type AdminSession = Session & {
-  user: Session["user"] & {
-    role?: string;
-  };
-};
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default async function AdminDashboardPage() {
-  // Hanya ADMIN yang boleh akses dashboard admin
-  const rawHeaders = await headers();
-  const session = (await auth.api.getSession({
-    headers: Object.fromEntries(rawHeaders),
-  })) as AdminSession | null;
-
-  const role = session?.user.role;
-  if (!session || role !== "ADMIN") {
-    redirect("/login");
-  }
-
   const [userCount, adminCount, templateCount, messageCount, transactionCount, latestUsers] = await Promise.all([
     prisma.user.count(),
-    prisma.user.count({ where: { role: "ADMIN" } }),
+    prisma.user.count({ where: { role: "admin" } }),
     prisma.template.count(),
     prisma.guestMessage.count(),
     prisma.transaction.count(),
@@ -39,6 +23,7 @@ export default async function AdminDashboardPage() {
         id: true,
         name: true,
         email: true,
+        image: true,
         createdAt: true,
       },
     }),
@@ -63,35 +48,42 @@ export default async function AdminDashboardPage() {
               <p className="text-muted-foreground">Statistik dan monitoring sistem nika.id</p>
             </div>
 
-            {/* Stats Cards */}
             <SectionCards stats={stats} />
 
-            {/* Traffic Chart */}
-            <div className="px-4 lg:px-6">
-              <div className="rounded-lg border bg-card p-4">
-                <h2 className="text-xl font-semibold mb-4">Grafik Trafik Kunjungan Tamu</h2>
-                <ChartAreaInteractive />
-              </div>
-            </div>
+            <div className="grid gap-4 px-4 lg:grid-cols-7 lg:px-6">
+              <Card className="col-span-4">
+                <CardHeader>
+                  <CardTitle>Grafik Trafik Kunjungan Tamu</CardTitle>
+                  <CardDescription>Visualisasi data pengunjung dari undangan yang aktif</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <ChartAreaInteractive />
+                </CardContent>
+              </Card>
 
-            {/* Recent Activity Log - data dari user terbaru */}
-            <div className="px-4 lg:px-6">
-              <div className="rounded-lg border bg-card p-4">
-                <h2 className="text-xl font-semibold mb-4">Log Aktivitas Sistem Terbaru</h2>
-                <div className="space-y-3">
-                  {latestUsers.map((user: { id: string; name: string | null; email: string; createdAt: Date }) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                      <div>
-                        <p className="font-medium">{user.name ?? user.email}</p>
-                        <p className="text-sm text-muted-foreground">User baru terdaftar</p>
+              <Card className="col-span-3">
+                <CardHeader>
+                  <CardTitle>Log Aktivitas Sistem Terbaru</CardTitle>
+                  <CardDescription>5 User terbaru yang mendaftar</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-8">
+                    {latestUsers.map((user) => (
+                      <div key={user.id} className="flex items-center">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={user.image || "/avatars/01.png"} alt="Avatar" />
+                          <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
+                        </Avatar>
+                        <div className="ml-4 space-y-1">
+                          <p className="text-sm font-medium leading-none">{user.name}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
+                        <div className="ml-auto font-medium text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString()}</div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">{user.createdAt.toLocaleString()}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

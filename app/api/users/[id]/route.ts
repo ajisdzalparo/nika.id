@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
 
+const VALID_ROLES = ["USER", "admin"];
+
 // GET /api/users/[id] - get user details
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -34,13 +36,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-// PATCH /api/users/[id] - update user (role, etc)
+// PATCH /api/users/[id] - update user role
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAdmin(request);
     const { id } = await params;
     const body = await request.json();
     const { role } = body;
+
+    if (!role || !VALID_ROLES.includes(role)) {
+      return NextResponse.json({ error: "INVALID_ROLE", allowed: VALID_ROLES }, { status: 400 });
+    }
 
     const user = await prisma.user.update({
       where: { id },
@@ -57,11 +63,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 // DELETE /api/users/[id] - delete user
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin(request);
+    const session = await requireAdmin(request);
     const { id } = await params;
 
-    // Safety check: don't delete yourself
-    // (This would require getting current session but as a basic safety for now)
+    // Safety: admin cannot delete their own account
+    if (id === session.user.id) {
+      return NextResponse.json({ error: "CANNOT_DELETE_SELF" }, { status: 400 });
+    }
 
     await prisma.user.delete({
       where: { id },

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Define protected routes
 const protectedRoutes = ["/dashboard", "/editor", "/pilih-template", "/buku-tamu", "/manajemen-tamu", "/pengaturan"];
 const adminRoutes = ["/admin", "/templates", "/users", "/moderasi", "/transaksi", "/pengaturan-admin"];
 const authRoutes = ["/login", "/register"];
@@ -9,7 +8,6 @@ const authRoutes = ["/login", "/register"];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if session exists
   const sessionToken = request.cookies.get("better-auth.session_token");
   const isAuthenticated = !!sessionToken;
 
@@ -26,17 +24,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect admin routes
-  if (adminRoutes.some((route) => pathname.startsWith(route))) {
-    if (!isAuthenticated) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("from", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  if (adminRoutes.some((route) => pathname.startsWith(route)) && !isAuthenticated) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("from", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)  "],
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

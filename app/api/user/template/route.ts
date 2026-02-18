@@ -1,29 +1,16 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth-helpers";
 
-export async function POST(req: Request) {
-  const rawHeaders = await headers();
-  const session = await auth.api.getSession({
-    headers: Object.fromEntries(rawHeaders),
-  });
-
-  if (!session) {
-    return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
+// POST /api/user/template - set user's template
+export async function POST(request: Request) {
   try {
-    const { templateId } = await req.json();
+    const session = await requireAuth(request);
+    const body = await request.json();
+    const { templateId } = body;
 
-    if (!templateId) {
-      return new NextResponse(JSON.stringify({ error: "Template ID is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!templateId || typeof templateId !== "string") {
+      return NextResponse.json({ error: "TEMPLATE_ID_REQUIRED" }, { status: 400 });
     }
 
     // Check if template exists
@@ -32,13 +19,9 @@ export async function POST(req: Request) {
     });
 
     if (!template) {
-      return new NextResponse(JSON.stringify({ error: "Template not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return NextResponse.json({ error: "TEMPLATE_NOT_FOUND" }, { status: 404 });
     }
 
-    // Update user's template
     const user = await prisma.user.update({
       where: { id: session.user.id },
       data: { templateId },
@@ -46,10 +29,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("[USER_TEMPLATE_POST]", error);
-    return new NextResponse(JSON.stringify({ error: "Internal Error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("Error setting user template:", error);
+    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
   }
 }

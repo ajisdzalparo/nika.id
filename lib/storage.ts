@@ -50,7 +50,8 @@ export async function uploadFile(fileName: string, fileBuffer: Buffer, contentTy
     });
 
     // Return the public URL
-    const publicUrl = process.env.MINIO_PUBLIC_URL || `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${bucketName}`;
+    const publicUrl = process.env.MINIO_PUBLIC_URL ? `${process.env.MINIO_PUBLIC_URL}/${bucketName}` : `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${bucketName}`;
+
     return `${publicUrl}/${objectName}`;
   } catch (error) {
     console.error("MinIO Upload Error:", error);

@@ -8,7 +8,6 @@ export async function GET(request: Request) {
   try {
     const session = await requireAuth(request);
 
-    // @ts-expect-error - Guest model exists in generated Prisma client
     const guests = await prisma.guest.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
@@ -32,7 +31,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "NAME_REQUIRED" }, { status: 400 });
     }
 
-    // @ts-expect-error - Guest model exists in generated Prisma client
     const guest = await prisma.guest.create({
       data: {
         userId: session.user.id,
@@ -46,4 +44,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
   }
 }
-

@@ -1,17 +1,6 @@
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-
 import { SiteHeader } from "@/components/site-header";
-import { auth } from "@/lib/auth";
-import type { Session } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TransactionsClient } from "@/components/admin/transaksi-client";
-
-type AdminSession = Session & {
-  user: Session["user"] & {
-    role?: string;
-  };
-};
 
 interface TransactionWithUser {
   id: string;
@@ -31,17 +20,6 @@ interface TransactionWithUser {
 }
 
 export default async function TransaksiPage() {
-  const rawHeaders = await headers();
-  const session = (await auth.api.getSession({
-    headers: Object.fromEntries(rawHeaders),
-  })) as AdminSession | null;
-
-  const role = session?.user.role;
-  if (!session || role !== "ADMIN") {
-    redirect("/login");
-  }
-
-  // Fetch transactions
   const transactions = await prisma.transaction.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -56,7 +34,6 @@ export default async function TransaksiPage() {
     take: 50,
   });
 
-  // Serialize dates for Client Component
   const serializedTransactions = transactions.map((t: TransactionWithUser) => ({
     ...t,
     createdAt: t.createdAt.toISOString(),

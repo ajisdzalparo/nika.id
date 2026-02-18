@@ -71,4 +71,26 @@ export const MOCK_WEDDING_DATA: WeddingData = {
       },
     ],
   },
+  quote: {
+    text: "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang. Sungguh, pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir.",
+    source: "Qs. Ar-Rum: 21",
+  },
+  loveStory: {
+    enabled: true,
+    chapters: [
+      { title: "Pertemuan", content: "Kami bertemu pertama kali di kampus yang sama pada tahun 2020. Awalnya hanya saling mengenal lewat organisasi, namun takdir berkata lain." },
+      { title: "Pendekatan", content: "Setelah beberapa bulan saling mengenal, kami mulai sering menghabiskan waktu bersama. Obrolan yang tak pernah habis menjadi awal dari segalanya." },
+      { title: "Lamaran", content: "Pada bulan September 2024, dengan restu kedua orang tua, kami memutuskan untuk melangkah ke tahap yang lebih serius." },
+      { title: "Pernikahan", content: "Dan akhirnya, kami memutuskan untuk menyatukan langkah dalam ikatan suci pernikahan." },
+    ],
+  },
+  streaming: {
+    enabled: true,
+    platform: "YouTube",
+    url: "https://youtube.com/live/example",
+  },
+  music: {
+    enabled: false,
+    url: "",
+  },
 };

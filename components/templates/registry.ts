@@ -33,8 +33,12 @@ export const templateRegistry: Record<string, TemplateRegistryItem> = {
     name: "Romantic Elegance",
     component: lazy(() => import("./romantic-elegance")),
   },
-  "example2": {
+  example2: {
     name: "example2",
     component: lazy(() => import("./example2")),
+  },
+  standard: {
+    name: "Standard",
+    component: lazy(() => import("./standard")),
   },
 };

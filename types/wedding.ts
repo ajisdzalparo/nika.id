@@ -56,6 +56,17 @@ export interface WeddingData {
     enabled: boolean;
     url: string;
   };
+  quote?: {
+    text: string;
+    source: string; // e.g. "Qs. Ar-Rum: 21"
+  };
+  loveStory?: {
+    enabled: boolean;
+    chapters: {
+      title: string; // e.g. "Pertemuan", "Pendekatan", "Lamaran"
+      content: string;
+    }[];
+  };
   // Penambahan data profesional
   extendedFamily?: {
     title: string; // Misal: "Turut Mengundang"

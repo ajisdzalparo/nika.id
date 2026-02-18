@@ -51,8 +51,6 @@ const data = {
 
 import { useSession } from "@/lib/auth-client";
 
-// ... (keep imports)
-
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
 

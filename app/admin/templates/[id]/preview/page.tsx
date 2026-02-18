@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TemplateRenderer } from "@/components/template-renderer";
 import { prisma } from "@/lib/prisma";
-import { mockWeddingData } from "@/lib/mock-wedding-data";
+import { MOCK_WEDDING_DATA } from "@/lib/constants/mock-wedding-data";
 
 export default async function TemplatePreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -38,7 +38,7 @@ export default async function TemplatePreviewPage({ params }: { params: Promise<
 
       {/* Template Render */}
       <div className="pt-16">
-        <TemplateRenderer slug={template.slug} data={mockWeddingData} />
+        <TemplateRenderer slug={template.slug} data={MOCK_WEDDING_DATA} />
       </div>
     </div>
   );

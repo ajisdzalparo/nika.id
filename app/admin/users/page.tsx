@@ -1,17 +1,6 @@
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-
 import { SiteHeader } from "@/components/site-header";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import type { Session } from "@/lib/auth";
 import { UsersClient, type User } from "@/components/admin/users-client";
-
-type AdminSession = Session & {
-  user: Session["user"] & {
-    role?: string;
-  };
-};
 
 export default async function UsersPage(props: { searchParams: Promise<{ q?: string; page?: string; limit?: string }> }) {
   const searchParams = await props.searchParams;
@@ -20,24 +9,12 @@ export default async function UsersPage(props: { searchParams: Promise<{ q?: str
   const limit = parseInt(searchParams.limit || "10");
   const skip = (page - 1) * limit;
 
-  // Proteksi: hanya ADMIN yang boleh akses halaman admin
-  const rawHeaders = await headers();
-  const session = (await auth.api.getSession({
-    headers: Object.fromEntries(rawHeaders),
-  })) as AdminSession | null;
-
-  const role = session?.user.role;
-  if (!session || role !== "ADMIN") {
-    redirect("/login");
-  }
-
   // Filter query
   const where: import("@prisma/client").Prisma.UserWhereInput = {};
   if (q) {
     where.OR = [{ name: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }, { invitationSlug: { contains: q, mode: "insensitive" } }, { partnerName: { contains: q, mode: "insensitive" } }];
   }
 
-  // Fetch users with pagination and search
   const [users, totalCount] = await Promise.all([
     prisma.user.findMany({
       where,
@@ -57,7 +34,6 @@ export default async function UsersPage(props: { searchParams: Promise<{ q?: str
 
   const totalPages = Math.ceil(totalCount / limit);
 
-  // Serialize dates for Client Component
   const serializedUsers = users.map((user) => ({
     ...user,
     createdAt: user.createdAt.toISOString(),
@@ -78,7 +54,6 @@ export default async function UsersPage(props: { searchParams: Promise<{ q?: str
 
           <UsersClient initialUsers={serializedUsers as User[]} totalPages={totalPages} currentPage={page} totalCount={totalCount} />
 
-          {/* Payment Verification Section (Placeholder for Phase 6) */}
           <div className="rounded-lg border bg-card p-6 mt-8">
             <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">Verifikasi Pembayaran</h2>
             <p className="text-sm text-muted-foreground mb-4">Daftar transaksi yang memerlukan persetujuan admin akan muncul di sini.</p>

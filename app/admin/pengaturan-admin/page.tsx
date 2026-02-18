@@ -23,7 +23,7 @@ export default async function PengaturanPage() {
   })) as AdminSession | null;
 
   const role = session?.user.role;
-  if (!session || role !== "ADMIN") {
+  if (!session || role !== "admin") {
     redirect("/login");
   }
   return (
