@@ -4,20 +4,21 @@
 import React, { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { IconHeart, IconMapPin, IconCalendar, IconGift, IconMusic, IconMusicOff, IconChevronDown, IconHeartFilled } from "@tabler/icons-react";
+import { IconHeart, IconMapPin, IconCalendar, IconGift, IconChevronDown, IconHeartFilled } from "@tabler/icons-react";
+import { MusicToggle } from "@/components/common/music-toggle";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { WeddingData } from "@/types/wedding";
 import { toast } from "sonner";
+import { RSVPSection } from "@/components/templates/romantic-elegance/rsvp-section";
+import { VideoSection } from "@/components/common/video-section";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function RomanticElegance({ data }: { data: WeddingData }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const petalsContainerRef = useRef<HTMLDivElement>(null);
 
   // Normalisasi data: gunakan 'events' array, tapi fallback ke 'event' tunggal jika 'events' kosong
@@ -39,20 +40,6 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
         : [];
 
   const mainDate = eventsToRender[0]?.date ? new Date(eventsToRender[0].date) : new Date();
-
-  // Music Logic
-  useEffect(() => {
-    if (isOpen && data.music?.enabled && data.music.url) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(data.music.url);
-        audioRef.current.loop = true;
-      }
-      audioRef.current.play().catch((e) => console.log("Audio play blocked", e));
-    }
-    return () => {
-      audioRef.current?.pause();
-    };
-  }, [isOpen, data.music]);
 
   // Floating Petals Logic (GSAP)
   useEffect(() => {
@@ -104,14 +91,6 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
     }
   }, [isOpen]);
 
-  const toggleMute = () => {
-    if (audioRef.current) {
-      if (isMuted) audioRef.current.play();
-      else audioRef.current.pause();
-      setIsMuted(!isMuted);
-    }
-  };
-
   const groomName = data.groom?.nickname || data.groom?.fullName?.split(" ")[0] || "";
   const brideName = data.bride?.nickname || data.bride?.fullName?.split(" ")[0] || "";
 
@@ -129,7 +108,7 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
               <div className="space-y-4">
                 <IconHeartFilled className="w-12 h-12 mx-auto text-[#FFB7C5] animate-pulse" />
                 <p className="font-sans uppercase tracking-[0.6em] text-[10px] text-[#A68F8F]">The Wedding Of</p>
-                <h1 className="text-5xl md:text-6xl font-light italic text-[#A67B7B]">
+                <h1 className="text-4xl md:text-6xl font-light italic text-[#A67B7B]">
                   {groomName} &amp; {brideName}
                 </h1>
               </div>
@@ -170,13 +149,13 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
             <div className="z-10 space-y-6">
               <p className="font-sans uppercase tracking-widest text-xs text-[#A68F8F]">Kami Akan Menikah</p>
               <div className="space-y-2">
-                <h1 className="text-6xl font-light italic text-[#A67B7B]">{groomName}</h1>
+                <h1 className="text-4xl md:text-6xl font-light italic text-[#A67B7B]">{groomName}</h1>
                 <div className="flex items-center justify-center gap-3">
                   <div className="h-px w-12 bg-[#A67B7B]/30" />
                   <IconHeartFilled className="text-[#FFB7C5] w-4 h-4" />
                   <div className="h-px w-12 bg-[#A67B7B]/30" />
                 </div>
-                <h1 className="text-6xl font-light italic text-[#A67B7B]">{brideName}</h1>
+                <h1 className="text-4xl md:text-6xl font-light italic text-[#A67B7B]">{brideName}</h1>
               </div>
               <p className="text-lg font-sans tracking-widest text-[#A68F8F]">{format(mainDate, "EEEE, dd . MM . yyyy", { locale: idLocale })}</p>
             </div>
@@ -312,6 +291,11 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
             </section>
           )}
 
+          {/* Video Section */}
+          <VideoSection data={data} />
+
+          {/* Video Section */}
+
           {/* Section: Gallery */}
           {data.gallery && data.gallery.length > 0 && (
             <section className="py-24 px-6 space-y-12">
@@ -385,6 +369,9 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
             </section>
           )}
 
+          {/* RSVP */}
+          <RSVPSection />
+
           {/* Footer */}
           <footer className="py-32 px-10 text-center bg-white border-t border-[#FCE2E6]">
             <div className="space-y-4 romantic-reveal">
@@ -401,13 +388,7 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
         </div>
 
         {/* Floating Controls */}
-        <div className="max-w-md md:max-w-lg mx-auto relative h-0">
-          {data.music?.enabled && isOpen && (
-            <motion.button initial={{ scale: 0 }} animate={{ scale: 1 }} onClick={toggleMute} className="fixed bottom-6 right-6 z-50 bg-white/80 backdrop-blur-md p-4 rounded-full shadow-2xl border border-[#FCE2E6] text-[#A67B7B]">
-              {isMuted ? <IconMusicOff size={20} /> : <IconMusic size={20} className="animate-pulse" />}
-            </motion.button>
-          )}
-        </div>
+        <div className="max-w-md md:max-w-lg mx-auto relative h-0">{data.music?.enabled && data.music.url && isOpen && <MusicToggle url={data.music.url} type={data.music.type} autoPlay={true} />}</div>
       </main>
     </div>
   );

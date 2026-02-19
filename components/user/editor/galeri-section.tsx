@@ -17,7 +17,7 @@ export function GaleriSection({ data, setData, renderExtraFields }: GaleriSectio
   const handlePhotoUpload = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const res = await fetch("/api/upload/image", { method: "POST", body: formData });
     const result = await res.json();
     if (result.url) {
       setData((prev) => ({ ...prev, gallery: [...(prev.gallery || []), result.url] }));

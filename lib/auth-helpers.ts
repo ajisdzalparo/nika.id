@@ -1,10 +1,13 @@
 import { auth } from "@/lib/auth";
 import type { Session } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function getSession(request?: Request): Promise<Session | null> {
   try {
+    const reqHeaders = request ? Object.fromEntries(request.headers) : Object.fromEntries(await headers());
+
     const session = await auth.api.getSession({
-      headers: request ? Object.fromEntries(request.headers) : {},
+      headers: reqHeaders,
     });
 
     return session;

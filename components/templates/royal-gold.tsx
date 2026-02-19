@@ -2,23 +2,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { IconHeart, IconMapPin, IconCalendar, IconGift, IconMusic, IconMusicOff, IconPlayerPlay, IconChevronDown } from "@tabler/icons-react";
+import { IconHeart, IconMapPin, IconCalendar, IconGift, IconPlayerPlay, IconChevronDown } from "@tabler/icons-react";
+import { MusicToggle } from "@/components/common/music-toggle";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { WeddingData } from "@/types/wedding";
 import { toast } from "sonner";
+import { RSVPSection } from "@/components/templates/royal-gold/rsvp-section";
+import { VideoSection } from "@/components/common/video-section";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function RoyalGold({ data }: { data: WeddingData }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   // Normalisasi data: gunakan 'events' array, tapi fallback ke 'event' tunggal jika 'events' kosong
@@ -57,28 +58,6 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
     }, 1000);
     return () => clearInterval(timer);
   }, [eventDate]);
-
-  // Handle Music
-  useEffect(() => {
-    if (isOpen && data.music?.enabled && data.music.url) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(data.music.url);
-        audioRef.current.loop = true;
-      }
-      audioRef.current.play().catch((e) => console.log("Audio play blocked", e));
-    }
-    return () => {
-      audioRef.current?.pause();
-    };
-  }, [isOpen, data.music]);
-
-  const toggleMute = () => {
-    if (audioRef.current) {
-      if (isMuted) audioRef.current.play();
-      else audioRef.current.pause();
-      setIsMuted(!isMuted);
-    }
-  };
 
   useEffect(() => {
     if (isOpen) {
@@ -127,7 +106,7 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
               </div>
               <div className="space-y-2">
                 <p className="tracking-[0.5em] text-xs uppercase text-white/60">Wedding Invitation</p>
-                <h1 className="text-5xl md:text-7xl font-light italic">
+                <h1 className="text-4xl md:text-7xl font-light italic">
                   {groomName} &amp; {brideName}
                 </h1>
               </div>
@@ -162,10 +141,10 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
 
           <div className="z-10 space-y-12 luxury-reveal">
             <IconHeart className="w-12 h-12 mx-auto text-[#D4AF37] opacity-30 animate-pulse" />
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12">
-              <h1 className="text-7xl md:text-9xl font-light font-display italic text-[#B8860B]">{groomName}</h1>
-              <span className="text-3xl text-[#D4AF37] font-sans">&amp;</span>
-              <h1 className="text-7xl md:text-9xl font-light font-display italic text-[#B8860B]">{brideName}</h1>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-12">
+              <h1 className="text-5xl md:text-9xl font-light font-display italic text-[#B8860B]">{groomName}</h1>
+              <span className="text-2xl md:text-3xl text-[#D4AF37] font-sans">&amp;</span>
+              <h1 className="text-5xl md:text-9xl font-light font-display italic text-[#B8860B]">{brideName}</h1>
             </div>
 
             <div className="flex items-center justify-center gap-4 text-[#D4AF37]">
@@ -207,7 +186,7 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
             {/* Groom */}
             <div className="flex flex-col items-center space-y-8 reveal-section">
               <div className="relative group">
-                <div className="relative w-72 h-[450px] bg-[#FFF9EA] rounded-full border-[12px] border-[#FFF9EA] shadow-2xl overflow-hidden">
+                <div className="relative w-72 h-[450px] bg-[#FFF9EA] rounded-full border-12 border-[#FFF9EA] shadow-2xl overflow-hidden">
                   <Image src={data.groom?.photo || "https://images.unsplash.com/photo-1549439602-43ebca2327af?q=80&w=2070"} fill className="object-cover grayscale-50 group-hover:grayscale-0 transition-all duration-1000" alt="Groom" />
                 </div>
                 <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white text-[#D4AF37] px-10 py-3 rounded-full shadow-xl border border-[#D4AF37]/20 font-bold tracking-widest uppercase">Groom</div>
@@ -225,7 +204,7 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
             {/* Bride */}
             <div className="flex flex-col items-center space-y-8 reveal-section" style={{ transitionDelay: "200ms" }}>
               <div className="relative group">
-                <div className="relative w-72 h-[450px] bg-[#FFF9EA] rounded-full border-[12px] border-[#FFF9EA] shadow-2xl overflow-hidden">
+                <div className="relative w-72 h-[450px] bg-[#FFF9EA] rounded-full border-12 border-[#FFF9EA] shadow-2xl overflow-hidden">
                   <Image src={data.bride?.photo || "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070"} fill className="object-cover grayscale-50 group-hover:grayscale-0 transition-all duration-1000" alt="Bride" />
                 </div>
                 <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white text-[#D4AF37] px-10 py-3 rounded-full shadow-xl border border-[#D4AF37]/20 font-bold tracking-widest uppercase">Bride</div>
@@ -320,6 +299,11 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
           </section>
         )}
 
+        {/* Video Section */}
+        <VideoSection data={data} />
+
+        {/* Video Section */}
+
         {/* Gallery */}
         {data.gallery && data.gallery.length > 0 && (
           <section className="py-32 px-6 bg-white reveal-section border-t border-[#F9F5F0]">
@@ -336,7 +320,7 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.1 }}
-                    className={`relative overflow-hidden rounded-2xl shadow-lg border-4 border-[#FFFDF9] ${i % 5 === 0 ? "md:col-span-2 md:row-span-2" : "aspect-square md:aspect-auto"}`}
+                    className={`relative overflow-hidden rounded-2xl shadow-lg border-4 border-[#FFFDF9] ${i % 5 === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}
                   >
                     <Image src={img} fill className="object-cover transition-transform duration-1000 hover:scale-110" alt={`Gallery ${i}`} />
                   </motion.div>
@@ -400,6 +384,9 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
           </section>
         )}
 
+        {/* RSVP */}
+        <RSVPSection />
+
         {/* Story Section */}
         <section className="py-32 px-6 bg-white reveal-section">
           <div className="max-w-3xl mx-auto space-y-10 text-center">
@@ -412,16 +399,7 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
         </section>
 
         {/* Floating Music Button */}
-        {data.music?.enabled && isOpen && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={toggleMute}
-            className="fixed bottom-8 right-8 z-40 bg-white/80 backdrop-blur-md p-4 rounded-full shadow-2xl border border-[#D4AF37]/20 text-[#D4AF37]"
-          >
-            {isMuted ? <IconMusicOff size={24} /> : <IconMusic size={24} className="animate-spin-slow" />}
-          </motion.button>
-        )}
+        {data.music?.enabled && data.music.url && isOpen && <MusicToggle url={data.music.url} type={data.music.type} autoPlay={true} />}
 
         {/* Footer */}
         <footer className="py-32 px-6 bg-[#1A1A1A] text-[#D4AF37] text-center border-t border-[#D4AF37]/10">

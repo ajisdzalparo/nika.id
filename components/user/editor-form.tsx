@@ -82,6 +82,8 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
       protocol: { ...defaults.protocol, ...(initial.protocol || {}) },
       streaming: { ...defaults.streaming, ...(initial.streaming || {}) },
       extra: { ...defaults.extra, ...(initial.extra || {}) },
+      music: { ...defaults.music, ...(initial.music || {}) },
+      story: { ...defaults.story, ...(initial.story || {}) },
     };
   });
 
@@ -101,7 +103,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
 
     const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await fetch("/api/upload", {
+        const response = await fetch("/api/upload/image", {
           method: "POST",
           body: formData,
         });
@@ -152,8 +154,8 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
   const onSave = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/invitation", {
-        method: "POST",
+      const response = await fetch("/api/user/invitation", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data }),
       });
@@ -197,7 +199,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
                 </div>
                 <span className="tracking-wide relative z-10">{section.label}</span>
 
-                {activeSection === section.id && <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent pointer-events-none" />}
+                {activeSection === section.id && <div className="absolute inset-0 bg-linear-to-r from-white/10 to-transparent pointer-events-none" />}
               </button>
             ))}
           </nav>
@@ -209,7 +211,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
 
           <h3 className="font-serif text-lg font-medium mb-1 relative z-10 text-primary">Sudah Selesai?</h3>
           <p className="text-zinc-400 text-sm mb-4 relative z-10">Simpan perubahan untuk memperbarui undangan.</p>
-          <Button onClick={onSave} disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg font-bold shadow-none relative z-10">
+          <Button onClick={onSave} disabled={loading} className="bg-linear-to-r from-primary to-amber-600 hover:from-primary/90 hover:to-amber-600/90 text-white rounded-full px-8 shadow-lg shadow-primary/20">
             {loading ? <span className="animate-spin mr-2">⏳</span> : <IconDeviceFloppy className="w-4 h-4 mr-2" />}
             Simpan
           </Button>

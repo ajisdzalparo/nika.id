@@ -129,6 +129,15 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
+      plan: {
+        type: "string",
+        required: false,
+        defaultValue: "FREE",
+      },
+      planExpiresAt: {
+        type: "date",
+        required: false,
+      },
     },
   },
   plugins: [admin()],

@@ -18,13 +18,13 @@ export function CoverPage({ groom, bride, guestName, onOpen }: CoverPageProps) {
         <p className="text-xs uppercase tracking-[0.5em] text-rose-400 font-semibold">The Wedding Of</p>
 
         <div className="space-y-3">
-          <h1 className="text-5xl sm:text-7xl font-serif font-light italic text-gray-900">{groom}</h1>
+          <h1 className="text-4xl sm:text-7xl font-serif font-light italic text-gray-900">{groom}</h1>
           <div className="flex items-center justify-center gap-3">
             <div className="h-px w-8 bg-rose-300" />
             <span className="text-rose-400 text-lg">&amp;</span>
             <div className="h-px w-8 bg-rose-300" />
           </div>
-          <h1 className="text-5xl sm:text-7xl font-serif font-light italic text-gray-900">{bride}</h1>
+          <h1 className="text-4xl sm:text-7xl font-serif font-light italic text-gray-900">{bride}</h1>
         </div>
 
         {guestName && (

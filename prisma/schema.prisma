@@ -4,30 +4,42 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  SILVER
+  GOLD
 }
 
 model User {
-  id             String         @id @default(cuid())
-  email          String         @unique
-  emailVerified  Boolean        @default(false)
+  id             String    @id @default(cuid())
+  email          String    @unique
+  emailVerified  Boolean   @default(false)
   name           String?
   image          String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  invitationSlug String?        @unique
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  invitationSlug String?   @unique
   partnerName    String?
   weddingDate    DateTime?
-  role           String         @default("USER")
-  banned         Boolean        @default(false)
-  views          Int            @default(0)
+  role           String    @default("USER")
+  banned         Boolean   @default(false)
+  views          Int       @default(0)
   templateSlug   String?
-  accounts       Account[]
-  guests         Guest[]
-  messages       GuestMessage[]
-  invitation     Invitation?
-  rsvps          RSVP[]
-  sessions       Session[]
-  transactions   Transaction[]
+  plan           Plan      @default(FREE)
+  planExpiresAt  DateTime? // Null means forever (for Gold) or not set? No, Free has 7 days.
+  // Actually, for Free, when does it start? on Creation?
+  // I'll assume planExpiresAt is strictly for when the *active period* ends.
+
+  accounts     Account[]
+  guests       Guest[]
+  messages     GuestMessage[]
+  invitation   Invitation?
+  rsvps        RSVP[]
+  sessions     Session[]
+  transactions Transaction[]
 }
 
 model Session {

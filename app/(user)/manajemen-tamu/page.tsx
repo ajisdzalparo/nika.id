@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/site-header";
 import { GuestList } from "@/components/user/guest-list";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PlanType } from "@/lib/limits";
 
 export default async function ManajemenTamuPage() {
   const rawHeaders = await headers();
@@ -13,13 +14,13 @@ export default async function ManajemenTamuPage() {
 
   if (!session) redirect("/login");
 
-  const [user, initialGuests] = await Promise.all([
+  const [user, initialGuests] = (await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id } }),
     prisma.guest.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
     }),
-  ]);
+  ])) as unknown as [import("@/types/user").UserWithPlan, never];
 
   if (!user) redirect("/login");
 
@@ -35,8 +36,7 @@ export default async function ManajemenTamuPage() {
               <p className="text-zinc-500 dark:text-zinc-400 mt-1">Kelola siapa saja yang akan menerima undangan spesialmu.</p>
             </div>
           </div>
-
-          <GuestList initialGuests={initialGuests} invitationSlug={user.invitationSlug || "undangan"} />
+          <GuestList initialGuests={initialGuests} invitationSlug={user.invitationSlug || "undangan"} userPlan={user.plan as PlanType} />
         </div>
       </div>
     </>

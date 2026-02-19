@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,8 +7,9 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconMail, IconLoader2, IconCircleCheck, IconAlertCircle, IconRefresh } from "@tabler/icons-react";
+import { Suspense } from "react";
 
-export default function VerificationSentPage() {
+function VerificationSentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "your email";
@@ -48,19 +50,19 @@ export default function VerificationSentPage() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-lg">
         <Card className="border-none shadow-2xl bg-white/90 backdrop-blur-xl overflow-hidden">
-          <div className="h-1.5 bg-gradient-to-r from-purple-400 to-pink-500 w-full" />
+          <div className="h-1.5 bg-linear-to-r from-purple-400 to-pink-500 w-full" />
 
           <CardHeader className="pt-12 pb-8">
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring", stiffness: 200 }} className="flex justify-center mb-6">
               <div className="relative">
-                <div className="p-6 rounded-full bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg">
+                <div className="p-6 rounded-full bg-linear-to-br from-purple-50 to-pink-50 shadow-lg">
                   <IconMail className="w-16 h-16 text-purple-500" strokeWidth={1.5} />
                 </div>
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-500 flex items-center justify-center shadow-lg"
+                  className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-linear-to-br from-green-400 to-green-500 flex items-center justify-center shadow-lg"
                 >
                   <IconCircleCheck className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </motion.div>
@@ -68,7 +70,7 @@ export default function VerificationSentPage() {
             </motion.div>
 
             <CardTitle className="text-3xl font-black text-center tracking-tight">
-              Cek Email <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">Anda</span>
+              Cek Email <span className="text-transparent bg-clip-text bg-linear-to-r from-purple-500 to-pink-500">Anda</span>
             </CardTitle>
           </CardHeader>
 
@@ -80,7 +82,7 @@ export default function VerificationSentPage() {
 
               <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-4 space-y-2">
                 <div className="flex items-start gap-3">
-                  <IconAlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <IconAlertCircle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-700 text-left space-y-1">
                     <p className="font-semibold">Langkah selanjutnya:</p>
                     <ol className="list-decimal list-inside space-y-1 text-blue-600">
@@ -148,5 +150,19 @@ export default function VerificationSentPage() {
         </Card>
       </motion.div>
     </div>
+  );
+}
+
+export default function VerificationSentPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[80vh]">
+          <IconLoader2 className="w-6 h-6 animate-spin text-purple-500" />
+        </div>
+      }
+    >
+      <VerificationSentContent />
+    </Suspense>
   );
 }

@@ -37,14 +37,14 @@ export function HowItWorks() {
           {steps.map((step, index) => (
             <motion.div key={step.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.2 }} className="flex flex-col items-center text-center group">
               <div className="relative mb-8">
-                <div className="w-24 h-24 bg-primary rounded-3xl flex items-center justify-center text-primary-foreground shadow-2xl transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
-                  <step.icon size={40} />
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-primary/20 bg-primary`}>
+                  <step.icon size={32} />
                 </div>
                 {/* Step Number Badge */}
                 <div className="absolute -top-3 -right-3 w-10 h-10 bg-card rounded-full flex items-center justify-center font-bold text-foreground border-4 border-background shadow-lg">{index + 1}</div>
               </div>
 
-              <h3 className="text-2xl font-bold mb-4 text-foreground">{step.title}</h3>
+              <h3 className="text-xl font-bold mb-4 text-foreground">{step.title}</h3>
               <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{step.description}</p>
 
               {index < steps.length - 1 && (

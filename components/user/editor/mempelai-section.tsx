@@ -93,7 +93,8 @@ export function MempelaiSection({ data, handleUpdate, handleFileUpload, renderEx
                   <span className="text-sm font-medium">Upload Foto</span>
                 </div>
               )}
-              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
                 <Button variant="secondary" size="sm" className="relative cursor-pointer rounded-full" asChild>
                   <label>
                     Ganti Foto

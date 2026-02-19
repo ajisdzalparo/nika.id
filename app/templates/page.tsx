@@ -88,7 +88,7 @@ export default function TemplatesPage() {
 
         {/* Filters & Search */}
         <section className="container mx-auto px-4 mb-12">
-          <div className="bg-white p-4 md:p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-center sticky top-24 z-40">
+          <div className="bg-white p-4 md:p-6 rounded-md shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-center sticky top-24 z-40">
             <div className="relative grow w-full">
               <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input
@@ -96,7 +96,7 @@ export default function TemplatesPage() {
                 placeholder="Cari desain impian..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all text-slate-900"
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-md border-none focus:ring-2 focus:ring-primary/20 outline-none transition-all text-slate-900"
               />
             </div>
 

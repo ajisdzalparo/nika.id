@@ -113,19 +113,19 @@ export function PricingSection() {
             <motion.div key={plan.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.15, duration: 0.5 }} className="relative flex flex-col">
               {/* Popular Badge */}
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 bg-linear-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-200 px-5 py-1.5 rounded-full text-xs font-bold tracking-wide flex items-center gap-1.5 whitespace-nowrap">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 bg-primary text-primary-foreground shadow-lg shadow-primary/20 px-5 py-1.5 rounded-full text-xs font-bold tracking-wide flex items-center gap-1.5 whitespace-nowrap">
                   <IconSparkles size={14} />
                   PALING POPULER
                 </div>
               )}
 
               {/* Card Container */}
-              <Card className={`flex-1 flex flex-col rounded-[2rem] p-8 transition-all duration-300 group ${plan.popular ? "border-amber-200 shadow-xl shadow-amber-100/50 ring-2 ring-amber-100" : "hover:shadow-xl"}`}>
+              <Card className={`flex-1 flex flex-col rounded-xl p-8 transition-all duration-300 group ${plan.popular ? "border-primary/50 shadow-xl shadow-primary/10 ring-1 ring-primary/20" : "hover:shadow-xl"}`}>
                 <CardContent className="p-0 flex flex-col flex-1">
                   {/* Tier icon & name */}
                   <div className="flex items-center gap-3 mb-6">
                     <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-6 ${plan.popular ? "bg-amber-100 text-amber-600" : "bg-accent text-accent-foreground"}`}
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-6 ${plan.popular ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}
                     >
                       <plan.icon size={24} />
                     </div>
@@ -137,11 +137,11 @@ export function PricingSection() {
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-sm font-semibold text-muted-foreground">Rp</span>
                       {plan.originalPrice && <span className="text-lg text-muted-foreground/50 line-through font-semibold mr-1">{plan.originalPrice}</span>}
-                      <span className={`text-4xl font-black ${plan.popular ? "text-transparent bg-clip-text bg-linear-to-r from-amber-500 to-orange-500" : "text-foreground"}`}>{plan.price}</span>
+                      <span className={`text-4xl font-black ${plan.popular ? "text-primary" : "text-foreground"}`}>{plan.price}</span>
                       <span className="text-sm text-muted-foreground ml-0.5">{plan.period}</span>
                     </div>
                     {plan.popular && (
-                      <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-50 text-green-600 text-xs font-bold">
+                      <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-green-50 text-green-600 text-xs font-bold">
                         <span>HEMAT Rp 100rb</span>
                       </div>
                     )}
@@ -155,7 +155,7 @@ export function PricingSection() {
                     {plan.features.map((feature, i) => (
                       <div key={i} className="flex items-center gap-3">
                         {feature.included ? (
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${plan.popular ? "bg-amber-50 text-amber-500" : "bg-green-50 text-green-500"}`}>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${plan.popular ? "bg-primary/10 text-primary" : "bg-accent/50 text-accent-foreground"}`}>
                             <IconCheck size={13} strokeWidth={3} />
                           </div>
                         ) : (
@@ -171,8 +171,8 @@ export function PricingSection() {
                   {/* CTA Button */}
                   <Button
                     asChild
-                    className={`w-full h-14 rounded-2xl text-base font-bold shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl mt-auto ${
-                      plan.popular ? "bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-200 text-white" : "shadow-muted"
+                    className={`w-full h-14 rounded-xl text-base font-bold shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl mt-auto ${
+                      plan.popular ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20" : "shadow-muted"
                     }`}
                     variant={plan.popular ? "default" : "default"}
                   >

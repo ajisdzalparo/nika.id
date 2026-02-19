@@ -54,13 +54,13 @@ export function HeroSection() {
         </motion.p>
 
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Button asChild size="lg" className="text-lg px-8 h-14 rounded-2xl shadow-xl group">
+          <Button asChild size="lg" className="text-lg px-8 h-14 rounded-xl shadow-xl group">
             <Link href="/register">
               Mulai Buat Gratis
               <IconArrowRight className="ml-2 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>
-          <Button asChild variant="outline" size="lg" className="text-lg px-8 h-14 rounded-2xl">
+          <Button asChild variant="outline" size="lg" className="text-lg px-8 h-14 rounded-xl">
             <Link href="#templates">Lihat Template</Link>
           </Button>
         </motion.div>

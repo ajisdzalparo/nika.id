@@ -5,6 +5,7 @@ import { WeddingData } from "@/types/wedding";
 
 // Shared Components
 import { MusicToggle } from "@/components/common/music-toggle";
+import { VideoSection } from "@/components/common/video-section";
 
 // Sections
 import { CoverPage } from "@/components/templates/standard/sections/cover-page";
@@ -32,7 +33,7 @@ export default function StandardTemplate({ data }: { data: WeddingData }) {
   return (
     <div className="min-h-screen bg-[#FBF7F4] font-sans text-gray-800 overflow-x-hidden">
       {/* Music */}
-      {data.music?.enabled && data.music.url && <MusicToggle url={data.music.url} />}
+      {data.music?.enabled && data.music.url && <MusicToggle url={data.music.url} type={data.music.type} autoPlay={true} />}
 
       {/* Sections */}
       <HeroSection data={data} />
@@ -40,6 +41,7 @@ export default function StandardTemplate({ data }: { data: WeddingData }) {
       <CoupleSection data={data} />
       <EventSection data={data} />
       <LoveStorySection data={data} />
+      <VideoSection data={data} />
       <GallerySection data={data} />
       <StreamingSection data={data} />
       <GiftSection data={data} />

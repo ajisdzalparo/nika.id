@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 import { uploadFile } from "@/lib/storage";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -7,7 +7,7 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "im
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin(request);
+    await requireAuth(request);
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

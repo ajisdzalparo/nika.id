@@ -2,16 +2,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { format, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { IconHeart, IconMapPin, IconCalendar, IconClock, IconGift, IconPhoto, IconMusic, IconMusicOff, IconPlayerPlay, IconChevronDown, IconHeartFilled, IconBook } from "@tabler/icons-react";
+import { IconHeart, IconMapPin, IconCalendar, IconClock, IconGift, IconPhoto, IconPlayerPlay, IconChevronDown, IconHeartFilled, IconBook } from "@tabler/icons-react";
+import { MusicToggle } from "@/components/common/music-toggle";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { WeddingData } from "@/types/wedding";
 import { toast } from "sonner";
+import { RSVPSection } from "@/components/templates/estetik/rsvp-section";
+import { VideoSection } from "@/components/common/video-section";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -20,8 +23,6 @@ gsap.registerPlugin(ScrollTrigger);
 // ═══════════════════════════════════════════════════════════
 export default function Estetik({ data }: { data: WeddingData }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   // Normalize events
@@ -61,28 +62,6 @@ export default function Estetik({ data }: { data: WeddingData }) {
     return () => clearInterval(timer);
   }, [eventDate]);
 
-  // Music
-  useEffect(() => {
-    if (isOpen && data.music?.enabled && data.music.url) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(data.music.url);
-        audioRef.current.loop = true;
-      }
-      audioRef.current.play().catch((e) => console.log("Audio play blocked", e));
-    }
-    return () => {
-      audioRef.current?.pause();
-    };
-  }, [isOpen, data.music]);
-
-  const toggleMute = () => {
-    if (audioRef.current) {
-      if (isMuted) audioRef.current.play();
-      else audioRef.current.pause();
-      setIsMuted(!isMuted);
-    }
-  };
-
   // GSAP Scroll Animations
   useEffect(() => {
     if (isOpen) {
@@ -117,8 +96,8 @@ export default function Estetik({ data }: { data: WeddingData }) {
               <div className="space-y-6">
                 <IconHeart className="w-10 h-10 mx-auto text-[#C4A484] opacity-40 animate-pulse" />
                 <p className="text-[10px] uppercase tracking-[0.6em] text-[#C4A484] font-sans">The Wedding Celebration Of</p>
-                <h1 className="text-5xl md:text-7xl font-light italic">
-                  {groomName} <span className="text-[#C4A484] font-sans text-3xl">&</span> {brideName}
+                <h1 className="text-4xl md:text-7xl font-light italic">
+                  {groomName} <span className="text-[#C4A484] font-sans text-2xl md:text-3xl">&</span> {brideName}
                 </h1>
               </div>
 
@@ -149,15 +128,15 @@ export default function Estetik({ data }: { data: WeddingData }) {
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/floral-paper.png')]" />
           <div className="absolute inset-0 opacity-15">
             <Image src={data.gallery?.[0] || data.bride?.photo || "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=2069"} fill className="object-cover" alt="Hero" />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/60 to-white" />
+            <div className="absolute inset-0 bg-linear-to-b from-transparent via-[#2c2420]/50 to-[#2c2420]" />
           </div>
 
-          <div className="z-10 space-y-8">
-            <p className="text-sm uppercase tracking-[0.4em] text-[#C4A484] font-sans estetik-reveal">The Wedding Celebration Of</p>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 estetik-reveal">
-              <h1 className="text-6xl md:text-8xl font-light italic">{groomName}</h1>
-              <span className="text-4xl text-[#C4A484] font-sans">&</span>
-              <h1 className="text-6xl md:text-8xl font-light italic">{brideName}</h1>
+          <div className="z-10 space-y-4 md:space-y-8">
+            <p className="text-xs md:text-sm uppercase tracking-[0.4em] text-[#C4A484] font-sans estetik-reveal">The Wedding Celebration Of</p>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-8 estetik-reveal">
+              <h1 className="text-5xl md:text-8xl font-light italic">{groomName}</h1>
+              <span className="text-2xl md:text-4xl text-[#C4A484] font-sans">&</span>
+              <h1 className="text-5xl md:text-8xl font-light italic">{brideName}</h1>
             </div>
             <div className="h-px w-24 bg-[#C4A484] mx-auto estetik-reveal" />
             <p className="text-xl tracking-widest font-sans estetik-reveal">{format(eventDate, "dd . MM . yyyy")}</p>
@@ -199,7 +178,7 @@ export default function Estetik({ data }: { data: WeddingData }) {
 
         {/* Couple Detail Section */}
         <section className="py-24 px-6 bg-white overflow-hidden">
-          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-20">
+          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 md:gap-20">
             {/* Groom */}
             <div className="text-center space-y-6 estetik-reveal">
               <div className="relative inline-block">
@@ -353,6 +332,11 @@ export default function Estetik({ data }: { data: WeddingData }) {
           </section>
         )}
 
+        {/* Video Section */}
+        <VideoSection data={data} />
+
+        {/* Video Section */}
+
         {/* Gallery Section */}
         {data.gallery && data.gallery.length > 0 && (
           <section className="py-24 px-6 bg-[#FDF8F5]">
@@ -414,6 +398,9 @@ export default function Estetik({ data }: { data: WeddingData }) {
           </section>
         )}
 
+        {/* RSVP Section */}
+        <RSVPSection />
+
         {/* Extended Family */}
         {data.extendedFamily?.members && data.extendedFamily.members.length > 0 && (
           <section className="py-24 px-6 bg-[#FDF8F5] estetik-reveal">
@@ -434,16 +421,7 @@ export default function Estetik({ data }: { data: WeddingData }) {
         )}
 
         {/* Music Toggle */}
-        {data.music?.enabled && isOpen && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={toggleMute}
-            className="fixed bottom-8 right-8 z-40 bg-white/80 backdrop-blur-md p-4 rounded-full shadow-2xl border border-[#C4A484]/20 text-[#C4A484]"
-          >
-            {isMuted ? <IconMusicOff size={24} /> : <IconMusic size={24} className="animate-pulse" />}
-          </motion.button>
-        )}
+        {data.music?.enabled && data.music.url && isOpen && <MusicToggle url={data.music.url} type={data.music.type} autoPlay={true} />}
 
         {/* Footer */}
         <footer className="py-16 px-6 text-center bg-[#4A403A] text-white">

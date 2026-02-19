@@ -4,13 +4,16 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { format, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from "date-fns";
-import { IconMapPin, IconCalendar, IconClock, IconGift, IconMusic, IconMusicOff, IconPlayerPlay, IconChevronDown, IconBook } from "@tabler/icons-react";
+import { IconMapPin, IconCalendar, IconClock, IconGift, IconPlayerPlay, IconBook } from "@tabler/icons-react";
+import { MusicToggle } from "@/components/common/music-toggle";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { WeddingData } from "@/types/wedding";
 import { toast } from "sonner";
+import { RSVPSection } from "@/components/templates/modern-dark/rsvp-section";
+import { VideoSection } from "@/components/common/video-section";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -19,8 +22,6 @@ gsap.registerPlugin(ScrollTrigger);
 // ═══════════════════════════════════════════════════════════
 export default function ModernDark({ data }: { data: WeddingData }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const titleGroomRef = useRef<HTMLHeadingElement>(null);
   const titleBrideRef = useRef<HTMLHeadingElement>(null);
@@ -62,28 +63,6 @@ export default function ModernDark({ data }: { data: WeddingData }) {
     }, 1000);
     return () => clearInterval(timer);
   }, [eventDate]);
-
-  // Music
-  useEffect(() => {
-    if (isOpen && data.music?.enabled && data.music.url) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(data.music.url);
-        audioRef.current.loop = true;
-      }
-      audioRef.current.play().catch((e) => console.log("Audio play blocked", e));
-    }
-    return () => {
-      audioRef.current?.pause();
-    };
-  }, [isOpen, data.music]);
-
-  const toggleMute = () => {
-    if (audioRef.current) {
-      if (isMuted) audioRef.current.play();
-      else audioRef.current.pause();
-      setIsMuted(!isMuted);
-    }
-  };
 
   // GSAP Animations
   useEffect(() => {
@@ -132,14 +111,13 @@ export default function ModernDark({ data }: { data: WeddingData }) {
 
             <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1.5 }} className="z-10 text-center space-y-10 p-8">
               <div className="space-y-6">
-                <p className="text-[10px] uppercase tracking-[1em] text-white/40 font-light">Wedding Invitation</p>
-                <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none">{groomName}</h1>
+                <h1 className="text-4xl md:text-8xl font-black uppercase tracking-tighter leading-none">{groomName}</h1>
                 <div className="flex items-center justify-center gap-4">
                   <div className="h-px w-12 bg-white/20" />
-                  <span className="text-2xl font-light italic text-white/40">and</span>
+                  <span className="text-xl md:text-2xl font-light italic text-white/40">and</span>
                   <div className="h-px w-12 bg-white/20" />
                 </div>
-                <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none">{brideName}</h1>
+                <h1 className="text-4xl md:text-8xl font-black uppercase tracking-tighter leading-none">{brideName}</h1>
               </div>
 
               <div className="space-y-3">
@@ -180,15 +158,15 @@ export default function ModernDark({ data }: { data: WeddingData }) {
           <div className="space-y-6">
             <p className="hero-text text-xs uppercase tracking-[0.8em] font-light opacity-60">The Wedding Of</p>
             <div className="space-y-0">
-              <h1 ref={titleGroomRef} className="text-7xl md:text-9xl font-black uppercase tracking-tighter leading-none">
+              <h1 ref={titleGroomRef} className="text-5xl md:text-9xl font-black uppercase tracking-tighter leading-none">
                 {groomName}
               </h1>
               <div className="hero-text flex items-center justify-center gap-4">
-                <div className="h-px w-12 bg-white/20" />
-                <span className="text-2xl font-light italic text-white/40">and</span>
-                <div className="h-px w-12 bg-white/20" />
+                <div className="h-px w-8 md:w-12 bg-white/20" />
+                <span className="text-xl md:text-2xl font-light italic text-white/40">and</span>
+                <div className="h-px w-8 md:w-12 bg-white/20" />
               </div>
-              <h1 ref={titleBrideRef} className="text-7xl md:text-9xl font-black uppercase tracking-tighter leading-none">
+              <h1 ref={titleBrideRef} className="text-5xl md:text-9xl font-black uppercase tracking-tighter leading-none">
                 {brideName}
               </h1>
             </div>
@@ -229,9 +207,8 @@ export default function ModernDark({ data }: { data: WeddingData }) {
           </div>
         </section>
 
-        {/* Couple Section */}
         <section className="relative z-10 py-32 px-6">
-          <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-32">
+          <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 md:gap-32">
             <div className="space-y-8 flex flex-col items-center md:items-start reveal-card">
               <motion.div whileHover={{ scale: 1.02 }} className="w-72 h-[450px] bg-white/5 rounded-2xl overflow-hidden border border-white/10 relative group">
                 <Image src={data.groom.photo || "https://images.unsplash.com/photo-1550246140-5119ae4790b8?q=80&w=2070"} fill className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt="Groom" />
@@ -369,6 +346,11 @@ export default function ModernDark({ data }: { data: WeddingData }) {
           </section>
         )}
 
+        {/* Video Section */}
+        <VideoSection data={data} />
+
+        {/* Video Section */}
+
         {/* Gallery */}
         <section className="relative z-10 py-32 px-6 bg-white text-black">
           <div className="max-w-6xl mx-auto space-y-12">
@@ -380,8 +362,8 @@ export default function ModernDark({ data }: { data: WeddingData }) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 gallery-grid">
               {data.gallery &&
                 data.gallery.slice(0, 8).map((img, i) => (
-                  <motion.div key={i} whileHover={{ scale: 1.05, zIndex: 10 }} className={`gallery-item relative overflow-hidden rounded-3xl bg-gray-100 ${i % 3 === 0 ? "col-span-2 row-span-2" : ""}`}>
-                    <Image src={img} alt={`Gallery ${i}`} fill className="object-cover grayscale hover:grayscale-0 transition-all duration-700" />
+                  <motion.div key={i} whileHover={{ scale: 1.05, zIndex: 10 }} className={`gallery-item relative overflow-hidden rounded-3xl aspect-square bg-gray-100 ${i % 3 === 0 ? "col-span-2 row-span-2" : ""}`}>
+                    <Image src={img} alt={`Gallery ${i}`} fill className="object-cover transition-all duration-700" />
                   </motion.div>
                 ))}
             </div>
@@ -418,6 +400,9 @@ export default function ModernDark({ data }: { data: WeddingData }) {
           </section>
         )}
 
+        {/* RSVP */}
+        <RSVPSection />
+
         {/* Extended Family */}
         {data.extendedFamily?.members && data.extendedFamily.members.length > 0 && (
           <section className="relative z-10 py-24 px-6 bg-white text-black text-center reveal-card">
@@ -436,22 +421,13 @@ export default function ModernDark({ data }: { data: WeddingData }) {
         )}
 
         {/* Music Toggle */}
-        {data.music?.enabled && isOpen && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={toggleMute}
-            className="fixed bottom-8 right-8 z-40 bg-white/10 backdrop-blur-md p-4 rounded-full shadow-2xl border border-white/10 text-white"
-          >
-            {isMuted ? <IconMusicOff size={24} /> : <IconMusic size={24} className="animate-pulse" />}
-          </motion.button>
-        )}
+        {data.music?.enabled && data.music.url && isOpen && <MusicToggle url={data.music.url} type={data.music.type} autoPlay={true} />}
 
         {/* Footer */}
         <footer className="relative z-10 py-24 px-6 text-center bg-white text-black rounded-b-[40px] md:rounded-b-[80px]">
           <div className="space-y-4 reveal-card">
             <p className="text-xs uppercase tracking-widest opacity-40 italic">Until forever ends</p>
-            <h1 className="text-5xl md:text-7xl font-black uppercase italic">
+            <h1 className="text-3xl md:text-7xl font-black uppercase italic">
               {groomName} & {brideName}
             </h1>
             <div className="pt-20 opacity-20 text-[8px] uppercase tracking-[1em] font-bold">Powered by Nika.id</div>

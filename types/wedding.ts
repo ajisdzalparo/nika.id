@@ -55,6 +55,7 @@ export interface WeddingData {
   music?: {
     enabled: boolean;
     url: string;
+    type?: "youtube" | "upload";
   };
   quote?: {
     text: string;

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 import { uploadFile } from "@/lib/storage";
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin(request);
+    await requireAuth(request);
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

@@ -46,7 +46,7 @@ export default function Home() {
         {/* Call to Action Section */}
         <section className="py-24 bg-background">
           <div className="container mx-auto px-4">
-            <div className="bg-primary rounded-[3rem] p-12 md:p-20 text-center text-primary-foreground shadow-2xl relative overflow-hidden">
+            <div className="bg-primary rounded-xl p-12 md:p-20 text-center text-primary-foreground shadow-2xl relative overflow-hidden">
               {/* Decorative circles */}
               <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
               <div className="absolute bottom-0 right-0 w-96 h-96 bg-black/10 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />

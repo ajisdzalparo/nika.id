@@ -47,7 +47,7 @@ export function TemplateShowcase() {
             <h2 className="text-3xl md:text-5xl font-bold mb-6 text-foreground">Template Desain Terpopuler</h2>
             <p className="text-muted-foreground text-lg">Pilih dari berbagai desain eksklusif yang dirancang oleh desainer profesional untuk menceritakan kisah cinta unik Anda.</p>
           </div>
-          <Button variant="outline" size="lg" className="rounded-2xl" asChild>
+          <Button variant="outline" size="lg" className="rounded-xl" asChild>
             <Link href="/templates">Lihat Semua Template</Link>
           </Button>
         </div>
@@ -55,7 +55,7 @@ export function TemplateShowcase() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {templates.map((template, index) => (
             <motion.div key={template.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
-              <Card className="group overflow-hidden rounded-[2rem] hover:shadow-2xl transition-all duration-500">
+              <Card className="group overflow-hidden rounded-xl hover:shadow-2xl transition-all duration-500">
                 <div className="aspect-4/5 relative overflow-hidden">
                   <Image src={template.image} alt={template.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">

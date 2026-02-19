@@ -12,16 +12,22 @@ interface Guest {
   name: string;
 }
 
+import { PlanType, getPlanLimits } from "@/lib/limits";
+
 interface GuestListProps {
   initialGuests: Guest[];
   invitationSlug: string;
+  userPlan: PlanType;
 }
 
-export function GuestList({ initialGuests, invitationSlug }: GuestListProps) {
+export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestListProps) {
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
   const [newName, setNewName] = useState("");
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+
+  const limits = getPlanLimits(userPlan);
+  const isLimitReached = guests.length >= limits.maxGuests;
 
   const baseUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${invitationSlug}`;
 
@@ -29,9 +35,14 @@ export function GuestList({ initialGuests, invitationSlug }: GuestListProps) {
     e.preventDefault();
     if (!newName) return;
 
+    if (isLimitReached) {
+      toast.error(`Batas tamu tercapai untuk paket ${limits.name}. Upgrade untuk menambah lebih banyak.`);
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch("/api/guests", {
+      const response = await fetch("/api/user/guests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName }),
@@ -53,7 +64,7 @@ export function GuestList({ initialGuests, invitationSlug }: GuestListProps) {
     if (!confirm("Hapus tamu ini?")) return;
 
     try {
-      const response = await fetch(`/api/guests/${id}`, { method: "DELETE" });
+      const response = await fetch(`/api/user/guests/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Gagal menghapus tamu");
       setGuests(guests.filter((g) => g.id !== id));
       toast.success("Tamu berhasil dihapus");
@@ -96,18 +107,36 @@ export function GuestList({ initialGuests, invitationSlug }: GuestListProps) {
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <IconUserPlus size={20} />
             </div>
-            <h3 className="font-serif text-lg font-medium">Tambah Tamu</h3>
+            <div>
+              <h3 className="font-serif text-lg font-medium">Tambah Tamu</h3>
+              <p className="text-xs text-muted-foreground">
+                Total: {guests.length} / {limits.maxGuests === Infinity ? "Unlimited" : limits.maxGuests}
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-bold text-zinc-500 uppercase">Nama Tamu</label>
-              <Input placeholder="Cth: Budi Santoso" value={newName} onChange={(e) => setNewName(e.target.value)} className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus:ring-primary rounded-lg" />
+              <Input
+                placeholder="Cth: Budi Santoso"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus:ring-primary rounded-lg"
+                disabled={isLimitReached && !loading}
+              />
             </div>
 
-            <Button onClick={addGuest} disabled={loading} className="w-full h-12 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 hover:dark:bg-zinc-100 shadow-lg">
-              {loading ? "Menyimpan..." : "Tambahkan ke Daftar"}
+            <Button
+              onClick={addGuest}
+              disabled={loading || isLimitReached}
+              className={`w-full h-12 rounded-lg shadow-lg ${
+                isLimitReached ? "bg-zinc-200 text-zinc-500 cursor-not-allowed dark:bg-zinc-800 dark:text-zinc-600" : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 hover:dark:bg-zinc-100"
+              }`}
+            >
+              {loading ? "Menyimpan..." : isLimitReached ? "Batas Tercapai" : "Tambahkan ke Daftar"}
             </Button>
+            {isLimitReached && limits.name !== "Gold" && <p className="text-xs text-center text-red-500 font-medium">Upgrade paket untuk menambah lebih banyak tamu.</p>}
           </div>
         </div>
 

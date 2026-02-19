@@ -5,7 +5,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { format, differenceInDays, differenceInHours, differenceInMinutes, differenceInSeconds } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { IconHeart, IconMapPin, IconCalendar, IconClock, IconGift, IconPhoto, IconMusic, IconMusicOff, IconPlayerPlay, IconChevronDown, IconHeartFilled, IconBook } from "@tabler/icons-react";
+import { IconHeart, IconMapPin, IconCalendar, IconClock, IconGift, IconPhoto, IconPlayerPlay, IconChevronDown, IconHeartFilled, IconBook } from "@tabler/icons-react";
+import { MusicToggle } from "@/components/common/music-toggle";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
@@ -24,10 +25,11 @@ const FadeInWhenVisible = ({ children, delay = 0 }: { children: React.ReactNode;
   </motion.div>
 );
 
+import { RSVPSection } from "@/components/templates/classic-premium/rsvp-section";
+import { VideoSection } from "@/components/common/video-section";
+
 export default function ClassicPremium({ data }: { data: WeddingData }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const floralRef = useRef<HTMLDivElement>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -69,28 +71,6 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
     return () => clearInterval(timer);
   }, [eventDate]);
 
-  // Music
-  useEffect(() => {
-    if (isOpen && data.music?.enabled && data.music.url) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(data.music.url);
-        audioRef.current.loop = true;
-      }
-      audioRef.current.play().catch((e) => console.log("Audio play blocked", e));
-    }
-    return () => {
-      audioRef.current?.pause();
-    };
-  }, [isOpen, data.music]);
-
-  const toggleMute = () => {
-    if (audioRef.current) {
-      if (isMuted) audioRef.current.play();
-      else audioRef.current.pause();
-      setIsMuted(!isMuted);
-    }
-  };
-
   // GSAP Animations
   useEffect(() => {
     if (isOpen) {
@@ -130,15 +110,15 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
 
               <div className="space-y-4">
                 <p className="text-[10px] uppercase tracking-[0.6em] text-[#C4A484] font-sans">The Wedding Celebration Of</p>
-                <h1 className="text-5xl md:text-7xl font-light italic">
-                  {groomName} <span className="text-[#C4A484] font-sans text-3xl">&</span> {brideName}
+                <h1 className="text-4xl md:text-7xl font-light italic">
+                  {groomName} <span className="text-[#C4A484] font-sans text-2xl md:text-3xl">&</span> {brideName}
                 </h1>
                 <div className="h-px w-20 bg-[#C4A484] mx-auto" />
               </div>
 
               <div className="space-y-3">
                 <p className="text-sm italic opacity-60">Kepada Yth.</p>
-                <h2 className="text-2xl font-bold text-[#C4A484] uppercase tracking-wider">{data.guestName || "Tamu Undangan"}</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-[#C4A484] uppercase tracking-wider">{data.guestName || "Tamu Undangan"}</h2>
               </div>
 
               <motion.button
@@ -167,13 +147,13 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
           </div>
 
           <motion.div className="z-10 space-y-8" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.2, ease: "easeOut" }}>
-            <p className="text-sm uppercase tracking-[0.4em] text-[#C4A484] font-sans">The Wedding Celebration Of</p>
+            <p className="text-xs md:text-sm uppercase tracking-[0.4em] text-[#C4A484] font-sans">The Wedding Celebration Of</p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
-              <h1 className="text-6xl md:text-8xl font-light italic">{groomName}</h1>
-              <motion.span initial={{ opacity: 0, rotate: -20 }} animate={{ opacity: 1, rotate: 0 }} transition={{ delay: 0.8 }} className="text-4xl text-[#C4A484] font-sans">
+              <h1 className="text-5xl md:text-8xl font-light italic">{groomName}</h1>
+              <motion.span initial={{ opacity: 0, rotate: -20 }} animate={{ opacity: 1, rotate: 0 }} transition={{ delay: 0.8 }} className="text-3xl md:text-4xl text-[#C4A484] font-sans">
                 &
               </motion.span>
-              <h1 className="text-6xl md:text-8xl font-light italic">{brideName}</h1>
+              <h1 className="text-5xl md:text-8xl font-light italic">{brideName}</h1>
             </div>
             <motion.div initial={{ width: 0 }} animate={{ width: 96 }} className="h-px bg-[#C4A484] mx-auto" transition={{ delay: 0.5, duration: 1 }} />
             <p className="text-xl tracking-widest font-sans">{format(eventDate, "dd . MM . yyyy")}</p>
@@ -215,7 +195,7 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
 
         {/* Couple Detail Section */}
         <section className="py-24 px-6 bg-white overflow-hidden">
-          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-20">
+          <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 md:gap-20">
             <motion.div whileInView={{ x: 0, opacity: 1 }} initial={{ x: -100, opacity: 0 }} viewport={{ once: true }} transition={{ duration: 1 }} className="text-center space-y-6">
               <div className="relative inline-block">
                 <div className="relative w-56 h-72 bg-[#FDF8F5] rounded-t-full border-8 border-white shadow-2xl overflow-hidden group">
@@ -370,6 +350,9 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
           </section>
         )}
 
+        {/* Video Section */}
+        <VideoSection data={data} />
+
         {/* Gallery Section */}
         {data.gallery && data.gallery.length > 0 && (
           <section className="py-24 px-6 bg-[#FDF8F5] overflow-hidden">
@@ -453,23 +436,17 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
         )}
 
         {/* Music Toggle */}
-        {data.music?.enabled && isOpen && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={toggleMute}
-            className="fixed bottom-8 right-8 z-40 bg-white/80 backdrop-blur-md p-4 rounded-full shadow-2xl border border-[#C4A484]/20 text-[#C4A484]"
-          >
-            {isMuted ? <IconMusicOff size={24} /> : <IconMusic size={24} className="animate-pulse" />}
-          </motion.button>
-        )}
+        {data.music?.enabled && data.music.url && isOpen && <MusicToggle url={data.music.url} type={data.music.type} autoPlay={true} />}
+
+        {/* RSVP Section */}
+        <RSVPSection />
 
         {/* Footer */}
         <footer className="py-24 px-6 text-center bg-[#4A403A] text-white">
           <div className="space-y-4">
             <FadeInWhenVisible>
-              <p className="italic text-xl">Wassalamu&apos;alaikum Warahmatullahi Wabarakatuh</p>
-              <h3 className="text-4xl font-light mt-4 text-[#C4A484]">
+              <p className="italic text-lg md:text-xl">Wassalamu&apos;alaikum Warahmatullahi Wabarakatuh</p>
+              <h3 className="text-3xl md:text-4xl font-light mt-4 text-[#C4A484]">
                 {groomName} & {brideName}
               </h3>
             </FadeInWhenVisible>

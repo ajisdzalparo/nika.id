@@ -34,31 +34,28 @@ export function Navbar() {
         <nav className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <motion.div whileHover={{ scale: 1.1, rotate: 10 }} className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow-lg">
-              <IconHeart size={24} fill="currentColor" />
-            </motion.div>
-            <span className="text-2xl font-bold text-foreground">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground transition-transform group-hover:scale-110">
+              <IconHeart size={18} fill="currentColor" />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-foreground">
               nika<span className="text-primary">.id</span>
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <ul className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <li key={link.name}>
-                <Link href={link.href} className={cn("text-sm font-medium transition-colors hover:text-primary", pathname === link.href ? "text-primary" : "text-muted-foreground")}>
-                  {link.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-
-          {/* Desktop CTAs */}
-          <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" asChild size="sm">
-              <Link href="/login">Masuk</Link>
-            </Button>
-            <Button className="shadow-lg" asChild size="sm">
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="/#features" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Fitur
+            </Link>
+            <Link href="/templates" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Template
+            </Link>
+            <Link href="/#pricing" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              Harga
+            </Link>
+            <Link href="/login" className="text-sm font-bold text-foreground hover:text-primary transition-colors">
+              Masuk
+            </Link>
+            <Button asChild className="rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-105">
               <Link href="/register">Buat Undangan</Link>
             </Button>
           </div>

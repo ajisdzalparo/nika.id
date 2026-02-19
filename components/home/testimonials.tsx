@@ -38,7 +38,7 @@ export function Testimonials() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {reviews.map((review, index) => (
             <motion.div key={review.name} initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
-              <Card className="p-8 rounded-[2.5rem] relative group hover:shadow-xl transition-shadow duration-500">
+              <Card className="p-8 rounded-xl relative group hover:shadow-xl transition-shadow duration-500">
                 <CardContent className="p-0">
                   <div className="absolute top-8 right-8 text-primary/10 group-hover:text-primary/20 transition-colors">
                     <IconQuote size={48} fill="currentColor" />

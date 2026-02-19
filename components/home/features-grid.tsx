@@ -73,9 +73,9 @@ export function FeaturesGrid() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature) => (
-            <Card key={feature.title} className="feature-card rounded-[2.5rem] border-border hover:border-primary/30 hover:shadow-2xl transition-all duration-300 group">
+            <Card key={feature.title} className="feature-card rounded-xl border-border hover:border-primary/30 hover:shadow-2xl transition-all duration-300 group">
               <CardContent className="p-8">
-                <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center text-accent-foreground mb-8 transition-transform group-hover:scale-110 group-hover:rotate-6">
+                <div className="w-16 h-16 bg-accent rounded-xl flex items-center justify-center text-accent-foreground mb-8 transition-transform group-hover:scale-110 group-hover:rotate-6">
                   <feature.icon size={36} />
                 </div>
                 <h3 className="text-xl font-black mb-4 text-foreground leading-tight">{feature.title}</h3>

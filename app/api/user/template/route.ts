@@ -24,7 +24,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "TEMPLATE_NOT_ACTIVE" }, { status: 400 });
     }
 
-    const user = await prisma.user.update({
+    const user = (await prisma.user.findUnique({
+      where: { id: session.user.id },
+    })) as unknown as import("@/types/user").UserWithPlan;
+
+    if (!user) {
+      return NextResponse.json({ error: "USER_NOT_FOUND" }, { status: 404 });
+    }
+
+    // Check Plan Limits
+    const { getPlanLimits } = await import("@/lib/limits");
+    const limits = getPlanLimits(user.plan);
+
+    if (!limits.allowedTemplateTypes.includes(template.type)) {
+      return NextResponse.json({ error: "PLAN_UPGRADE_REQUIRED" }, { status: 403 });
+    }
+
+    await prisma.user.update({
       where: { id: session.user.id },
       data: { templateSlug },
     });

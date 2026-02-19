@@ -22,13 +22,13 @@ export function HeroSection({ data }: HeroSectionProps) {
       <div className="z-10 space-y-6 animate-in fade-in zoom-in duration-700">
         <p className="text-xs uppercase tracking-[0.5em] text-rose-400 font-semibold">The Wedding Of</p>
         <div className="space-y-2">
-          <h1 className="text-5xl sm:text-7xl font-serif font-light italic text-gray-900">{data.groom.nickname}</h1>
+          <h1 className="text-4xl sm:text-7xl font-serif font-light italic text-gray-900">{data.groom.nickname}</h1>
           <div className="flex items-center justify-center gap-3">
             <div className="h-px w-12 bg-rose-300" />
             <IconHeart size={20} className="text-rose-400 fill-rose-400" />
             <div className="h-px w-12 bg-rose-300" />
           </div>
-          <h1 className="text-5xl sm:text-7xl font-serif font-light italic text-gray-900">{data.bride.nickname}</h1>
+          <h1 className="text-4xl sm:text-7xl font-serif font-light italic text-gray-900">{data.bride.nickname}</h1>
         </div>
         <p className="text-sm tracking-widest text-gray-500">{format(eventDate, "dd MMMM yyyy", { locale: idLocale })}</p>
 

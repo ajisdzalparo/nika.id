@@ -42,7 +42,7 @@ export function FAQSection() {
 
           <div className="space-y-4">
             {faqs.map((faq, index) => (
-              <Card key={index} className="overflow-hidden rounded-3xl transition-all duration-300">
+              <Card key={index} className="overflow-hidden rounded-xl transition-all duration-300">
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
                   className={`w-full flex items-center justify-between p-6 text-left transition-colors ${openIndex === index ? "bg-muted" : "bg-card hover:bg-muted/50"}`}

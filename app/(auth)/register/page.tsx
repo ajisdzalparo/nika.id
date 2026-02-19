@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signUp, signIn } from "@/lib/auth-client";
-import { IconHeart, IconBrandGoogle, IconEye, IconEyeOff, IconLoader2, IconCheck, IconX, IconMail, IconLock, IconUser } from "@tabler/icons-react";
+import { IconBrandGoogle, IconEye, IconEyeOff, IconLoader2, IconCheck, IconX, IconMail, IconLock, IconUser } from "@tabler/icons-react";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 // Helper function to generate slug
 const generateSlug = (name: string) => {
@@ -22,10 +22,10 @@ const generateSlug = (name: string) => {
 // Password strength checker
 const getPasswordStrength = (password: string) => {
   if (password.length === 0) return { strength: 0, label: "", color: "" };
-  if (password.length < 8) return { strength: 1, label: "Lemah", color: "bg-red-500" };
-  if (password.length < 12 && !/[A-Z]/.test(password)) return { strength: 2, label: "Sedang", color: "bg-yellow-500" };
-  if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) return { strength: 3, label: "Baik", color: "bg-blue-500" };
-  return { strength: 4, label: "Kuat", color: "bg-green-500" };
+  if (password.length < 8) return { strength: 1, label: "Lemah", color: "bg-red-500 text-red-500" };
+  if (password.length < 12 && !/[A-Z]/.test(password)) return { strength: 2, label: "Sedang", color: "bg-yellow-500 text-yellow-500" };
+  if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) return { strength: 3, label: "Baik", color: "bg-blue-500 text-blue-500" };
+  return { strength: 4, label: "Kuat", color: "bg-green-500 text-green-500" };
 };
 
 export default function RegisterPage() {
@@ -36,7 +36,6 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -45,15 +44,14 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
 
     if (password !== confirmPassword) {
-      setError("Password tidak cocok");
+      toast.error("Password tidak cocok");
       return;
     }
 
     if (password.length < 8) {
-      setError("Password minimal 8 karakter");
+      toast.error("Password minimal 8 karakter");
       return;
     }
 
@@ -71,20 +69,19 @@ export default function RegisterPage() {
       });
 
       if (result.error) {
-        setError(result.error.message || "Registrasi gagal");
+        toast.error(result.error.message || "Registrasi gagal");
         setLoading(false);
         return;
       }
 
       router.push("/verification-sent?email=" + encodeURIComponent(email));
     } catch {
-      setError("Terjadi kesalahan yang tidak terduga");
+      toast.error("Terjadi kesalahan yang tidak terduga");
       setLoading(false);
     }
   };
 
   const handleGoogleSignUp = async () => {
-    setError("");
     setGoogleLoading(true);
 
     try {
@@ -93,244 +90,174 @@ export default function RegisterPage() {
         callbackURL: "/dashboard",
       });
     } catch {
-      setError("Gagal mendaftar dengan Google");
+      toast.error("Gagal mendaftar dengan Google");
       setGoogleLoading(false);
     }
   };
 
   return (
-    <div className="relative">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-[40%] h-[40%] bg-purple-200/40 blur-[120px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[35%] h-[35%] bg-pink-200/40 blur-[120px] rounded-full animate-pulse" style={{ animationDelay: "1s" }} />
+    <div className="w-full">
+      <div className="mb-8">
+        <h1 className="font-serif text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mb-2">Buat Akun Baru</h1>
+        <p className="text-zinc-500 dark:text-zinc-400">Mulai perjalanan pernikahan digital Anda di sini.</p>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Card className="border-none shadow-2xl bg-white/90 backdrop-blur-xl overflow-hidden relative">
-          <div className="h-1.5 bg-linear-to-r from-purple-400 to-pink-500 w-full" />
+      <div className="space-y-6">
+        {process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true" && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleSignUp}
+              disabled={loading || googleLoading}
+              className="w-full h-12 text-zinc-700 dark:text-zinc-300 font-medium border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-lg"
+            >
+              {googleLoading ? <IconLoader2 className="w-5 h-5 animate-spin mr-2" /> : <IconBrandGoogle className="w-5 h-5 mr-2" />}
+              Daftar dengan Google
+            </Button>
 
-          <CardHeader className="space-y-4 sm:space-y-6 pt-8 sm:pt-10 pb-4 sm:pb-6 relative">
-            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring", stiffness: 200 }} className="flex justify-center">
-              <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-linear-to-br from-purple-50 to-pink-50 shadow-lg shadow-purple-100/50 relative group">
-                <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
-                  <IconHeart className="w-10 h-10 sm:w-12 sm:h-12 text-purple-500 drop-shadow-lg" strokeWidth={1.5} />
-                </motion.div>
-                <div className="absolute inset-0 bg-linear-to-br from-purple-400/20 to-pink-400/20 rounded-2xl sm:rounded-3xl blur-xl group-hover:blur-2xl transition-all" />
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
               </div>
-            </motion.div>
-
-            <div className="space-y-2 sm:space-y-3 text-center">
-              <CardTitle className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-gray-900">
-                Daftar Akun <span className="text-transparent bg-clip-text bg-linear-to-r from-purple-500 to-pink-500">Baru</span>
-              </CardTitle>
-              <CardDescription className="text-sm sm:text-base text-gray-600 font-medium">Mulai buat undangan pernikahan digital Anda secara gratis</CardDescription>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white dark:bg-zinc-950 px-2 text-zinc-400 font-medium">Atau dengan email</span>
+              </div>
             </div>
-          </CardHeader>
+          </>
+        )}
 
-          <CardContent className="px-6 sm:px-10 pb-8 sm:pb-10">
-            {/* Google Sign-Up Button - Show first */}
-            {process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true" && (
-              <>
-                <Button
-                  type="button"
-                  onClick={handleGoogleSignUp}
-                  disabled={loading || googleLoading}
-                  className="w-full h-12 sm:h-14 text-sm sm:text-base font-bold rounded-xl sm:rounded-2xl bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 shadow-md hover:shadow-lg transition-all duration-300 text-gray-700 relative overflow-hidden group"
-                >
-                  <div className="absolute inset-0 bg-linear-to-r from-blue-50 to-red-50 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span className="relative z-10 flex items-center justify-center gap-2 sm:gap-3">
-                    {googleLoading ? (
-                      <>
-                        <IconLoader2 size={18} className="animate-spin" />
-                        <span>Menghubungkan...</span>
-                      </>
-                    ) : (
-                      <>
-                        <IconBrandGoogle size={18} />
-                        <span>Daftar dengan Google</span>
-                      </>
-                    )}
-                  </span>
-                </Button>
-
-                {/* Divider */}
-                <div className="relative my-6 sm:my-8">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t-2 border-gray-100" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase font-black tracking-widest">
-                    <span className="bg-white/80 px-6 text-gray-400">Atau daftar dengan email</span>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              {/* Name Field */}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-gray-600 ml-1">
-                  Nama Lengkap
-                </Label>
-                <div className="relative">
-                  <IconUser size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    disabled={loading || googleLoading}
-                    className="h-12 sm:h-14 pl-11 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all text-sm sm:text-base font-medium bg-white/50 backdrop-blur-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-gray-600 ml-1">
-                  Email
-                </Label>
-                <div className="relative">
-                  <IconMail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="nama@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading || googleLoading}
-                    className="h-12 sm:h-14 pl-11 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all text-sm sm:text-base font-medium bg-white/50 backdrop-blur-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-gray-600 ml-1">
-                  Password
-                </Label>
-                <div className="relative">
-                  <IconLock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min 8 karakter"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading || googleLoading}
-                    className="h-12 sm:h-14 pl-11 pr-12 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all text-sm sm:text-base bg-white/50 backdrop-blur-sm"
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" disabled={loading || googleLoading}>
-                    {showPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                  </button>
-                </div>
-
-                {/* Password Strength Indicator */}
-                {password.length > 0 && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-1.5 pt-1">
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4].map((level) => (
-                        <div key={level} className={`h-1.5 flex-1 rounded-full transition-all ${level <= passwordStrength.strength ? passwordStrength.color : "bg-gray-200"}`} />
-                      ))}
-                    </div>
-                    <p className={`text-xs font-semibold ${passwordStrength.color.replace("bg-", "text-")}`}>{passwordStrength.label}</p>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Confirm Password Field */}
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password" className="text-xs font-bold uppercase tracking-wider text-gray-600 ml-1">
-                  Konfirmasi Password
-                </Label>
-                <div className="relative">
-                  <IconLock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    id="confirm-password"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Ulangi password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    disabled={loading || googleLoading}
-                    className="h-12 sm:h-14 pl-11 pr-12 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all text-sm sm:text-base bg-white/50 backdrop-blur-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    disabled={loading || googleLoading}
-                  >
-                    {showConfirmPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                  </button>
-                </div>
-
-                {/* Password Match Indicator */}
-                {confirmPassword.length > 0 && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-xs font-semibold pt-1">
-                    {passwordsMatch ? (
-                      <>
-                        <IconCheck size={14} className="text-green-500" />
-                        <span className="text-green-600">Password cocok</span>
-                      </>
-                    ) : (
-                      <>
-                        <IconX size={14} className="text-red-500" />
-                        <span className="text-red-600">Password tidak cocok</span>
-                      </>
-                    )}
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-xs sm:text-sm font-semibold text-red-600 bg-red-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-red-100 flex items-center gap-2"
-                >
-                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse shrink-0" />
-                  {error}
-                </motion.div>
-              )}
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full h-12 sm:h-14 text-sm sm:text-base font-bold rounded-xl sm:rounded-2xl bg-linear-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 shadow-xl shadow-purple-200 hover:shadow-2xl hover:shadow-purple-300 transition-all duration-300 hover:scale-[1.02] relative overflow-hidden group"
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Nama Lengkap
+            </Label>
+            <div className="relative">
+              <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+              <Input
+                id="name"
+                type="text"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
                 disabled={loading || googleLoading}
-              >
-                <div className="absolute inset-0 bg-linear-to-r from-purple-400 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  {loading ? (
-                    <>
-                      <IconLoader2 size={18} className="animate-spin" />
-                      Memproses...
-                    </>
-                  ) : (
-                    "Buat Akun Sekarang"
-                  )}
-                </span>
-              </Button>
-            </form>
-
-            {/* Sign In Link */}
-            <div className="text-center mt-6 sm:mt-8">
-              <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                Sudah punya akun?{" "}
-                <Link href="/login" className="font-black text-transparent bg-clip-text bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all">
-                  Masuk di sini
-                </Link>
-              </p>
+                className="pl-10 h-11 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-lg"
+              />
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Email
+            </Label>
+            <div className="relative">
+              <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="nama@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading || googleLoading}
+                className="pl-10 h-11 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-lg"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Password
+            </Label>
+            <div className="relative">
+              <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Min 8 karakter"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading || googleLoading}
+                className="pl-10 pr-10 h-11 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-lg"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors" tabIndex={-1}>
+                {showPassword ? <IconEyeOff className="w-5 h-5" /> : <IconEye className="w-5 h-5" />}
+              </button>
+            </div>
+
+            {/* Password Strength Indicator */}
+            {password.length > 0 && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-1.5 pt-1">
+                <div className="flex gap-1 h-1">
+                  {[1, 2, 3, 4].map((level) => (
+                    <div key={level} className={`flex-1 rounded-full transition-all duration-300 ${level <= passwordStrength.strength ? passwordStrength.color.split(" ")[0] : "bg-zinc-100 dark:bg-zinc-800"}`} />
+                  ))}
+                </div>
+                <p className={`text-xs font-medium text-right ${passwordStrength.color.split(" ")[1]}`}>{passwordStrength.label}</p>
+              </motion.div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Konfirmasi Password
+            </Label>
+            <div className="relative">
+              <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
+              <Input
+                id="confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Ulangi password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={loading || googleLoading}
+                className="pl-10 pr-10 h-11 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-lg"
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors" tabIndex={-1}>
+                {showConfirmPassword ? <IconEyeOff className="w-5 h-5" /> : <IconEye className="w-5 h-5" />}
+              </button>
+            </div>
+
+            {/* Password Match Indicator */}
+            {confirmPassword.length > 0 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 text-xs font-medium pt-1">
+                {passwordsMatch ? (
+                  <>
+                    <IconCheck className="w-3.5 h-3.5 text-green-500" />
+                    <span className="text-green-600">Password cocok</span>
+                  </>
+                ) : (
+                  <>
+                    <IconX className="w-3.5 h-3.5 text-red-500" />
+                    <span className="text-red-600">Password tidak cocok</span>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </div>
+
+          <Button type="submit" className="w-full h-11 rounded-lg font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-all mt-6" disabled={loading || googleLoading}>
+            {loading ? (
+              <>
+                <IconLoader2 className="w-5 h-5 animate-spin mr-2" />
+                Memproses...
+              </>
+            ) : (
+              "Buat Akun"
+            )}
+          </Button>
+        </form>
+
+        <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+          Sudah punya akun?{" "}
+          <Link href="/login" className="font-semibold text-primary hover:text-primary/90 transition-colors">
+            Masuk Sekarang
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
