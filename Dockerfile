@@ -28,8 +28,11 @@ ENV DATABASE_URL=${DATABASE_URL}
 ENV NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=${NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED}
 ENV NODE_ENV=production
 
-RUN bun run build
+# Disable telemetry and limit JS heap size to prevent OOM on small VPS
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 
+RUN bun run build
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
