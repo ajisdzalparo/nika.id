@@ -25,7 +25,6 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }: { user: { name: string; email: string }; url: string }) => {
-      // If Resend is not configured, log the verification URL for development
       if (!resend) {
         console.log("\n" + "=".repeat(80));
         console.log("📧 EMAIL VERIFICATION LINK (Resend not configured)");
