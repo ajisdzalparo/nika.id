@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { IconCreditCard, IconLogout, IconNotification, IconUserCircle } from "@tabler/icons-react";
+import Link from "next/link";
 
 // import { UserWithPlan } from "@/types/user";
 
@@ -45,9 +46,11 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                   <IconUserCircle className="mr-2 size-4" />
                   Account
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <IconCreditCard className="mr-2 size-4" />
-                  Billing
+                <DropdownMenuItem asChild>
+                  <Link href="/upgrade">
+                    <IconCreditCard className="mr-2 size-4" />
+                    Billing
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <IconNotification className="mr-2 size-4" />

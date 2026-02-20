@@ -138,7 +138,9 @@ model Transaction {
   userId        String
   amount        Int
   status        String   @default("PENDING") // PENDING, SUCCESS, FAILED
-  paymentProof  String? // URL to the uploaded image
+  snapToken     String?
+  plan          String? // FREE, SILVER, GOLD
+  paymentProof  String? // URL to the uploaded image (for manual)
   paymentMethod String?
   notes         String?
   createdAt     DateTime @default(now())

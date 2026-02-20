@@ -65,9 +65,11 @@ export default async function UserDashboardPage() {
             <div className="relative z-10">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
                 <div>
-                  <Badge variant="outline" className="mb-4 bg-primary/5 text-primary border-primary/20 px-3 py-1 rounded-full text-xs uppercase tracking-wider font-semibold">
-                    {user.role === "admin" ? "Admin Access" : "Premium Member"}
-                  </Badge>
+                  <Link href="/upgrade">
+                    <Badge variant="outline" className="mb-4 bg-primary/5 text-primary border-primary/20 px-3 py-1 rounded-full text-xs uppercase tracking-wider font-semibold hover:bg-primary/10 transition-colors cursor-pointer">
+                      {user.role === "admin" ? "Admin Access" : "Premium Member"}
+                    </Badge>
+                  </Link>
                   <h1 className="font-serif text-4xl md:text-5xl font-medium text-zinc-900 dark:text-zinc-50 tracking-tight mb-2">
                     {greeting}, <span className="italic text-primary">{user.name?.split(" ")[0]}</span>
                   </h1>

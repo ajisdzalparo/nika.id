@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { IconCrown } from "@tabler/icons-react";
+import Link from "next/link";
 
 interface UpgradeBannerProps {
   feature: string;
@@ -16,9 +17,11 @@ export function UpgradeBanner({ feature, plan }: UpgradeBannerProps) {
       <p className="text-sm text-zinc-500 max-w-xs mt-1 mb-4">
         Fitur <span className="font-medium text-zinc-900 dark:text-zinc-100">{feature}</span> hanya tersedia di paket <span className="font-bold text-amber-600 dark:text-amber-500">{plan}</span>.
       </p>
-      <Button variant="default" className="bg-amber-600 hover:bg-amber-700 text-white">
-        Upgrade ke {plan}
-      </Button>
+      <Link href="/upgrade">
+        <Button variant="default" className="bg-amber-600 hover:bg-amber-700 text-white">
+          Upgrade ke {plan}
+        </Button>
+      </Link>
     </div>
   );
 }
