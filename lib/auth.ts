@@ -12,7 +12,12 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  trustedOrigins: [process.env.BETTER_AUTH_URL || "http://localhost:3000"],
+  trustedOrigins: [process.env.BETTER_AUTH_URL, process.env.NEXT_PUBLIC_APP_URL, "http://nikayuk.ajisdzalparo.com", "https://nikayuk.ajisdzalparo.com", "http://localhost:3000"].filter(Boolean) as string[],
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+    },
+  },
   secret: process.env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
