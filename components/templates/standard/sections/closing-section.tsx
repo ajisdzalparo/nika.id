@@ -11,7 +11,7 @@ interface ClosingSectionProps {
 export function ClosingSection({ data }: ClosingSectionProps) {
   return (
     <>
-      <section className="py-20 px-6 bg-gradient-to-b from-white to-rose-50 text-center">
+      <section className="py-20 px-6 bg-linear-to-b from-white to-rose-50 text-center">
         <div className="max-w-lg mx-auto space-y-6">
           <p className="text-sm text-gray-500 leading-relaxed">Atas kehadiran dan doa restunya kami ucapkan terima kasih</p>
           <div className="space-y-2">
