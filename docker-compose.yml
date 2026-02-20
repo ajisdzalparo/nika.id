@@ -6,7 +6,7 @@ services:
     container_name: nikaid-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_USER: nikaid
       POSTGRES_PASSWORD: nikaid_password
