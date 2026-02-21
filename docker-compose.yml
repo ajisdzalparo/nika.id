@@ -2,7 +2,11 @@ version: "3.8"
 
 services:
   app:
-    build: .
+    # Anda juga bisa biarkan build: . untuk local, tapi saat di VPS kita mau pull image
+    # build: .
+    image: ghcr.io/ajisdzalparo/nika.id:latest
+    container_name: nikaid-app
+    restart: unless-stopped
     ports:
       - "3000:3000"
   postgres:
