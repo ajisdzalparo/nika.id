@@ -12,7 +12,12 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  trustedOrigins: [process.env.BETTER_AUTH_URL || "http://localhost:3000"],
+  trustedOrigins: [process.env.BETTER_AUTH_URL, process.env.NEXT_PUBLIC_APP_URL, "http://nikayuk.ajisdzalparo.com", "https://nikayuk.ajisdzalparo.com", "http://localhost:3000"].filter(Boolean) as string[],
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+    },
+  },
   secret: process.env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
@@ -20,7 +25,6 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }: { user: { name: string; email: string }; url: string }) => {
-      // If Resend is not configured, log the verification URL for development
       if (!resend) {
         console.log("\n" + "=".repeat(80));
         console.log("📧 EMAIL VERIFICATION LINK (Resend not configured)");
