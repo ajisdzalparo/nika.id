@@ -38,24 +38,8 @@ jobs:
     needs: build-push
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            # Sesuaikan path ini dengan lokasi file docker-compose.yml di VPS Anda
-            cd /root/nika.id
-
-            # Jika repository GitHub Anda PRIVATE, uncomment bagian login di bawah ini:
-            # echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # Pull image terbaru
-            docker-compose pull app
-
-            # Build ulang dan jalankan (akan menggunakan image baru tanpa melakukan build lokaly)
-            docker-compose up -d app
-
-            # Bersihkan image lama yang tak tepakai agar memori server tidak penuh
-            docker image prune -a -f
+      - name: Trigger Coolify Deploy
+        run: |
+          curl --request GET \
+            --url "${{ secrets.COOLIFY_WEBHOOK }}" \
+            --header "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
