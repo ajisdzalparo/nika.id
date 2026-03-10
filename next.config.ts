@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "minio.ajisdzalparo.com",
+        hostname: "minio.programmer-ngonten.my.id",
       },
       {
         protocol: "https",

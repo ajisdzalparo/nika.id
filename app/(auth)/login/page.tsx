@@ -76,7 +76,7 @@ function LoginForm() {
       </div>
 
       <div className="space-y-6">
-        {process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true" && (
+        {(process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true" || process.env.NODE_ENV === "production") && (
           <>
             <Button
               type="button"
