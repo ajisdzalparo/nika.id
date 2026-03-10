@@ -17,6 +17,7 @@ export const auth = betterAuth({
     crossSubDomainCookies: {
       enabled: true,
     },
+    trustProxy: true,
   },
   secret: process.env.BETTER_AUTH_SECRET,
   emailAndPassword: {
