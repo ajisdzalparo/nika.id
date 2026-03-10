@@ -10,6 +10,11 @@ const minioClient = new Minio.Client({
 
 const bucketName = process.env.MINIO_BUCKET || "uploads";
 
+// Initialize bucket and policy asynchronously if this is in a server environment
+if (typeof window === "undefined") {
+  ensureBucketExists().catch(console.error);
+}
+
 /**
  * Ensures the bucket exists, creates it if it doesn't.
  */
@@ -18,7 +23,6 @@ export async function ensureBucketExists() {
     const exists = await minioClient.bucketExists(bucketName);
     if (!exists) {
       await minioClient.makeBucket(bucketName, "us-east-1");
-      console.log(`Bucket "${bucketName}" created successfully.`);
 
       // Set public policy for the bucket so images can be accessed publicly
       const policy = {
@@ -33,6 +37,7 @@ export async function ensureBucketExists() {
         ],
       };
       await minioClient.setBucketPolicy(bucketName, JSON.stringify(policy));
+      console.log(`MinIO Bucket "${bucketName}" and public policy ensured.`);
     }
   } catch (error) {
     console.error("Error ensuring MinIO bucket exists:", error);
@@ -50,9 +55,14 @@ export async function uploadFile(fileName: string, fileBuffer: Buffer, contentTy
     });
 
     // Return the public URL
-    const publicUrl = process.env.MINIO_PUBLIC_URL ? `${process.env.MINIO_PUBLIC_URL}/${bucketName}` : `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${bucketName}`;
+    let publicUrl = process.env.MINIO_PUBLIC_URL;
 
-    return `${publicUrl}/${objectName}`;
+    if (!publicUrl) {
+      const protocol = process.env.MINIO_USE_SSL === "true" ? "https" : "http";
+      publicUrl = `${protocol}://${process.env.MINIO_ENDPOINT}${process.env.MINIO_PORT ? `:${process.env.MINIO_PORT}` : ""}`;
+    }
+
+    return `${publicUrl.replace(/\/+$/, "")}/${bucketName}/${objectName}`;
   } catch (error) {
     console.error("MinIO Upload Error:", error);
     throw new Error("Failed to upload file to storage");

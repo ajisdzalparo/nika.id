@@ -50,6 +50,13 @@ jobs:
             NEXT_PUBLIC_APP_URL=https://nikayuk.programmer-ngonten.my.id
             BETTER_AUTH_URL=https://nikayuk.programmer-ngonten.my.id
             NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true
+            MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}
+            MINIO_PORT=${{ secrets.MINIO_PORT }}
+            MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}
+            MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}
+            MINIO_BUCKET=${{ secrets.MINIO_BUCKET }}
+            MINIO_USE_SSL=${{ secrets.MINIO_USE_SSL }}
+            MINIO_PUBLIC_URL=${{ secrets.MINIO_PUBLIC_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
