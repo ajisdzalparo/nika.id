@@ -4,8 +4,7 @@ import * as React from "react";
 import { IconTemplate, IconDashboard, IconMessage, IconUser, IconTransactionDollar } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavUser } from "@/components/nav-user";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import Image from "next/image";
 import Link from "next/link";
 
