@@ -188,7 +188,7 @@ export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestList
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="icon" onClick={() => copyLink(guest.name)} className="h-10 w-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Salin Link">
                       <IconCopy size={18} className="text-zinc-600 dark:text-zinc-300" />
                     </Button>

@@ -221,15 +221,5 @@
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
   }
-
-  /* Prevent sticky hover effects on mobile */
-  @media (hover: none) {
-    button:hover,
-    a:hover,
-    [role="button"]:hover {
-      background-color: inherit !important;
-      color: inherit !important;
-      transform: none !important;
-    }
   }
 }

@@ -213,7 +213,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount 
                     <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <div className="flex justify-end gap-1 opacity-100 transition-opacity">
                       <Button variant="ghost" size="icon-sm" title="Login As" onClick={() => handleImpersonate(user.id)} disabled={isImpersonating === user.id}>
                         <LogIn className={`h-4 w-4 ${isImpersonating === user.id ? "animate-pulse" : ""}`} />
                       </Button>
