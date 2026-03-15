@@ -3,10 +3,8 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { IconCreditCard, IconLogout, IconNotification, IconUserCircle } from "@tabler/icons-react";
+import { IconCreditCard, IconLogout, IconUserCircle } from "@tabler/icons-react";
 import Link from "next/link";
-
-// import { UserWithPlan } from "@/types/user";
 
 interface SiteHeaderProps {
   user?: {
@@ -51,10 +49,6 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                     <IconCreditCard className="mr-2 size-4" />
                     Billing
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <IconNotification className="mr-2 size-4" />
-                  Notifications
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
