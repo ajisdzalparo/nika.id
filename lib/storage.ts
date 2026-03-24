@@ -1,7 +1,7 @@
 import * as Minio from "minio";
 
 const minioClient = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT || "localhost",
+  endPoint: process.env.MINIO_ENDPOINT || "nikayuk.programmer-ngonten.my.id",
   port: parseInt(process.env.MINIO_PORT || "9000"),
   useSSL: process.env.MINIO_USE_SSL === "true",
   accessKey: process.env.MINIO_ACCESS_KEY || "",

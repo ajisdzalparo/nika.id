@@ -50,7 +50,7 @@ export default async function UserDashboardPage() {
 
   if (!user) redirect("/login");
 
-  const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/${user.invitationSlug || ""}`;
+  const invitationUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://nikayuk.programmer-ngonten.my.id"}/${user.invitationSlug || ""}`;
   const greeting = getGreeting();
 
   return (
