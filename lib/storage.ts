@@ -1,12 +1,15 @@
 import * as Minio from "minio";
 
+const minioEndpoint = (process.env.MINIO_ENDPOINT || "nikayuk.programmer-ngonten.my.id").replace(/^https?:\/\//, "");
+
 const minioClient = new Minio.Client({
-  endPoint: process.env.MINIO_ENDPOINT || "nikayuk.programmer-ngonten.my.id",
+  endPoint: minioEndpoint,
   port: parseInt(process.env.MINIO_PORT || "9000"),
   useSSL: process.env.MINIO_USE_SSL === "true",
   accessKey: process.env.MINIO_ACCESS_KEY || "",
   secretKey: process.env.MINIO_SECRET_KEY || "",
 });
+
 
 const bucketName = process.env.MINIO_BUCKET || "uploads";
 

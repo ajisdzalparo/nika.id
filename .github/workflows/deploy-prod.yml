@@ -1,4 +1,4 @@
-name: Build and Publish Docker Image
+name: Build and Deploy to Production
 
 on:
   push:
@@ -7,10 +7,11 @@ on:
 
 env:
   REGISTRY: ghcr.io
+  # We will lowercase this in the job steps
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push-image:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,10 +21,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Lowercase IMAGE_NAME
+        run: |
+          echo "IMAGE_NAME_LC=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to the Container registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -34,7 +39,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -60,7 +65,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
       - name: Trigger Dokploy Redeploy
         if: success()
         run: |
           curl -X POST "${{ secrets.DOKPLOY_WEBHOOK }}"
+
+      - name: Trigger Coolify Deploy
+        if: success()
+        run: |
+          curl --request GET \
+            --url "${{ secrets.COOLIFY_WEBHOOK }}" \
+            --header "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
