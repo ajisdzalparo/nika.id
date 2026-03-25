@@ -148,7 +148,7 @@ export default async function UserDashboardPage() {
                 <IconBrush size={100} className="text-primary" />
               </div>
               <div className="relative z-10">
-                <div className="w-14 h-14 bg-gradient-to-br from-white to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-lg flex items-center justify-center text-zinc-900 dark:text-white mb-6 shadow-sm border border-white/50 dark:border-white/10 group-hover:scale-110 transition-transform duration-500">
+                <div className="w-14 h-14 bg-linear-to-br from-white to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-lg flex items-center justify-center text-zinc-900 dark:text-white mb-6 shadow-sm border border-white/50 dark:border-white/10 group-hover:scale-110 transition-transform duration-500">
                   <IconBrush size={26} className="text-primary" />
                 </div>
                 <h3 className="font-serif text-2xl font-medium text-zinc-900 dark:text-white mb-2">Editor</h3>
@@ -165,7 +165,7 @@ export default async function UserDashboardPage() {
                 <IconMessage size={100} className="text-primary" />
               </div>
               <div className="relative z-10">
-                <div className="w-14 h-14 bg-gradient-to-br from-white to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-lg flex items-center justify-center text-zinc-900 dark:text-white mb-6 shadow-sm border border-white/50 dark:border-white/10 group-hover:scale-110 transition-transform duration-500">
+                <div className="w-14 h-14 bg-linear-to-br from-white to-zinc-100 dark:from-zinc-800 dark:to-zinc-900 rounded-lg flex items-center justify-center text-zinc-900 dark:text-white mb-6 shadow-sm border border-white/50 dark:border-white/10 group-hover:scale-110 transition-transform duration-500">
                   <IconMessage size={26} className="text-primary" />
                 </div>
                 <h3 className="font-serif text-2xl font-medium text-zinc-900 dark:text-white mb-2">Wishes</h3>
@@ -179,7 +179,7 @@ export default async function UserDashboardPage() {
               className="md:col-span-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border border-transparent p-8 flex items-center justify-between group transition-all hover:scale-[1.01] hover:shadow-2xl shadow-xl overflow-hidden relative"
             >
               {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 dark:via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+              <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 dark:via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
 
               <div className="flex items-center gap-6 relative z-10">
                 <div className="w-20 h-20 rounded-lg bg-white/10 dark:bg-black/5 border border-white/10 dark:border-black/5 flex items-center justify-center text-white dark:text-zinc-900">
