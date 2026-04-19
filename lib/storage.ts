@@ -10,6 +10,11 @@ const minioClient = new Minio.Client({
   secretKey: process.env.MINIO_SECRET_KEY || "",
 });
 
+// Deployments behind Traefik / custom TLS often use chains Node does not trust (UNABLE_TO_VERIFY_LEAF_SIGNATURE).
+// Prefer fixing the server cert chain; use this only when necessary.
+if (process.env.MINIO_SKIP_TLS_VERIFY === "true") {
+  minioClient.setRequestOptions({ rejectUnauthorized: false });
+}
 
 const bucketName = process.env.MINIO_BUCKET || "uploads";
 
