@@ -86,7 +86,7 @@ function LoginForm() {
               className="w-full h-12 text-zinc-700 dark:text-zinc-300 font-medium border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-lg"
             >
               {googleLoading ? <IconLoader2 className="w-5 h-5 animate-spin mr-2" /> : <IconBrandGoogle className="w-5 h-5 mr-2" />}
-              Masuk dengan Google 
+              Masuk dengan Google
             </Button>
 
             <div className="relative">
