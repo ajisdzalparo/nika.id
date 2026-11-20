@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import { getActiveInvitation } from "@/lib/active-invitation";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,8 +14,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "NAME_REQUIRED" }, { status: 400 });
     }
 
+    const active = await getActiveInvitation(session.user.id);
     const guest = await prisma.guest.update({
-      where: { id, userId: session.user.id },
+      where: { id, userId: session.user.id, invitationId: active.id },
       data: { name },
     });
 
@@ -31,7 +32,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const session = await requireAuth(request);
     const { id } = await params;
 
-    await prisma.guest.delete({
+    await prisma.guest.deleteMany({
       where: { id, userId: session.user.id },
     });
 

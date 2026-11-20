@@ -1,75 +1,102 @@
-/* eslint-disable @next/next/no-img-element */
-"use client";
-
 import React from "react";
-import { IconHeart, IconBrandInstagram } from "@tabler/icons-react";
+import { IconBrandInstagram } from "@tabler/icons-react";
 import { WeddingData } from "@/types/wedding";
+import { SectionHeader } from "../shared";
 
-interface CoupleSectionProps {
-  data: WeddingData;
+function CoupleCard({
+  roleLabel,
+  childOfLabel,
+  person,
+}: {
+  roleLabel: string;
+  childOfLabel: string;
+  person: WeddingData["groom"];
+}) {
+  const initial = (person.nickname || person.fullName || "?").trim().charAt(0).toUpperCase();
+
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className="relative mb-6 w-52 sm:w-56">
+        <div
+          className="pointer-events-none absolute -inset-2 rounded-t-full rounded-b-2xl border border-[#C8B08A]/60"
+          aria-hidden="true"
+        />
+        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-full rounded-b-xl border border-[#DFD4C4] bg-[#F1EAE0] shadow-sm">
+          {person.photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={person.photo}
+              alt={person.fullName}
+              className="h-full w-full object-cover transition-transform duration-700 hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center bg-[#EFE8DC] text-[#8C6D3F]">
+              <span className="font-serif text-5xl italic">{initial}</span>
+              <span className="mt-2 text-[10px] uppercase tracking-[0.26em] text-[#9A8B7A]">
+                {roleLabel}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <p className="text-[11px] font-medium uppercase tracking-[0.26em] text-[#9A7B4F]">
+        {roleLabel}
+      </p>
+      <h3 className="mt-2 font-serif text-2xl font-normal text-[#1F1C18] sm:text-[1.75rem]">
+        {person.fullName}
+      </h3>
+      <p className="mt-2 text-xs leading-relaxed text-[#6B6257]">
+        {childOfLabel}
+        <br />
+        <span className="font-medium text-[#3B352D]">
+          {person.fatherName} &amp; {person.motherName}
+        </span>
+      </p>
+
+      {person.instagram ? (
+        <a
+          href={`https://instagram.com/${person.instagram.replace(/^@/, "")}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex items-center gap-1.5 border border-[#DDD2C2] bg-[#FFFDF9] px-3.5 py-1.5 text-xs text-[#5D554B] transition-colors hover:border-[#9A7B4F] hover:text-[#1F1C18]"
+        >
+          <IconBrandInstagram size={14} stroke={1.6} />
+          @{person.instagram.replace(/^@/, "")}
+        </a>
+      ) : null}
+    </div>
+  );
 }
 
-export function CoupleSection({ data }: CoupleSectionProps) {
+export function CoupleSection({ data }: { data: WeddingData }) {
   return (
-    <section className="py-20 px-6 bg-[#FBF7F4]">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12 space-y-3">
-          <p className="text-xs uppercase tracking-[0.4em] text-rose-400 font-semibold">Mempelai</p>
-          <h2 className="text-3xl sm:text-4xl font-serif italic text-gray-900">Pasangan Pengantin</h2>
-          <div className="h-px w-16 bg-rose-300 mx-auto" />
-        </div>
+    <section className="px-5 py-20 sm:px-8 sm:py-24">
+      <div className="mx-auto max-w-4xl space-y-14">
+        <SectionHeader
+          kicker="Mempelai Berbahagia"
+          title="Assalamualaikum Warahmatullahi Wabarakatuh"
+          subtitle="Dengan memohon rahmat dan ridho Allah SWT, kami bermaksud menyelenggarakan pernikahan putra-putri kami:"
+        />
 
-        <div className="grid md:grid-cols-2 gap-12 md:gap-16">
-          {/* Groom */}
-          <div className="text-center space-y-6 animate-in slide-in-from-left duration-700">
-            <div className="relative inline-block">
-              <div className="w-48 h-60 sm:w-56 sm:h-72 rounded-t-full overflow-hidden border-4 border-white shadow-2xl mx-auto bg-gray-100">
-                {data.groom.photo ? <img src={data.groom.photo} alt={data.groom.fullName} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400 text-5xl">🤵</div>}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl sm:text-3xl font-serif italic text-gray-900">{data.groom.fullName}</h3>
-              <p className="text-sm text-gray-500">Putra dari</p>
-              <p className="text-base font-semibold text-gray-700">
-                Bapak {data.groom.fatherName} &amp; Ibu {data.groom.motherName}
-              </p>
-              {data.groom.instagram && (
-                <a href={`https://instagram.com/${data.groom.instagram}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-rose-400 hover:text-rose-500 transition-colors">
-                  <IconBrandInstagram size={16} /> @{data.groom.instagram}
-                </a>
-              )}
+        <div className="grid items-start gap-12 md:grid-cols-[1fr_auto_1fr] md:gap-8">
+          <CoupleCard
+            roleLabel="Mempelai Pria"
+            childOfLabel="Putra dari pasangan"
+            person={data.groom}
+          />
+
+          <div className="flex items-center justify-center md:pt-36">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#D4C4AE] bg-[#FFFDF9] font-serif text-2xl italic text-[#9A7B4F]">
+              &amp;
             </div>
           </div>
 
-          {/* Divider on mobile */}
-          <div className="md:hidden flex items-center justify-center">
-            <div className="flex items-center gap-3">
-              <div className="h-px w-8 bg-rose-200" />
-              <IconHeart size={24} className="text-rose-400 fill-rose-300" />
-              <div className="h-px w-8 bg-rose-200" />
-            </div>
-          </div>
-
-          {/* Bride */}
-          <div className="text-center space-y-6 animate-in slide-in-from-right duration-700">
-            <div className="relative inline-block">
-              <div className="w-48 h-60 sm:w-56 sm:h-72 rounded-t-full overflow-hidden border-4 border-white shadow-2xl mx-auto bg-gray-100">
-                {data.bride.photo ? <img src={data.bride.photo} alt={data.bride.fullName} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-400 text-5xl">👰</div>}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl sm:text-3xl font-serif italic text-gray-900">{data.bride.fullName}</h3>
-              <p className="text-sm text-gray-500">Putri dari</p>
-              <p className="text-base font-semibold text-gray-700">
-                Bapak {data.bride.fatherName} &amp; Ibu {data.bride.motherName}
-              </p>
-              {data.bride.instagram && (
-                <a href={`https://instagram.com/${data.bride.instagram}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-rose-400 hover:text-rose-500 transition-colors">
-                  <IconBrandInstagram size={16} /> @{data.bride.instagram}
-                </a>
-              )}
-            </div>
-          </div>
+          <CoupleCard
+            roleLabel="Mempelai Wanita"
+            childOfLabel="Putri dari pasangan"
+            person={data.bride}
+          />
         </div>
       </div>
     </section>

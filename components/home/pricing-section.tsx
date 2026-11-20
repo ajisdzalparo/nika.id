@@ -20,7 +20,7 @@ const plans = [
       { text: "Link Aktif 7 Hari", included: true },
       { text: "Share Maks. 25 Tamu", included: true },
       { text: "Countdown Timer", included: true },
-      { text: "Ada Watermark nika.id", included: true },
+      { text: "Ada Watermark undangin yuk", included: true },
       { text: "RSVP & Buku Tamu", included: false },
       { text: "Galeri Foto", included: false },
       { text: "Musik Latar", included: false },

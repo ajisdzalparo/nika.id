@@ -450,7 +450,7 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
                 {groomName} & {brideName}
               </h3>
             </FadeInWhenVisible>
-            <div className="pt-16 text-[10px] tracking-[0.3em] uppercase opacity-50">Official Invitation by Nika.id</div>
+            <div className="pt-16 text-[10px] tracking-[0.3em] uppercase opacity-50">Official Invitation by Undangin Yuk</div>
           </div>
         </footer>
       </main>

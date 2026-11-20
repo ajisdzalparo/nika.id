@@ -1,4 +1,4 @@
-export type PlanType = "FREE" | "SILVER" | "GOLD";
+export type PlanType = "FREE" | "HEMAT" | "PREMIUM" | "EKSKLUSIF";
 
 export interface PlanLimits {
   name: string;
@@ -12,41 +12,71 @@ export interface PlanLimits {
   canUseDigitalGift: boolean;
   canUseLoveStory: boolean;
   activeDays: number | null; // null = forever
+  aiDesignQuota: number; // number of AI theme generations included in the plan
   allowedTemplateTypes: ("Gratis" | "Premium")[];
 }
 
+export const GUEST_ADDON_PRICE = 15000;
+export const GUEST_ADDON_SIZE = 100;
+export const PAID_PLANS: PlanType[] = ["HEMAT", "PREMIUM", "EKSKLUSIF"];
+
+const PLAN_ORDER: Record<PlanType, number> = {
+  FREE: 0,
+  HEMAT: 1,
+  PREMIUM: 2,
+  EKSKLUSIF: 3,
+};
+
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
+  // Unpaid accounts stay in draft/preview mode until they pick a paid plan
   FREE: {
-    name: "Free",
+    name: "Pratinjau",
     price: 0,
-    maxGuests: 25,
-    maxGalleryPhotos: 0,
-    canUseMusic: false,
-    canUseRSVP: false,
+    maxGuests: 100,
+    maxGalleryPhotos: 10,
+    canUseMusic: true,
+    canUseRSVP: true,
     canRemoveWatermark: false,
-    canUseVideo: false,
-    canUseDigitalGift: false,
-    canUseLoveStory: false,
-    activeDays: 7,
-    allowedTemplateTypes: ["Gratis"],
+    canUseVideo: true,
+    canUseDigitalGift: true,
+    canUseLoveStory: true,
+    activeDays: null,
+    aiDesignQuota: 1,
+    allowedTemplateTypes: ["Gratis", "Premium"],
   },
-  SILVER: {
-    name: "Silver",
-    price: 99000,
+  HEMAT: {
+    name: "Hemat",
+    price: 49000,
     maxGuests: 100,
     maxGalleryPhotos: 10,
     canUseMusic: true,
     canUseRSVP: true,
     canRemoveWatermark: false,
     canUseVideo: false,
-    canUseDigitalGift: false,
+    canUseDigitalGift: true,
     canUseLoveStory: false,
-    activeDays: 90, // 3 months
+    activeDays: 90,
+    aiDesignQuota: 1,
+    allowedTemplateTypes: ["Gratis"],
+  },
+  PREMIUM: {
+    name: "Premium",
+    price: 79000,
+    maxGuests: 300,
+    maxGalleryPhotos: 20,
+    canUseMusic: true,
+    canUseRSVP: true,
+    canRemoveWatermark: false,
+    canUseVideo: false,
+    canUseDigitalGift: true,
+    canUseLoveStory: true,
+    activeDays: 180,
+    aiDesignQuota: 5,
     allowedTemplateTypes: ["Gratis", "Premium"],
   },
-  GOLD: {
-    name: "Gold",
-    price: 199000,
+  EKSKLUSIF: {
+    name: "Eksklusif",
+    price: 99000,
     maxGuests: Infinity,
     maxGalleryPhotos: Infinity,
     canUseMusic: true,
@@ -55,17 +85,33 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseVideo: true,
     canUseDigitalGift: true,
     canUseLoveStory: true,
-    activeDays: null, // Forever
+    activeDays: null,
+    aiDesignQuota: 10,
     allowedTemplateTypes: ["Gratis", "Premium"],
   },
 };
 
-export function getPlanLimits(plan: PlanType) {
-  return PLAN_LIMITS[plan] || PLAN_LIMITS.FREE;
+export function getPlanLimits(plan: PlanType | string | null | undefined) {
+  if (plan && plan in PLAN_LIMITS) return PLAN_LIMITS[plan as PlanType];
+  return PLAN_LIMITS.FREE;
 }
 
-export function isFeatureEnabled(plan: PlanType, feature: keyof PlanLimits) {
+export function isFeatureEnabled(plan: PlanType | string | null | undefined, feature: keyof PlanLimits) {
   const limits = getPlanLimits(plan);
-  const value = limits[feature];
-  return value === true;
+  return limits[feature] === true;
+}
+
+/** Returns the amount to pay when upgrading from `currentPlan` to `targetPlan` (paying only the difference), or `null` if not an upgrade. */
+export function getUpgradePrice(currentPlan: PlanType | string | null | undefined, targetPlan: PlanType): number | null {
+  if (targetPlan === "FREE") return null;
+  const cur: PlanType = currentPlan && currentPlan in PLAN_LIMITS ? (currentPlan as PlanType) : "FREE";
+  if (PLAN_ORDER[targetPlan] <= PLAN_ORDER[cur]) return null;
+  if (cur === "FREE") return PLAN_LIMITS[targetPlan].price;
+  return Math.max(0, PLAN_LIMITS[targetPlan].price - PLAN_LIMITS[cur].price);
+}
+
+export function getMaxGuests(plan: PlanType | string | null | undefined, extraGuestQuota = 0) {
+  const base = getPlanLimits(plan).maxGuests;
+  if (base === Infinity) return Infinity;
+  return base + Math.max(0, extraGuestQuota);
 }

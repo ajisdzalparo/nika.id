@@ -1,20 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import { getActiveInvitation } from "@/lib/active-invitation";
 import { getTemplateBySlug } from "@/lib/templates";
+import { getPlanLimits, type PlanType } from "@/lib/limits";
 
-// POST /api/user/template - set user's template by slug
+// POST /api/user/template - set active invitation's template by slug
 export async function POST(request: Request) {
   try {
     const session = await requireAuth(request);
     const body = await request.json();
-    const { templateSlug } = body;
+    const { templateSlug, invitationId } = body;
 
     if (!templateSlug || typeof templateSlug !== "string") {
       return NextResponse.json({ error: "TEMPLATE_SLUG_REQUIRED" }, { status: 400 });
     }
 
-    // Validate slug exists in source code registry
     const template = getTemplateBySlug(templateSlug);
     if (!template) {
       return NextResponse.json({ error: "TEMPLATE_NOT_FOUND" }, { status: 404 });
@@ -24,30 +25,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "TEMPLATE_NOT_ACTIVE" }, { status: 400 });
     }
 
-    const user = (await prisma.user.findUnique({
-      where: { id: session.user.id },
-    })) as unknown as import("@/types/user").UserWithPlan;
+    const active = await getActiveInvitation(session.user.id, typeof invitationId === "string" ? invitationId : undefined);
 
-    if (!user) {
-      return NextResponse.json({ error: "USER_NOT_FOUND" }, { status: 404 });
+    if (templateSlug === "ai-design" && !active.activeAiDesignId) {
+      return NextResponse.json({ error: "AI_DESIGN_REQUIRED" }, { status: 400 });
     }
 
-    // Check Plan Limits
-    const { getPlanLimits } = await import("@/lib/limits");
-    const limits = getPlanLimits(user.plan);
-
+    const limits = getPlanLimits(active.plan as PlanType);
     if (!limits.allowedTemplateTypes.includes(template.type)) {
       return NextResponse.json({ error: "PLAN_UPGRADE_REQUIRED" }, { status: 403 });
     }
 
-    await prisma.user.update({
-      where: { id: session.user.id },
+    const updated = await prisma.invitation.update({
+      where: { id: active.id },
       data: { templateSlug },
     });
 
-    return NextResponse.json(user);
+    return NextResponse.json(updated);
   } catch (error) {
-    console.error("Error setting user template:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    }
+    console.error("Error setting template:", error);
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
   }
 }

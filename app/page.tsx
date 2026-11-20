@@ -1,76 +1,44 @@
-"use client";
+import type { Metadata } from "next";
+import { LandingNavbar } from "@/components/landing/navbar";
+import { Hero } from "@/components/landing/hero";
+import { AiDemo, Collection, Faq, Features, FinalCta, LandingFooter, Pricing, Steps, StickyCta } from "@/components/landing/sections";
+import { LandingChatWidget } from "@/components/landing/landing-chat-widget";
+import { L } from "@/components/landing/primitives";
+import { getCatalog } from "@/lib/catalog";
+import { getLandingContent } from "@/lib/landing-content";
+import { getManualPaymentInfo } from "@/lib/payment";
+import { studioDisplay } from "@/lib/studio";
 
-import { useEffect, useRef } from "react";
-import { Navbar } from "@/components/layout/navbar";
-import { HeroSection } from "@/components/home/hero-section";
-import { FeaturesGrid } from "@/components/home/features-grid";
-import { TemplateShowcase } from "@/components/home/template-showcase";
-import { HowItWorks } from "@/components/home/how-it-works";
-import { PricingSection } from "@/components/home/pricing-section";
-import { Testimonials } from "@/components/home/testimonials";
-import { FAQSection } from "@/components/home/faq-section";
-import { Footer } from "@/components/layout/footer";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+export const dynamic = "force-dynamic";
 
-gsap.registerPlugin(ScrollTrigger);
 
-export default function Home() {
-  const mainRef = useRef<HTMLDivElement>(null);
+export const metadata: Metadata = {
+  title: "UNDANGIN YUK · Undangan pernikahan digital dengan Desain AI",
+  description: "Rancang undangan pernikahan digital sesuai konsep kalian dengan AI. RSVP, amplop digital, musik, galeri, dan kirim ke tamu lewat WhatsApp.",
+};
 
-  useEffect(() => {
-    // Page level animations can be added here if needed
-  }, []);
-
+export default async function Home() {
+  const [catalog, { whatsapp }, cms] = await Promise.all([
+    getCatalog(),
+    getManualPaymentInfo(),
+    getLandingContent(),
+  ]);
   return (
-    <div ref={mainRef} className="min-h-screen bg-background">
-      <Navbar />
-
+    <div className={`${studioDisplay.variable} min-h-screen antialiased`} style={{ background: L.bg, color: L.ink }}>
+      <LandingNavbar />
       <main>
-        <HeroSection />
-
-        <FeaturesGrid />
-
-        <TemplateShowcase />
-
-        <HowItWorks />
-
-        <PricingSection />
-
-        <Testimonials />
-
-        <FAQSection />
-
-        {/* Call to Action Section */}
-        <section className="py-24 bg-background">
-          <div className="container mx-auto px-4">
-            <div className="bg-primary rounded-xl p-12 md:p-20 text-center text-primary-foreground shadow-2xl relative overflow-hidden">
-              {/* Decorative circles */}
-              <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
-              <div className="absolute bottom-0 right-0 w-96 h-96 bg-black/10 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
-
-              <div className="relative z-10 max-w-3xl mx-auto">
-                <h2 className="text-4xl md:text-6xl font-bold mb-8 capitalize">
-                  Siap untuk merayakan <br /> momen spesial Anda?
-                </h2>
-                <p className="text-primary-foreground/80 text-xl mb-12 leading-relaxed">Gabung bersama ribuan pasangan lainnya yang telah menggunakan nika.id untuk hari bahagia mereka.</p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button asChild size="lg" variant="secondary" className="text-lg px-8 h-14 rounded-2xl">
-                    <Link href="/register">Buat Undangan Sekarang</Link>
-                  </Button>
-                  <Button asChild size="lg" className="text-lg px-8 h-14 bg-white/10 hover:bg-white/20 border-white/20 backdrop-blur-sm rounded-2xl">
-                    <Link href="/login">Masuk ke Dashboard</Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <Hero content={cms.hero} />
+        <AiDemo />
+        <Collection items={catalog} />
+        <Steps content={cms.steps} />
+        <Features content={cms.features} />
+        <Pricing />
+        <Faq content={cms.faq} />
+        <FinalCta content={cms.finalCta} />
       </main>
-
-      <Footer />
+      <LandingFooter content={cms.footer} />
+      <StickyCta />
+      <LandingChatWidget whatsapp={whatsapp} />
     </div>
   );
 }
