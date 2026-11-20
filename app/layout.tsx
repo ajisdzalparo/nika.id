@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -19,7 +19,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nika.id - Platform Undangan Digital",
+  title: "UNDANGIN YUK - Platform Undangan Digital",
   description: "Buat undangan pernikahan digital impianmu dengan mudah dan cepat.",
 };
 
@@ -32,7 +32,7 @@ export default function RootLayout({
     <html lang="id">
       <body className={`${inter.variable} ${playfair.variable} ${mono.variable} antialiased bg-background text-foreground`}>
         {children}
-        <Toaster position="top-center" richColors />
+        <Toaster position="top-center" />
       </body>
     </html>
   );

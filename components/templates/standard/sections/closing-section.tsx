@@ -1,32 +1,47 @@
-"use client";
-
 import React from "react";
-import { IconHeart } from "@tabler/icons-react";
 import { WeddingData } from "@/types/wedding";
+import { BotanicalDivider, extractInitials } from "../shared";
 
-interface ClosingSectionProps {
-  data: WeddingData;
-}
+export function ClosingSection({ data }: { data: WeddingData }) {
+  const initials = extractInitials(data.groom.nickname, data.bride.nickname);
 
-export function ClosingSection({ data }: ClosingSectionProps) {
   return (
-    <>
-      <section className="py-20 px-6 bg-linear-to-b from-white to-rose-50 text-center">
-        <div className="max-w-lg mx-auto space-y-6">
-          <p className="text-sm text-gray-500 leading-relaxed">Atas kehadiran dan doa restunya kami ucapkan terima kasih</p>
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.4em] text-rose-400 font-semibold">Kami Yang Berbahagia</p>
-            <h2 className="text-4xl sm:text-5xl font-serif italic text-gray-900">
-              {data.groom.nickname} &amp; {data.bride.nickname}
-            </h2>
-          </div>
-          <IconHeart size={24} className="mx-auto text-rose-300 fill-rose-300" />
+    <footer className="bg-[#1E1B17] px-6 py-20 text-center text-[#F4EDE2]">
+      <div className="mx-auto max-w-xl space-y-6">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#C8B08A]/50 font-serif text-sm tracking-wider text-[#D8C49E]">
+          {initials.a}
+          <span className="mx-0.5 text-[11px] italic">&amp;</span>
+          {initials.b}
         </div>
-      </section>
 
-      <footer className="py-8 px-6 bg-gray-900 text-center">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">Design with 💕 by nika.id</p>
-      </footer>
-    </>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-[#C8B08A]">
+          Terima Kasih
+        </p>
+
+        <p className="font-serif text-base italic leading-relaxed text-[#DDD3C4] sm:text-lg">
+          Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i
+          berkenan hadir untuk memberikan doa restu kepada kedua mempelai.
+        </p>
+
+        <BotanicalDivider tone="light" className="py-1" />
+
+        <div className="space-y-1.5">
+          <p className="text-xs uppercase tracking-[0.22em] text-[#AFA596]">
+            Kami yang berbahagia
+          </p>
+          <p className="font-serif text-3xl font-normal text-[#FFFDF9] sm:text-4xl">
+            {data.groom.nickname}
+            <span className="mx-2 font-serif italic text-[#C8B08A]">&amp;</span>
+            {data.bride.nickname}
+          </p>
+        </div>
+
+        <div className="border-t border-white/10 pt-8">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-[#9A9082]">
+            Dibuat dengan UNDANGIN YUK
+          </p>
+        </div>
+      </div>
+    </footer>
   );
 }

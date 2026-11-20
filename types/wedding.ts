@@ -1,3 +1,6 @@
+import type { AiTheme } from "@/lib/ai-design/schema";
+import type { Wish } from "@/lib/rsvp";
+
 export interface BankAccount {
   bankName: string;
   accountHolder: string;
@@ -12,6 +15,9 @@ export interface WeddingEvent {
   venue: string;
   address: string;
   mapUrl: string;
+  // Pinned location from the map picker (optional; older data only has mapUrl)
+  lat?: number;
+  lng?: number;
 }
 
 export interface WeddingData {
@@ -84,4 +90,8 @@ export interface WeddingData {
   };
   rsvpDeadline?: string | Date;
   extra?: Record<string, string | number | boolean>;
+  // Theme for the "ai-design" template, attached server-side from the user's active AiDesign
+  aiTheme?: AiTheme;
+  // Guest wishes shown under the RSVP form (latest first, rejected ones excluded)
+  wishes?: Wish[];
 }

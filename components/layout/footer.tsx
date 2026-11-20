@@ -8,13 +8,9 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand Column */}
           <div className="space-y-6">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
-                <IconHeart size={18} fill="currentColor" />
-              </div>
-              <span className="text-xl font-bold text-foreground">
-                nika<span className="text-primary">.id</span>
-              </span>
+            <Link href="/" className="inline-flex items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="UNDANGIN YUK" className="h-8 w-auto object-contain" />
             </Link>
             <p className="text-muted-foreground leading-relaxed max-w-xs">Membantu setiap pasangan menciptakan undangan digital yang indah dan berkesan untuk hari bahagia mereka.</p>
             <div className="flex items-center gap-4">
@@ -96,7 +92,7 @@ export function Footer() {
         </div>
 
         <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Nika.id. Seluruh hak cipta dilindungi.</p>
+          <p>© {new Date().getFullYear()} UNDANGIN YUK. Seluruh hak cipta dilindungi.</p>
           <div className="flex items-center gap-1">
             Dibuat dengan <IconHeart className="text-primary fill-primary" size={14} /> untuk Cinta
           </div>

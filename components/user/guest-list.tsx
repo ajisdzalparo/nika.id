@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { IconCopy, IconTrash, IconBrandWhatsapp, IconUsers, IconShare, IconSearch, IconUserPlus } from "@tabler/icons-react";
+import { IconCopy, IconTrash, IconBrandWhatsapp, IconUsers, IconSearch, IconUserPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -12,22 +12,24 @@ interface Guest {
   name: string;
 }
 
-import { PlanType, getPlanLimits } from "@/lib/limits";
+import { PlanType, getMaxGuests, getPlanLimits } from "@/lib/limits";
 
 interface GuestListProps {
   initialGuests: Guest[];
   invitationSlug: string;
   userPlan: PlanType;
+  extraGuestQuota?: number;
 }
 
-export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestListProps) {
+export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQuota = 0 }: GuestListProps) {
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
   const [newName, setNewName] = useState("");
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
   const limits = getPlanLimits(userPlan);
-  const isLimitReached = guests.length >= limits.maxGuests;
+  const maxGuests = getMaxGuests(userPlan, extraGuestQuota);
+  const isLimitReached = guests.length >= maxGuests;
 
   const baseUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${invitationSlug}`;
 
@@ -102,7 +104,7 @@ export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestList
       {/* Sidebar: Add Guest & Group Actions */}
       <div className="space-y-6 lg:sticky lg:top-24">
         {/* Add Guest Form */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-zinc-200/50 dark:shadow-black/20">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 border border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <IconUserPlus size={20} />
@@ -110,7 +112,7 @@ export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestList
             <div>
               <h3 className="font-serif text-lg font-medium">Tambah Tamu</h3>
               <p className="text-xs text-muted-foreground">
-                Total: {guests.length} / {limits.maxGuests === Infinity ? "Unlimited" : limits.maxGuests}
+                Total: {guests.length} / {maxGuests === Infinity ? "Unlimited" : maxGuests}
               </p>
             </div>
           </div>
@@ -141,20 +143,17 @@ export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestList
         </div>
 
         {/* Group Actions */}
-        <div className="bg-zinc-900 dark:bg-zinc-800 rounded-xl p-6 shadow-xl text-white relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-            <IconShare size={100} className="text-primary" />
-          </div>
+        <div className="bg-zinc-900 dark:bg-zinc-800 rounded-xl p-6 shadow-sm text-white relative overflow-hidden group">
 
-          <h3 className="font-serif text-xl font-medium mb-1 relative z-10 text-primary">Bagikan Undangan</h3>
+          <h3 className="font-serif text-2xl font-medium mb-1 relative z-10 text-[#C9A45C]">Bagikan undangan</h3>
           <p className="text-zinc-400 text-sm mb-6 relative z-10">Untuk grup WA atau sosial media.</p>
 
           <div className="space-y-3 relative z-10">
-            <Button onClick={copyGeneralLink} variant="secondary" className="w-full justify-start h-12 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-white backdrop-blur-sm">
+            <Button onClick={copyGeneralLink} variant="secondary" className="w-full justify-start h-12 rounded-full border border-white/15 bg-white/5 px-5 text-[#F3EBDD] hover:bg-white/10">
               <IconCopy className="w-5 h-5 mr-3" />
               Salin Link Umum
             </Button>
-            <Button onClick={shareGroupWA} className="w-full justify-start h-12 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
+            <Button onClick={shareGroupWA} className="w-full justify-start h-12 rounded-full bg-[#F3EBDD] px-5 text-[#15130F] hover:bg-white">
               <IconBrandWhatsapp className="w-5 h-5 mr-3" />
               Share ke Grup
             </Button>
@@ -166,14 +165,14 @@ export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestList
       {/* Main Content: Guest List */}
       <div className="lg:col-span-2 space-y-4">
         {/* Search Bar */}
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md rounded-xl p-2 border border-zinc-200 dark:border-zinc-800 flex items-center gap-2 shadow-sm">
+        <div className="bg-white rounded-xl p-2 border border-zinc-200 dark:border-zinc-800 flex items-center gap-2 shadow-sm">
           <div className="w-10 h-10 flex items-center justify-center text-zinc-400">
             <IconSearch size={20} />
           </div>
           <input type="text" placeholder="Cari nama tamu..." className="flex-1 bg-transparent border-none outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
 
-        <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden min-h-[400px]">
+        <div className="bg-white rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden min-h-[400px]">
           {filteredGuests.length > 0 ? (
             <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
               {filteredGuests.map((guest) => (

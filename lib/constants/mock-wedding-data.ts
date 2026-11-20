@@ -33,7 +33,9 @@ export const MOCK_WEDDING_DATA: WeddingData = {
       time: "08:00 - 10:00",
       venue: "Masjid Agung Jakarta",
       address: "Jl. Lapangan Banteng Barat No.1, Jakarta Pusat",
-      mapUrl: "https://maps.google.com",
+      mapUrl: "",
+      lat: -6.170166,
+      lng: 106.831375,
     },
     {
       id: "2",
@@ -42,7 +44,9 @@ export const MOCK_WEDDING_DATA: WeddingData = {
       time: "11:00 - 14:00",
       venue: "Ballroom Hotel Indonesia",
       address: "Jl. M.H. Thamrin No. 1, Jakarta Pusat",
-      mapUrl: "https://maps.google.com",
+      mapUrl: "",
+      lat: -6.195232,
+      lng: 106.822906,
     },
   ],
   gallery: [
@@ -93,4 +97,9 @@ export const MOCK_WEDDING_DATA: WeddingData = {
     enabled: false,
     url: "",
   },
+  wishes: [
+    { guestName: "Rina & keluarga", message: "Selamat menempuh hidup baru, Adit & Sarah! Semoga menjadi keluarga yang sakinah, mawaddah, warahmah.", createdAt: "2026-11-18T09:12:00.000Z" },
+    { guestName: "Bima Saputra", message: "Barakallahu lakuma wa baraka alaikuma. Sampai jumpa di hari bahagia kalian!", createdAt: "2026-11-17T14:40:00.000Z" },
+    { guestName: "Tante Lia", message: "Bahagia selalu, langgeng sampai kakek nenek.", createdAt: "2026-11-15T07:05:00.000Z" },
+  ],
 };

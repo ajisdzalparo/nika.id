@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { IconHeart, IconCalendar, IconPhoto, IconSparkles, IconDeviceFloppy } from "@tabler/icons-react";
+import { IconHeart, IconCalendar, IconPhoto, IconAdjustmentsHorizontal, IconDeviceFloppy, IconLoader2 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { WeddingData } from "@/types/wedding";
 import { MempelaiSection } from "./editor/mempelai-section";
@@ -36,7 +36,7 @@ const SECTIONS = [
   { id: "mempelai", label: "Mempelai", icon: IconHeart },
   { id: "acara", label: "Acara", icon: IconCalendar },
   { id: "galeri", label: "Galeri", icon: IconPhoto },
-  { id: "fitur", label: "Fitur", icon: IconSparkles },
+  { id: "fitur", label: "Fitur", icon: IconAdjustmentsHorizontal },
 ] as const;
 
 export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
@@ -120,7 +120,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
 
     toast.promise(promise, {
       loading: "Mengupload foto...",
-      success: "Foto berhasil diunggah! ✨",
+      success: "Foto berhasil diunggah",
       error: "Gagal mengupload foto",
     });
   };
@@ -162,7 +162,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
 
       if (!response.ok) throw new Error("Gagal menyimpan data");
 
-      toast.success("Undangan berhasil diperbarui! ✨");
+      toast.success("Undangan berhasil diperbarui");
     } catch (error) {
       toast.error("Terjadi kesalahan saat menyimpan");
       console.error(error);
@@ -172,69 +172,94 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)] relative">
-      {/* Sidebar Navigation */}
-      <aside className="lg:w-64 shrink-0 lg:sticky lg:top-24 self-start space-y-4">
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-800 shadow-sm">
-          <h2 className="px-4 mb-2 text-xs font-bold text-zinc-400 uppercase tracking-widest">Navigasi</h2>
-          <nav className="flex flex-col gap-2">
-            {SECTIONS.map((section) => (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={cn(
-                  "flex items-center gap-4 px-6 py-4 rounded-lg text-sm font-medium transition-all text-left relative overflow-hidden group border",
-                  activeSection === section.id
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-zinc-900 dark:border-white shadow-xl"
-                    : "bg-white/50 dark:bg-white/5 border-transparent hover:bg-white hover:border-zinc-200 dark:hover:bg-white/10 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
-                )}
-              >
-                <div
+    <div className="relative flex flex-col gap-6 lg:flex-row lg:gap-8">
+      {/* Mobile Horizontal Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] lg:hidden">
+        {SECTIONS.map((section, idx) => {
+          const active = activeSection === section.id;
+          return (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => setActiveSection(section.id)}
+              className={cn(
+                "flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-all",
+                active ? "border-[#1E1B17] bg-[#1E1B17] text-[#F7F3EC]" : "border-[#E1D8C9] bg-[#FFFDF9] text-[#6B6358]",
+              )}
+            >
+              <section.icon size={16} strokeWidth={1.7} />
+              <span>{String(idx + 1).padStart(2, "0")}. {section.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Desktop Sidebar Navigation */}
+      <aside className="hidden lg:block lg:w-64 shrink-0 lg:sticky lg:top-24 self-start space-y-4">
+        <div className="rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-3">
+          <h2 className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8C8272]">Navigasi</h2>
+          <nav className="flex flex-col gap-1.5">
+            {SECTIONS.map((section, idx) => {
+              const active = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => setActiveSection(section.id)}
                   className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
-                    activeSection === section.id ? "bg-white/20 text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-white/5 text-zinc-400 group-hover:scale-110 group-hover:text-primary",
+                    "flex items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-medium transition-all",
+                    active ? "bg-[#1E1B17] text-[#F7F3EC] shadow-xs" : "text-[#6B6358] hover:bg-[#F7F3EC] hover:text-[#1E1B17]",
                   )}
                 >
-                  <section.icon size={20} strokeWidth={1.5} />
-                </div>
-                <span className="tracking-wide relative z-10">{section.label}</span>
-
-                {activeSection === section.id && <div className="absolute inset-0 bg-linear-to-r from-white/10 to-transparent pointer-events-none" />}
-              </button>
-            ))}
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+                      active ? "bg-white/15 text-[#C9A45C]" : "bg-[#EFE8DC] text-[#8A6A2F]",
+                    )}
+                  >
+                    <section.icon size={17} strokeWidth={1.7} />
+                  </span>
+                  <span className="flex-1 truncate">{section.label}</span>
+                  <span className={cn("text-[11px] tabular-nums", active ? "text-[#B8AD9A]" : "text-[#A59B8C]")}>{String(idx + 1).padStart(2, "0")}</span>
+                </button>
+              );
+            })}
           </nav>
         </div>
 
-        <div className="bg-zinc-900 dark:bg-zinc-800 rounded-xl p-6 text-white shadow-xl relative overflow-hidden group">
-          {/* Ambient Gold Glow */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
-
-          <h3 className="font-serif text-lg font-medium mb-1 relative z-10 text-primary">Sudah Selesai?</h3>
-          <p className="text-zinc-400 text-sm mb-4 relative z-10">Simpan perubahan untuk memperbarui undangan.</p>
-          <Button onClick={onSave} disabled={loading} className="bg-linear-to-r from-primary to-amber-600 hover:from-primary/90 hover:to-amber-600/90 text-white rounded-full px-8 shadow-lg shadow-primary/20">
-            {loading ? <span className="animate-spin mr-2">⏳</span> : <IconDeviceFloppy className="w-4 h-4 mr-2" />}
-            Simpan
+        <div className="rounded-2xl bg-[#15130F] p-5 text-[#F3EBDD]">
+          <h3 className="font-serif text-2xl font-medium text-[#C9A45C]">Sudah selesai?</h3>
+          <p className="mt-1 mb-4 text-sm leading-relaxed text-[#B8AD9A]">Simpan perubahan untuk memperbarui undangan.</p>
+          <Button onClick={onSave} disabled={loading} className="h-11 w-full rounded-full bg-[#F3EBDD] text-[#15130F] hover:bg-white">
+            {loading ? <IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> : <IconDeviceFloppy className="mr-2 h-4 w-4" />}
+            {loading ? "Menyimpan..." : "Simpan Perubahan"}
           </Button>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0">
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 md:p-8 border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-[600px] relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-zinc-50 dark:bg-zinc-800 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
-          <div className="relative z-10">
-            <div className="mb-8">
-              <h1 className="font-serif text-3xl font-medium text-zinc-900 dark:text-zinc-100">{SECTIONS.find((s) => s.id === activeSection)?.label}</h1>
-              <p className="text-zinc-500 dark:text-zinc-400">
-                {activeSection === "mempelai" && "Informasi data kedua mempelai."}
-                {activeSection === "acara" && "Jadwal dan lokasi acara pernikahan."}
-                {activeSection === "galeri" && "Foto, video, dan cerita cinta."}
-                {activeSection === "fitur" && "Pengaturan musik, hadiah, dan lainnya."}
+        <div className="rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-7">
+          <div className="mb-7 flex flex-col justify-between gap-4 border-b border-[#E1D8C9] pb-5 sm:flex-row sm:items-end">
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#8A6A2F]">
+                Bagian {String(SECTIONS.findIndex((s) => s.id === activeSection) + 1).padStart(2, "0")}
+              </p>
+              <h1 className="mt-1 font-serif text-3xl font-medium text-[#1E1B17]">{SECTIONS.find((s) => s.id === activeSection)?.label}</h1>
+              <p className="mt-1 text-sm text-[#6B6358]">
+                {activeSection === "mempelai" && "Lengkapi nama panggilan, nama lengkap, dan orang tua kedua mempelai."}
+                {activeSection === "acara" && "Atur jadwal, lokasi peta, serta live streaming acara pernikahan."}
+                {activeSection === "galeri" && "Tambahkan video prewedding dan foto galeri pilihan Anda."}
+                {activeSection === "fitur" && "Atur musik latar (YouTube atau S3), amplop digital, turut mengundang, dan kisah cinta."}
               </p>
             </div>
+            <Button onClick={onSave} disabled={loading} className="h-11 shrink-0 rounded-full bg-[#1E1B17] px-6 text-[#F7F3EC] hover:bg-[#2E2A24] lg:hidden">
+              {loading ? <IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> : <IconDeviceFloppy className="mr-2 h-4 w-4" />}
+              {loading ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
 
+          <div key={activeSection} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             {activeSection === "mempelai" && <MempelaiSection data={data} handleUpdate={handleUpdate} handleFileUpload={handleFileUpload} renderExtraFields={renderExtraFields} />}
             {activeSection === "acara" && <AcaraSection data={data} setData={setData} />}
             {activeSection === "galeri" && <GaleriSection data={data} setData={setData} renderExtraFields={renderExtraFields} />}

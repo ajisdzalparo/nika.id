@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
-
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import { getActiveInvitation } from "@/lib/active-invitation";
+import { getMaxGuests, type PlanType } from "@/lib/limits";
 
-// GET /api/user/guests - list guests for current user
+// GET /api/user/guests - list guests for active invitation
 export async function GET(request: Request) {
   try {
     const session = await requireAuth(request);
+    const invitation = await getActiveInvitation(session.user.id);
 
     const guests = await prisma.guest.findMany({
-      where: { userId: session.user.id },
+      where: { invitationId: invitation.id },
       orderBy: { createdAt: "desc" },
     });
 
@@ -20,7 +22,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /api/user/guests - create guest for current user
+// POST /api/user/guests - create guest for active invitation
 export async function POST(request: Request) {
   try {
     const session = await requireAuth(request);
@@ -31,9 +33,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "NAME_REQUIRED" }, { status: 400 });
     }
 
+    const invitation = await getActiveInvitation(session.user.id);
+    const count = await prisma.guest.count({ where: { invitationId: invitation.id } });
+
+    const maxGuests = getMaxGuests(invitation.plan as PlanType, invitation.extraGuestQuota ?? 0);
+    if (count >= maxGuests) {
+      return NextResponse.json({ error: "GUEST_LIMIT_REACHED", message: `Batas ${maxGuests} tamu tercapai. Tingkatkan paket atau beli add-on +100 tamu.` }, { status: 403 });
+    }
+
     const guest = await prisma.guest.create({
       data: {
         userId: session.user.id,
+        invitationId: invitation.id,
         name,
       },
     });

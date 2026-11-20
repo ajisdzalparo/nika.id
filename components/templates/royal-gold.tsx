@@ -408,7 +408,7 @@ export default function RoyalGold({ data }: { data: WeddingData }) {
             <h1 className="text-5xl font-light italic">
               {groomName} &amp; {brideName}
             </h1>
-            <p className="text-xs uppercase tracking-widest pt-12 opacity-30 font-sans">Official Invitation by Nika.id</p>
+            <p className="text-xs uppercase tracking-widest pt-12 opacity-30 font-sans">Official Invitation by Undangin Yuk</p>
           </div>
         </footer>
       </main>

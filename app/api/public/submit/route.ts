@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { checkChatRateLimit } from "@/lib/chat-security";
+import { createNotification } from "@/lib/notifications";
 import { NextResponse } from "next/server";
 
 const MAX_GUEST_NAME_LENGTH = 100;
@@ -15,19 +17,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "SLUG_REQUIRED" }, { status: 400 });
     }
 
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+    if (!checkChatRateLimit(`public-submit:${clientIp}:${slug}`, 15, 60_000)) {
+      return NextResponse.json({ error: "RATE_LIMITED", message: "Terlalu banyak kiriman. Coba lagi nanti." }, { status: 429 });
+    }
+
     if (!type || !["RSVP", "MESSAGE"].includes(type)) {
       return NextResponse.json({ error: "INVALID_TYPE" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { invitationSlug: slug },
-    });
+    let invitation = await prisma.invitation.findUnique({ where: { slug } });
+    let userId = invitation?.userId;
 
-    if (!user) {
+    if (!invitation) {
+      const legacyUser = await prisma.user.findUnique({
+        where: { invitationSlug: slug },
+        include: { invitations: { orderBy: { createdAt: "asc" }, take: 1 } },
+      });
+      if (!legacyUser) {
+        return NextResponse.json({ error: "USER_NOT_FOUND" }, { status: 404 });
+      }
+      userId = legacyUser.id;
+      invitation = legacyUser.invitations[0] ?? null;
+    }
+
+    if (!userId) {
       return NextResponse.json({ error: "USER_NOT_FOUND" }, { status: 404 });
     }
 
-    // Sanitize guest name
     const guestName = String(body.guestName ?? "")
       .trim()
       .slice(0, MAX_GUEST_NAME_LENGTH);
@@ -45,11 +62,20 @@ export async function POST(req: Request) {
 
       const rsvp = await prisma.rSVP.create({
         data: {
-          userId: user.id,
+          userId,
+          invitationId: invitation?.id ?? null,
           guestName,
           attendance,
           guests,
         },
+      });
+      await createNotification({
+        audience: "USER",
+        userId,
+        type: "RSVP",
+        title: `RSVP baru · ${guestName}`,
+        message: `Konfirmasi ${attendance} untuk ${guests} tamu${invitation?.title ? ` (${invitation.title})` : ""}.`,
+        href: "/buku-tamu",
       });
       return NextResponse.json(rsvp);
     }
@@ -64,11 +90,20 @@ export async function POST(req: Request) {
 
       const msg = await prisma.guestMessage.create({
         data: {
-          userId: user.id,
+          userId,
+          invitationId: invitation?.id ?? null,
           guestName,
           message,
           status: "PENDING",
         },
+      });
+      await createNotification({
+        audience: "USER",
+        userId,
+        type: "RSVP",
+        title: `Ucapan baru dari ${guestName}`,
+        message: message.slice(0, 120),
+        href: "/buku-tamu",
       });
       return NextResponse.json(msg);
     }

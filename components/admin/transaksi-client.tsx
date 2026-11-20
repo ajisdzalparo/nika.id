@@ -17,6 +17,7 @@ interface Transaction {
   id: string;
   userId: string;
   amount: number;
+  plan?: string | null;
   status: string;
   paymentProof: string | null;
   paymentMethod: string | null;
@@ -119,6 +120,8 @@ export function TransactionsClient({ initialTransactions }: TransactionsClientPr
                   <TableCell className="font-mono text-xs text-muted-foreground lowercase">#{t.id.slice(-8)}</TableCell>
                   <TableCell>
                     <span className="font-semibold">Rp {t.amount.toLocaleString("id-ID")}</span>
+                    {t.plan && <span className="ml-2 rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-600">Paket {t.plan}</span>}
+                    {t.paymentMethod === "MANUAL_TRANSFER" && <span className="ml-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-600">Transfer manual</span>}
                   </TableCell>
                   <TableCell>{getStatusBadge(t.status)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">

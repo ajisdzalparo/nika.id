@@ -10,8 +10,8 @@ import Link from "next/link";
 
 const data = {
   user: {
-    name: "Nika",
-    email: "nika@nika.id",
+    name: "Undangin Yuk",
+    email: "halo@undanginyuk.id",
     avatar: "/logo",
   },
   navMain: [
@@ -49,7 +49,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" className="data-[slot=sidebar-menu-button]:p-1.5!" tooltip="nika.id">
+            <SidebarMenuButton asChild size="lg" className="data-[slot=sidebar-menu-button]:p-1.5!" tooltip="undangin yuk">
               <Link href="/" className="flex items-center gap-2">
                 <div className="flex aspect-square size-28 items-center justify-center rounded-lg overflow-hidden">
                   <Image src="/logo-transparan.png" alt="Logo" width={120} height={120} />

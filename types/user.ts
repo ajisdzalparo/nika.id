@@ -8,7 +8,9 @@ export interface UserWithPlan {
   image: string | null;
   plan: PlanType;
   planExpiresAt?: Date | string | null;
+  extraGuestQuota?: number;
   templateSlug?: string | null;
+  activeAiDesignId?: string | null;
   weddingDate?: Date | string | null;
   invitationSlug: string | null;
   invitation?: {

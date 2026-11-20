@@ -223,3 +223,183 @@
   }
 }
 
+
+/* ─────────────────────────────────────────────────────────────
+   Studio theme: ivory, ink and antique gold (same as the landing page).
+   Applied with the `studio` class on the user, auth and admin shells.
+   Tailwind v4 colours are CSS variables, so remapping them here restyles
+   every shadcn component and every hard-coded zinc/gray/pink/purple class
+   inside the scope without touching each page.
+   ───────────────────────────────────────────────────────────── */
+.studio {
+  --background: #f7f3ec;
+  --foreground: #1e1b17;
+  --card: #fffdf9;
+  --card-foreground: #1e1b17;
+  --popover: #fffdf9;
+  --popover-foreground: #1e1b17;
+  --primary: #1e1b17;
+  --primary-foreground: #f7f3ec;
+  --secondary: #efe8dc;
+  --secondary-foreground: #1e1b17;
+  --muted: #f1ece3;
+  --muted-foreground: #6b6358;
+  --accent: #efe8dc;
+  --accent-foreground: #1e1b17;
+  --border: #e1d8c9;
+  --input: #e1d8c9;
+  --ring: #8a6a2f;
+  --radius: 0.75rem;
+
+  /* Warm neutrals instead of cold greys */
+  --color-white: #fffdf9;
+  --color-zinc-50: #f7f3ec;
+  --color-zinc-100: #efe9df;
+  --color-zinc-200: #e1d8c9;
+  --color-zinc-300: #cfc5b4;
+  --color-zinc-400: #a59b8c;
+  --color-zinc-500: #7d7468;
+  --color-zinc-600: #6b6358;
+  --color-zinc-700: #4a443b;
+  --color-zinc-800: #2e2a24;
+  --color-zinc-900: #1e1b17;
+  --color-zinc-950: #15130f;
+  --color-gray-50: #f7f3ec;
+  --color-gray-100: #efe9df;
+  --color-gray-200: #e1d8c9;
+  --color-gray-300: #cfc5b4;
+  --color-gray-400: #a59b8c;
+  --color-gray-500: #7d7468;
+  --color-gray-600: #6b6358;
+  --color-gray-700: #4a443b;
+  --color-gray-800: #2e2a24;
+  --color-gray-900: #1e1b17;
+
+  /* The old pink/purple brand accents become antique gold and bronze */
+  --color-pink-50: #fbf6ec;
+  --color-pink-100: #f4ead6;
+  --color-pink-200: #e9d6ae;
+  --color-pink-300: #d9bc83;
+  --color-pink-400: #c9a45c;
+  --color-pink-500: #a9824b;
+  --color-pink-600: #8a6a2f;
+  --color-pink-700: #6e5426;
+  --color-rose-50: #fbf6ec;
+  --color-rose-100: #f4ead6;
+  --color-rose-400: #c9a45c;
+  --color-rose-500: #a9824b;
+  --color-rose-600: #8a6a2f;
+  --color-purple-50: #f8f3ee;
+  --color-purple-100: #efe4da;
+  --color-purple-200: #e0cbb8;
+  --color-purple-300: #cbaa8e;
+  --color-purple-400: #b48a68;
+  --color-purple-500: #9a6e4d;
+  --color-purple-600: #7e583c;
+  --color-purple-700: #63452f;
+  --color-amber-50: #fbf6ec;
+  --color-amber-100: #f4ead6;
+  --color-amber-400: #c9a45c;
+  --color-amber-500: #a9824b;
+  --color-amber-600: #8a6a2f;
+  --color-amber-700: #6e5426;
+
+  /* Quiet, warm shadows */
+  --shadow-2xs: 0 1px 2px rgb(30 27 23 / 0.04);
+  --shadow-xs: 0 1px 2px rgb(30 27 23 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(30 27 23 / 0.06);
+  --shadow: 0 2px 6px rgb(30 27 23 / 0.06);
+  --shadow-md: 0 4px 12px -4px rgb(30 27 23 / 0.1);
+  --shadow-lg: 0 10px 24px -10px rgb(30 27 23 / 0.14);
+  --shadow-xl: 0 16px 32px -14px rgb(30 27 23 / 0.16);
+  --shadow-2xl: 0 24px 48px -20px rgb(30 27 23 / 0.2);
+
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Headings using `font-serif` pick up the landing display face inside the studio */
+.studio .font-serif {
+  font-family: var(--font-landing-display), "Cormorant Garamond", Georgia, serif;
+  font-variant-numeric: lining-nums;
+}
+
+/* Semantic shadcn tokens at the root as well, so portalled popovers, dialogs
+   and toasts (rendered outside .studio) use the same palette. Invitation
+   templates do not use these tokens, so their designs are unaffected. */
+:root {
+  --background: #f7f3ec;
+  --foreground: #1e1b17;
+  --card: #fffdf9;
+  --card-foreground: #1e1b17;
+  --popover: #fffdf9;
+  --popover-foreground: #1e1b17;
+  --primary: #1e1b17;
+  --primary-foreground: #f7f3ec;
+  --secondary: #efe8dc;
+  --secondary-foreground: #1e1b17;
+  --muted: #f1ece3;
+  --muted-foreground: #6b6358;
+  --accent: #efe8dc;
+  --accent-foreground: #1e1b17;
+  --border: #e1d8c9;
+  --input: #e1d8c9;
+  --ring: #8a6a2f;
+  --radius: 0.75rem;
+}
+
+@keyframes uy-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes uy-sway {
+  0%,
+  100% {
+    transform: rotate(-1.5deg) translateY(0px);
+  }
+  50% {
+    transform: rotate(1.5deg) translateY(-2px);
+  }
+}
+
+@keyframes uy-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-uy-float {
+  animation: uy-float 6s ease-in-out infinite;
+}
+
+.animate-uy-float-delayed {
+  animation: uy-float 7s ease-in-out 1.4s infinite;
+}
+
+.animate-uy-sway {
+  animation: uy-sway 7s ease-in-out infinite;
+  transform-origin: center top;
+}
+
+.animate-uy-progress {
+  animation: uy-progress 7s linear forwards;
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-uy-float,
+  .animate-uy-float-delayed,
+  .animate-uy-sway,
+  .animate-uy-progress {
+    animation: none !important;
+  }
+}

@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @next/next/no-img-element */
+import { IconHeart, IconTrash, IconUpload, IconUser } from "@tabler/icons-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { IconUpload } from "@tabler/icons-react";
-import Image from "next/image";
 
 interface MempelaiSectionProps {
   data: any;
@@ -18,100 +17,118 @@ export function MempelaiSection({ data, handleUpdate, handleFileUpload, renderEx
     const isGroom = type === "groom";
 
     return (
-      <div className="bg-zinc-50 dark:bg-zinc-950/50 rounded-[2rem] p-6 border border-zinc-100 dark:border-zinc-800/50">
-        <div className="flex items-center gap-4 mb-6">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm ${isGroom ? "bg-blue-100 text-blue-500" : "bg-pink-100 text-pink-500"}`}>{isGroom ? "👨‍⚖️" : "👰‍♀️"}</div>
+      <section className="rounded-2xl border border-[#E1D8C9] bg-[#F7F3EC]/55 p-5 sm:p-6">
+        <div className="mb-6 flex items-center gap-3.5 border-b border-[#E1D8C9]/80 pb-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFE8DC] text-[#8A6A2F]">
+            {isGroom ? <IconUser size={20} stroke={1.7} /> : <IconHeart size={20} stroke={1.7} />}
+          </span>
           <div>
-            <h3 className="font-serif text-xl font-medium text-zinc-900 dark:text-zinc-100">{label}</h3>
-            <p className="text-xs text-zinc-500 uppercase tracking-widest">Data Utama</p>
+            <h3 className="font-serif text-xl font-medium text-[#1E1B17]">{label}</h3>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[#6B6358]">Data Utama</p>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_210px] md:items-start">
+          {/* Fields */}
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-zinc-500 uppercase">Nama Panggilan</Label>
-              <Input
-                value={sectionData.nickname}
-                onChange={(e) => handleUpdate(type, "nickname", e.target.value)}
-                placeholder={`Contoh: ${isGroom ? "Romeo" : "Juliet"}`}
-                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
-              />
-            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Panggilan</Label>
+                <Input
+                  value={sectionData.nickname || ""}
+                  onChange={(e) => handleUpdate(type, "nickname", e.target.value)}
+                  placeholder={`Contoh: ${isGroom ? "Adit" : "Sarah"}`}
+                  className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-zinc-500 uppercase">Nama Lengkap</Label>
-              <Input
-                value={sectionData.fullName}
-                onChange={(e) => handleUpdate(type, "fullName", e.target.value)}
-                placeholder="Nama lengkap beserta gelar"
-                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-zinc-500 uppercase">Nama Ayah</Label>
-              <Input
-                value={sectionData.fatherName}
-                onChange={(e) => handleUpdate(type, "fatherName", e.target.value)}
-                placeholder="Nama Ayah"
-                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-zinc-500 uppercase">Nama Ibu</Label>
-              <Input
-                value={sectionData.motherName}
-                onChange={(e) => handleUpdate(type, "motherName", e.target.value)}
-                placeholder="Nama Ibu"
-                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-zinc-500 uppercase">Username Instagram</Label>
-              <Input
-                value={sectionData.instagram}
-                onChange={(e) => handleUpdate(type, "instagram", e.target.value)}
-                placeholder="@username"
-                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl h-12 focus:ring-primary"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <Label className="text-xs font-bold text-zinc-500 uppercase">Foto {label}</Label>
-            <div className="aspect-square relative rounded-[1.5rem] overflow-hidden border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 group transition-all hover:border-primary/50">
-              {sectionData.photo ? (
-                <Image src={sectionData.photo} alt={label} fill className="object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-400">
-                  <div className="w-16 h-16 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center mb-2">
-                    <IconUpload size={24} />
-                  </div>
-                  <span className="text-sm font-medium">Upload Foto</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex justify-center">
-                <Button variant="secondary" size="sm" className="relative cursor-pointer rounded-full" asChild>
-                  <label>
-                    Ganti Foto
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(type, e.target.files[0])} />
-                  </label>
-                </Button>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Username Instagram</Label>
+                <Input
+                  value={sectionData.instagram || ""}
+                  onChange={(e) => handleUpdate(type, "instagram", e.target.value)}
+                  placeholder="@username"
+                  className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+                />
               </div>
             </div>
-            <p className="text-[10px] text-zinc-400 text-center">Disarankan rasio 1:1 (Persegi). Max 2MB.</p>
+
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Lengkap</Label>
+              <Input
+                value={sectionData.fullName || ""}
+                onChange={(e) => handleUpdate(type, "fullName", e.target.value)}
+                placeholder="Nama lengkap beserta gelar"
+                className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Ayah</Label>
+                <Input
+                  value={sectionData.fatherName || ""}
+                  onChange={(e) => handleUpdate(type, "fatherName", e.target.value)}
+                  placeholder="Nama Ayah"
+                  className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Ibu</Label>
+                <Input
+                  value={sectionData.motherName || ""}
+                  onChange={(e) => handleUpdate(type, "motherName", e.target.value)}
+                  placeholder="Nama Ibu"
+                  className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Proportional Portrait Photo Upload */}
+          <div className="space-y-2">
+            <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Foto {label}</Label>
+            <div className="mx-auto w-full max-w-[210px]">
+              {sectionData.photo ? (
+                <div className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9]">
+                  <img src={sectionData.photo} alt={label} className="h-full w-full object-cover" />
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3">
+                    <label className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-[#FFFDF9] px-3.5 text-xs font-medium text-[#1E1B17] shadow-sm transition-colors hover:bg-[#EFE8DC]">
+                      <IconUpload size={14} /> Ganti
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(type, e.target.files[0])} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdate(type, "photo", "")}
+                      aria-label={`Hapus foto ${label}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white transition-colors hover:bg-red-600"
+                    >
+                      <IconTrash size={14} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2.5 rounded-2xl border border-dashed border-[#CFC5B4] bg-[#FFFDF9] p-4 text-center transition-colors hover:border-[#8A6A2F]">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EFE8DC] text-[#8A6A2F]">
+                    <IconUpload size={20} />
+                  </span>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium text-[#1E1B17]">Unggah Foto</p>
+                    <p className="text-[11px] text-[#6B6358]">Rasio 3:4 atau 1:1 · Maks. 2MB</p>
+                  </div>
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(type, e.target.files[0])} />
+                </label>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     );
   };
 
   return (
-    <div className="grid gap-8">
+    <div className="space-y-6">
       {renderMempelaiForm("groom", "Mempelai Pria")}
       {renderMempelaiForm("bride", "Mempelai Wanita")}
       {renderExtraFields("mempelai")}
