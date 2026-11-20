@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { ADMIN_PORTAL_COOKIE, USER_PORTAL_COOKIE } from "@/lib/portal-constants";
+import { ADMIN_PORTAL_COOKIE, USER_PORTAL_COOKIE, buildRedirectUrl } from "@/lib/portal-constants";
 
 const protectedRoutes = ["/dashboard", "/undangan", "/editor", "/pilih-template", "/desain-ai", "/buku-tamu", "/manajemen-tamu", "/pengaturan", "/upgrade"];
 const adminRoutes = ["/admin", "/templates", "/users", "/moderasi", "/transaksi", "/pengaturan-admin"];
@@ -14,12 +14,12 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated user-portal users away from /login or /register
   if (authRoutes.some((route) => pathname.startsWith(route)) && hasUserPortal) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(buildRedirectUrl("/dashboard", request));
   }
 
   // Protect user routes using independent user portal cookie
   if (protectedRoutes.some((route) => pathname.startsWith(route)) && !hasUserPortal) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = buildRedirectUrl("/login", request);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -27,12 +27,12 @@ export async function middleware(request: NextRequest) {
   // Admin area has its own login page and independent admin portal cookie
   if (pathname === "/admin/login") return NextResponse.next();
   if (pathname.startsWith("/admin") && !hasAdminPortal) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+    return NextResponse.redirect(buildRedirectUrl("/admin/login", request));
   }
 
   // Protect other legacy admin paths
   if (adminRoutes.some((route) => pathname.startsWith(route)) && !hasAdminPortal) {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
+    return NextResponse.redirect(buildRedirectUrl("/admin/login", request));
   }
 
   return NextResponse.next();
