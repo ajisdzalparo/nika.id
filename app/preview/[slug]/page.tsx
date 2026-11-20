@@ -6,13 +6,18 @@ import { MOCK_WEDDING_DATA } from "@/lib/constants/mock-wedding-data";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { IconArrowLeft, IconEdit } from "@tabler/icons-react";
+import { AI_THEME_PRESETS } from "@/lib/ai-design/presets";
 
 interface PreviewPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ preset?: string }>;
 }
 
-export default function TemplatePreviewPage({ params }: PreviewPageProps) {
+export default function TemplatePreviewPage({ params, searchParams }: PreviewPageProps) {
   const { slug } = use(params);
+  const { preset } = use(searchParams);
+  const presetTheme = slug === "ai-design" && preset ? AI_THEME_PRESETS[preset]?.theme : undefined;
+  const data = presetTheme ? { ...MOCK_WEDDING_DATA, aiTheme: presetTheme } : MOCK_WEDDING_DATA;
 
   return (
     <div className="relative">
@@ -38,7 +43,7 @@ export default function TemplatePreviewPage({ params }: PreviewPageProps) {
       </div>
 
       {/* Template Render */}
-      <TemplateRenderer slug={slug} data={MOCK_WEDDING_DATA} />
+      <TemplateRenderer slug={slug} data={data} />
     </div>
   );
 }

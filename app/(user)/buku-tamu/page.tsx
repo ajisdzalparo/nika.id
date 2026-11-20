@@ -32,14 +32,14 @@ export default async function BukuTamuPage() {
 
   const stats = {
     total: attendees.length,
-    present: attendees.filter((a) => a.attendance === "Hadir").length,
-    absent: attendees.filter((a) => a.attendance === "Tidak Hadir").length,
+    present: attendees.filter((a) => a.attendance.toUpperCase() === "HADIR").length,
+    absent: attendees.filter((a) => a.attendance.toUpperCase() === "TIDAK HADIR").length,
   };
 
   return (
     <>
       <SiteHeader />
-      <div className="flex flex-1 flex-col bg-[#FAFAFA] dark:bg-zinc-950 min-h-screen">
+      <div className="flex flex-1 flex-col min-h-screen">
         <div className="flex flex-col gap-8 py-10 px-4 lg:px-8 w-full">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -52,15 +52,15 @@ export default async function BukuTamuPage() {
 
           {/* Stats Cards - Glass & Minimalist */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-6 rounded-xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
+            <div className="p-6 rounded-xl bg-white border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Total Respon</span>
               <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.total}</span>
             </div>
-            <div className="p-6 rounded-xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
+            <div className="p-6 rounded-xl bg-white border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Hadir</span>
               <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.present}</span>
             </div>
-            <div className="p-6 rounded-xl bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
+            <div className="p-6 rounded-xl bg-white border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
               <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Berhalangan</span>
               <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.absent}</span>
             </div>
@@ -79,17 +79,17 @@ export default async function BukuTamuPage() {
             </TabsList>
 
             <TabsContent value="attendance">
-              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm overflow-hidden shadow-sm">
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white overflow-hidden shadow-sm">
                 <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {attendees.map((attendee) => (
                     <div key={attendee.id} className="p-5 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                            attendee.attendance === "Hadir" ? "bg-primary/10 border-primary/20 text-primary" : "bg-zinc-100 border-zinc-200 text-zinc-400 dark:bg-zinc-800 dark:border-zinc-700"
+                            attendee.attendance.toUpperCase() === "HADIR" ? "bg-primary/10 border-primary/20 text-primary" : "bg-zinc-100 border-zinc-200 text-zinc-400 dark:bg-zinc-800 dark:border-zinc-700"
                           }`}
                         >
-                          {attendee.attendance === "Hadir" ? <IconCheck size={18} /> : <IconX size={18} />}
+                          {attendee.attendance.toUpperCase() === "HADIR" ? <IconCheck size={18} /> : <IconX size={18} />}
                         </div>
                         <div>
                           <p className="font-bold text-zinc-900 dark:text-zinc-100">{attendee.guestName}</p>
@@ -100,7 +100,7 @@ export default async function BukuTamuPage() {
                         <Badge
                           variant="outline"
                           className={`rounded-full px-3 py-0.5 border ${
-                            attendee.attendance === "Hadir" ? "border-primary/20 bg-primary/5 text-primary" : "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+                            attendee.attendance.toUpperCase() === "HADIR" ? "border-primary/20 bg-primary/5 text-primary" : "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
                           }`}
                         >
                           {attendee.guests} Orang
@@ -123,7 +123,7 @@ export default async function BukuTamuPage() {
             <TabsContent value="messages">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {messages.map((msg) => (
-                  <Card key={msg.id} className="border-none shadow-sm hover:shadow-md transition-all bg-white/70 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-100 dark:border-zinc-800 rounded-xl overflow-hidden group">
+                  <Card key={msg.id} className="border-none shadow-sm hover:shadow-md transition-all bg-white border border-zinc-100 dark:border-zinc-800 rounded-xl overflow-hidden group">
                     <CardContent className="p-6 relative">
                       <IconQuote className="absolute top-6 right-6 text-primary/10 w-10 h-10 rotate-180" />
                       <p className="text-zinc-600 dark:text-zinc-300 italic mb-6 relative z-10 leading-relaxed min-h-[60px]">&rdquo;{msg.message}&rdquo;</p>
@@ -140,7 +140,7 @@ export default async function BukuTamuPage() {
                   </Card>
                 ))}
                 {messages.length === 0 && (
-                  <div className="col-span-2 p-16 text-center bg-white dark:bg-zinc-900 rounded-[2rem] border border-dashed border-zinc-200 dark:border-zinc-800">
+                  <div className="col-span-2 p-16 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
                     <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
                       <IconMessage size={32} />
                     </div>

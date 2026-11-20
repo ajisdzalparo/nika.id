@@ -27,7 +27,7 @@ export default async function EditorPage() {
   return (
     <>
       <SiteHeader />
-      <div className="flex flex-1 flex-col bg-[#FAFAFA] dark:bg-zinc-950 min-h-screen">
+      <div className="flex flex-1 flex-col min-h-screen">
         <div className="w-full px-4 lg:px-8 py-8">
           <EditorForm initialData={user.invitation} templateConfig={null} />
         </div>

@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconMapPin, IconTrash, IconPlus } from "@tabler/icons-react";
 import { WeddingData, WeddingEvent } from "@/types/wedding";
+import { LocationPicker, mapsLink, type PickedLocation } from "@/components/common/location-picker";
 
 interface AcaraSectionProps {
   data: WeddingData;
@@ -26,6 +27,15 @@ export function AcaraSection({ data, setData }: AcaraSectionProps) {
     const newEvents = [...(data.events || [])];
     newEvents[index] = { ...newEvents[index], [field]: value };
     setData((prev) => ({ ...prev, events: newEvents }));
+  };
+
+  const setLocation = (index: number, loc: PickedLocation) => {
+    setData((prev) => {
+      const events = [...(prev.events || [])];
+      const ev = events[index];
+      events[index] = { ...ev, lat: loc.lat, lng: loc.lng, mapUrl: mapsLink(loc.lat, loc.lng), address: ev.address || loc.address || "" };
+      return { ...prev, events };
+    });
   };
 
   return (
@@ -68,10 +78,14 @@ export function AcaraSection({ data, setData }: AcaraSectionProps) {
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <IconMapPin className="h-4 w-4 text-red-500" />
-                Link Google Maps
+                <IconMapPin className="h-4 w-4 text-[#8A6A2F]" />
+                Lokasi di peta
               </Label>
-              <Input value={event.mapUrl || ""} onChange={(e) => updateEvent(index, "mapUrl", e.target.value)} placeholder="https://maps.google.com/..." />
+              <LocationPicker value={{ lat: event.lat, lng: event.lng }} onChange={(loc) => setLocation(index, loc)} />
+              <details className="text-sm">
+                <summary className="flex min-h-9 cursor-pointer items-center text-zinc-500">Atau tempel link Google Maps sendiri</summary>
+                <Input className="mt-2" value={event.mapUrl || ""} onChange={(e) => updateEvent(index, "mapUrl", e.target.value)} placeholder="https://maps.app.goo.gl/..." />
+              </details>
             </div>
           </CardContent>
         </Card>

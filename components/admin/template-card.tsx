@@ -15,7 +15,7 @@ export function TemplateCard({ template }: TemplateCardProps) {
   return (
     <div className="rounded-lg border bg-card overflow-hidden hover:shadow-lg transition-shadow group flex flex-col h-full">
       <div className="relative aspect-video bg-muted">
-        <Image src={template.thumbnail} alt={template.name} fill className="object-cover transition-transform group-hover:scale-105" />
+        <Image src={template.thumbnail} alt={template.name} fill className="object-cover transition-transform" />
         <div className="absolute top-2 right-2 flex gap-1">
           <Badge variant={template.type === "Premium" ? "default" : "secondary"}>{template.type}</Badge>
           {!template.isActive && <Badge variant="destructive">Archived</Badge>}

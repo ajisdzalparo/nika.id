@@ -2,10 +2,20 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-// Initialize Resend only if API key is available
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// Gmail SMTP (needs a Google App Password, not the normal account password).
+// Only initialized when both values are set; otherwise links are logged to the console.
+const mailer =
+  process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
+    ? nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD.replace(/\s+/g, ""),
+        },
+      })
+    : null;
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -26,9 +36,9 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }: { user: { name: string; email: string }; url: string }) => {
-      if (!resend) {
+      if (!mailer) {
         console.log("\n" + "=".repeat(80));
-        console.log("📧 EMAIL VERIFICATION LINK (Resend not configured)");
+        console.log("📧 EMAIL VERIFICATION LINK (Gmail SMTP not configured)");
         console.log("=".repeat(80));
         console.log(`User: ${user.name} (${user.email})`);
         console.log(`Verification URL: ${url}`);
@@ -99,8 +109,9 @@ export const auth = betterAuth({
         </html>
       `;
 
-      await resend.emails.send({
-        from: process.env.EMAIL_FROM || "noreply@nika.id",
+      await mailer.sendMail({
+        // Gmail always sends from GMAIL_USER; EMAIL_FROM only sets the display name
+        from: `"${process.env.EMAIL_FROM_NAME || "nika.id"}" <${process.env.GMAIL_USER}>`,
         to: user.email,
         subject: "Verifikasi Email Anda - nika.id",
         html: emailHtml,
@@ -115,10 +126,37 @@ export const auth = betterAuth({
           google: {
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            // Always let the user pick which Google account to use
+            prompt: "select_account",
           },
         },
       }
     : {}),
+  databaseHooks: {
+    user: {
+      create: {
+        // Social sign-ups (Google) don't send invitationSlug, so generate one
+        before: async (user) => {
+          const data = user as typeof user & { invitationSlug?: string | null };
+          if (data.invitationSlug) return { data };
+          const base =
+            (data.name || data.email.split("@")[0])
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/^-+|-+$/g, "") || "undangan";
+          return { data: { ...data, invitationSlug: `${base}-${Date.now().toString().slice(-4)}` } };
+        },
+      },
+    },
+  },
+  account: {
+    accountLinking: {
+      enabled: true,
+      // Google verifies emails, so an existing email/password account with the
+      // same address is linked instead of failing with "account not linked".
+      trustedProviders: ["google"],
+    },
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day

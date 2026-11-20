@@ -9,6 +9,8 @@ export interface TemplateDefinition {
   thumbnail: string;
   description: string;
   isActive: boolean;
+  /** Hidden from the template catalog (e.g. the AI theme engine, chosen via /desain-ai). */
+  hidden?: boolean;
 }
 
 export const templates: TemplateDefinition[] = [
@@ -66,6 +68,16 @@ export const templates: TemplateDefinition[] = [
     description: "Desain romantis elegan dengan sentuhan floral lembut.",
     isActive: true,
   },
+  {
+    slug: "ai-design",
+    name: "Desain AI",
+    category: "AI",
+    type: "Gratis",
+    thumbnail: "/templates/standard.png",
+    description: "Tema unik yang dirancang AI sesuai permintaan pasangan.",
+    isActive: true,
+    hidden: true,
+  },
 ];
 
 // Helper functions
@@ -74,7 +86,7 @@ export function getTemplateBySlug(slug: string): TemplateDefinition | undefined 
 }
 
 export function getActiveTemplates(): TemplateDefinition[] {
-  return templates.filter((t) => t.isActive);
+  return templates.filter((t) => t.isActive && !t.hidden);
 }
 
 export function getAllTemplates(): TemplateDefinition[] {

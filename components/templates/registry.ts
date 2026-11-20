@@ -41,4 +41,8 @@ export const templateRegistry: Record<string, TemplateRegistryItem> = {
     name: "Standard",
     component: lazy(() => import("./standard")),
   },
+  "ai-design": {
+    name: "Desain AI",
+    component: lazy(() => import("./ai-design")),
+  },
 };

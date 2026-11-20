@@ -27,7 +27,7 @@ export default async function ManajemenTamuPage() {
   return (
     <>
       <SiteHeader />
-      <div className="flex flex-1 flex-col bg-[#FAFAFA] dark:bg-zinc-950 min-h-screen">
+      <div className="flex flex-1 flex-col min-h-screen">
         <div className="flex flex-col gap-8 py-10 px-4 lg:px-8 w-full">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

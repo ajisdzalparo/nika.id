@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/editor", "/pilih-template", "/buku-tamu", "/manajemen-tamu", "/pengaturan"];
+const protectedRoutes = ["/dashboard", "/editor", "/pilih-template", "/desain-ai", "/buku-tamu", "/manajemen-tamu", "/pengaturan"];
 const adminRoutes = ["/admin", "/templates", "/users", "/moderasi", "/transaksi", "/pengaturan-admin"];
 const authRoutes = ["/login", "/register"];
 
@@ -23,7 +23,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Protect admin routes
+  // Admin area has its own login page (the role itself is checked in app/admin/(panel)/layout.tsx)
+  if (pathname === "/admin/login") return NextResponse.next();
+  if (pathname.startsWith("/admin") && !isAuthenticated) {
+    return NextResponse.redirect(new URL("/admin/login", request.url));
+  }
+
+  // Protect other legacy admin paths
   if (adminRoutes.some((route) => pathname.startsWith(route)) && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);

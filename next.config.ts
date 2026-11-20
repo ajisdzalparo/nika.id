@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
       },
+      // Local MinIO (docker-compose) for uploads in development
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
+      },
     ],
   },
 };

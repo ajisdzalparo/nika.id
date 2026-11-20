@@ -18,7 +18,7 @@ export function MempelaiSection({ data, handleUpdate, handleFileUpload, renderEx
     const isGroom = type === "groom";
 
     return (
-      <div className="bg-zinc-50 dark:bg-zinc-950/50 rounded-[2rem] p-6 border border-zinc-100 dark:border-zinc-800/50">
+      <div className="bg-zinc-50 dark:bg-zinc-950/50 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800/50">
         <div className="flex items-center gap-4 mb-6">
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm ${isGroom ? "bg-blue-100 text-blue-500" : "bg-pink-100 text-pink-500"}`}>{isGroom ? "👨‍⚖️" : "👰‍♀️"}</div>
           <div>
@@ -93,7 +93,7 @@ export function MempelaiSection({ data, handleUpdate, handleFileUpload, renderEx
                   <span className="text-sm font-medium">Upload Foto</span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              {sectionData.photo && <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />}
               <div className="absolute inset-x-0 bottom-0 p-4 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex justify-center">
                 <Button variant="secondary" size="sm" className="relative cursor-pointer rounded-full" asChild>
                   <label>

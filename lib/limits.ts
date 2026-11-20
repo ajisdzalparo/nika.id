@@ -12,6 +12,7 @@ export interface PlanLimits {
   canUseDigitalGift: boolean;
   canUseLoveStory: boolean;
   activeDays: number | null; // null = forever
+  aiDesignQuota: number; // number of AI theme generations included in the plan
   allowedTemplateTypes: ("Gratis" | "Premium")[];
 }
 
@@ -28,6 +29,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseDigitalGift: false,
     canUseLoveStory: false,
     activeDays: 7,
+    aiDesignQuota: 1,
     allowedTemplateTypes: ["Gratis"],
   },
   SILVER: {
@@ -42,6 +44,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseDigitalGift: false,
     canUseLoveStory: false,
     activeDays: 90, // 3 months
+    aiDesignQuota: 5,
     allowedTemplateTypes: ["Gratis", "Premium"],
   },
   GOLD: {
@@ -56,6 +59,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseDigitalGift: true,
     canUseLoveStory: true,
     activeDays: null, // Forever
+    aiDesignQuota: 10,
     allowedTemplateTypes: ["Gratis", "Premium"],
   },
 };

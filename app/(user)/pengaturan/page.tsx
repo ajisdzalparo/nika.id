@@ -31,7 +31,7 @@ export default async function PengaturanPage() {
   return (
     <>
       <SiteHeader user={user} />
-      <div className="flex flex-1 flex-col bg-[#FAFAFA] dark:bg-zinc-950 min-h-screen">
+      <div className="flex flex-1 flex-col min-h-screen">
         <div className="flex flex-col gap-8 py-10 px-4 lg:px-8 w-full">
           <div>
             <h1 className="font-serif text-3xl md:text-4xl font-medium text-zinc-900 dark:text-zinc-50 tracking-tight">Pengaturan</h1>

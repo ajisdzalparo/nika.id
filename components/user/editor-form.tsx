@@ -185,14 +185,14 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
                 className={cn(
                   "flex items-center gap-4 px-6 py-4 rounded-lg text-sm font-medium transition-all text-left relative overflow-hidden group border",
                   activeSection === section.id
-                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-zinc-900 dark:border-white shadow-xl"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-zinc-900 dark:border-white shadow-sm"
                     : "bg-white/50 dark:bg-white/5 border-transparent hover:bg-white hover:border-zinc-200 dark:hover:bg-white/10 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
                 )}
               >
                 <div
                   className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
-                    activeSection === section.id ? "bg-white/20 text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-white/5 text-zinc-400 group-hover:scale-110 group-hover:text-primary",
+                    activeSection === section.id ? "bg-white/20 text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-white/5 text-zinc-400 group-hover:text-primary",
                   )}
                 >
                   <section.icon size={20} strokeWidth={1.5} />
@@ -205,13 +205,11 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
           </nav>
         </div>
 
-        <div className="bg-zinc-900 dark:bg-zinc-800 rounded-xl p-6 text-white shadow-xl relative overflow-hidden group">
-          {/* Ambient Gold Glow */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
-
-          <h3 className="font-serif text-lg font-medium mb-1 relative z-10 text-primary">Sudah Selesai?</h3>
+        <div className="bg-zinc-900 dark:bg-zinc-800 rounded-xl p-6 text-white shadow-sm relative overflow-hidden group">
+          
+          <h3 className="font-serif text-2xl font-medium mb-1 relative z-10 text-[#C9A45C]">Sudah selesai?</h3>
           <p className="text-zinc-400 text-sm mb-4 relative z-10">Simpan perubahan untuk memperbarui undangan.</p>
-          <Button onClick={onSave} disabled={loading} className="bg-linear-to-r from-primary to-amber-600 hover:from-primary/90 hover:to-amber-600/90 text-white rounded-full px-8 shadow-lg shadow-primary/20">
+          <Button onClick={onSave} disabled={loading} className="h-11 rounded-full bg-[#F3EBDD] px-8 text-[#15130F] hover:bg-white">
             {loading ? <span className="animate-spin mr-2">⏳</span> : <IconDeviceFloppy className="w-4 h-4 mr-2" />}
             Simpan
           </Button>
@@ -222,7 +220,6 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
       <main className="flex-1 min-w-0">
         <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 md:p-8 border border-zinc-200 dark:border-zinc-800 shadow-sm min-h-[600px] relative overflow-hidden">
           {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-zinc-50 dark:bg-zinc-800 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
           <div className="relative z-10">
             <div className="mb-8">

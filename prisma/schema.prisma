@@ -33,7 +33,10 @@ model User {
   // Actually, for Free, when does it start? on Creation?
   // I'll assume planExpiresAt is strictly for when the *active period* ends.
 
+  activeAiDesignId String?
+
   accounts     Account[]
+  aiDesigns    AiDesign[]
   guests       Guest[]
   messages     GuestMessage[]
   invitation   Invitation?
@@ -149,4 +152,40 @@ model Transaction {
 
   @@index([userId])
   @@index([status])
+}
+
+model AiDesign {
+  id        String   @id @default(cuid())
+  userId    String
+  source    String   @default("AI") // AI (counts toward quota) | CATALOG (picked from the template catalog)
+  prompt    String   @db.Text
+  theme     Json
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Template catalog managed from the admin CMS.
+model CatalogTemplate {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String   @default("")
+  category      String
+  tier          String   @default("Gratis") // Gratis | Premium
+  kind          String   @default("ENGINE") // ENGINE: theme JSON rendered by the AI theme engine; CODE: component in components/templates
+  theme         Json?
+  componentSlug String?
+  thumbnail     String?
+  referenceUrl  String? // inspiration note for admins, never shown publicly
+  isActive      Boolean  @default(true)
+  isFeatured    Boolean  @default(false)
+  isNew         Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  usageCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
 }

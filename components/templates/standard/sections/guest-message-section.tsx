@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { IconSend, IconCheck, IconHeartHandshake } from "@tabler/icons-react";
+import { invitationSlugFromPath, submitRsvp } from "@/lib/rsvp";
 
 export function GuestMessageSection() {
   const [name, setName] = useState("");
@@ -18,18 +19,9 @@ export function GuestMessageSection() {
       // Improved slug extraction: handle both server and client side if needed,
       // though this component is likely client-side only.
       // Using window directly as it was in the original, but safe-guarded.
-      const slug = typeof window !== "undefined" ? window.location.pathname.replace("/", "") : "";
-
-      if (!slug) {
-        console.error("Slug not found");
-        return;
-      }
-
-      await fetch("/api/public/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, guestName: name, attendance, message }),
-      });
+      const slug = invitationSlugFromPath();
+      if (!slug) return;
+      await submitRsvp({ slug, name, attendance: attendance === "hadir" ? "HADIR" : "TIDAK HADIR", message });
       setSent(true);
       setName("");
       setMessage("");

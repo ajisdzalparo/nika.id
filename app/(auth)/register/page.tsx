@@ -85,10 +85,15 @@ export default function RegisterPage() {
     setGoogleLoading(true);
 
     try {
-      await signIn.social({
+      const result = await signIn.social({
         provider: "google",
         callbackURL: "/dashboard",
+        errorCallbackURL: "/login",
       });
+      if (result?.error) {
+        toast.error(result.error.message || "Gagal mendaftar dengan Google");
+        setGoogleLoading(false);
+      }
     } catch {
       toast.error("Gagal mendaftar dengan Google");
       setGoogleLoading(false);
@@ -98,19 +103,19 @@ export default function RegisterPage() {
   return (
     <div className="w-full">
       <div className="mb-8">
-        <h1 className="font-serif text-3xl font-bold text-zinc-900 dark:text-zinc-50 tracking-tight mb-2">Buat Akun Baru</h1>
+        <h1 className="font-serif text-[2.6rem] leading-tight font-medium text-zinc-900 dark:text-zinc-50 tracking-tight mb-2">Buat Akun Baru</h1>
         <p className="text-zinc-500 dark:text-zinc-400">Mulai perjalanan pernikahan digital Anda di sini.</p>
       </div>
 
       <div className="space-y-6">
-        {(process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true" || process.env.NODE_ENV === "production") && (
+        {process.env.NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED === "true" && (
           <>
             <Button
               type="button"
               variant="outline"
               onClick={handleGoogleSignUp}
               disabled={loading || googleLoading}
-              className="w-full h-12 text-zinc-700 dark:text-zinc-300 font-medium border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-lg"
+              className="w-full h-12 rounded-full border-zinc-300 bg-white font-medium text-zinc-800 hover:bg-zinc-100"
             >
               {googleLoading ? <IconLoader2 className="w-5 h-5 animate-spin mr-2" /> : <IconBrandGoogle className="w-5 h-5 mr-2" />}
               Daftar dengan Google
@@ -121,7 +126,7 @@ export default function RegisterPage() {
                 <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-zinc-950 px-2 text-zinc-400 font-medium">Atau dengan email</span>
+                <span className="bg-[#F7F3EC] px-2 text-zinc-400 font-medium">Atau dengan email</span>
               </div>
             </div>
           </>
@@ -142,7 +147,7 @@ export default function RegisterPage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 disabled={loading || googleLoading}
-                className="pl-10 h-11 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-lg"
+                className="pl-10 h-11 bg-white border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-xl"
               />
             </div>
           </div>
@@ -161,7 +166,7 @@ export default function RegisterPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading || googleLoading}
-                className="pl-10 h-11 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-lg"
+                className="pl-10 h-11 bg-white border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-xl"
               />
             </div>
           </div>
@@ -180,7 +185,7 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading || googleLoading}
-                className="pl-10 pr-10 h-11 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-lg"
+                className="pl-10 pr-10 h-11 bg-white border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-xl"
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors" tabIndex={-1}>
                 {showPassword ? <IconEyeOff className="w-5 h-5" /> : <IconEye className="w-5 h-5" />}
@@ -214,7 +219,7 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 disabled={loading || googleLoading}
-                className="pl-10 pr-10 h-11 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-lg"
+                className="pl-10 pr-10 h-11 bg-white border-zinc-200 dark:border-zinc-800 focus:ring-primary focus:border-primary rounded-xl"
               />
               <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors" tabIndex={-1}>
                 {showConfirmPassword ? <IconEyeOff className="w-5 h-5" /> : <IconEye className="w-5 h-5" />}

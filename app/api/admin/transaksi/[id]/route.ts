@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { activateTransaction } from "@/lib/payment";
 
 const VALID_STATUSES = ["PENDING", "SUCCESS", "FAILED"];
 
@@ -16,10 +17,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "INVALID_STATUS", allowed: VALID_STATUSES }, { status: 400 });
     }
 
-    const transaction = await prisma.transaction.update({
-      where: { id },
-      data: { status },
-    });
+    // Approving also activates the plan for the user (manual transfers have no webhook)
+    const transaction =
+      status === "SUCCESS"
+        ? await activateTransaction(id)
+        : await prisma.transaction.update({ where: { id }, data: { status, ...(typeof body.notes === "string" ? { notes: body.notes.slice(0, 300) } : {}) } });
 
     return NextResponse.json(transaction);
   } catch (error) {

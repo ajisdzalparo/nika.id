@@ -94,8 +94,7 @@ export function MusicTab({ invitation, isEnabled }: MusicTabProps) {
       {!isEnabled ? (
         <UpgradeBanner feature="Musik Latar" plan="Silver" />
       ) : (
-        <div className="bg-white/60 dark:bg-zinc-900/50 backdrop-blur-md rounded-xl p-6 border border-zinc-200/50 dark:border-zinc-800 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+        <div className="bg-white rounded-xl p-6 border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
 
           <div className="mb-6 relative z-10">
             <h3 className="font-serif text-xl font-medium text-zinc-900 dark:text-zinc-100">Background Music</h3>

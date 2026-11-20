@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 import { getTemplateBySlug } from "@/lib/templates";
 import { InvitationGuard } from "@/components/invitation/invitation-guard";
+import { getActiveAiTheme } from "@/lib/ai-design/server";
+import type { AiTheme } from "@/lib/ai-design/schema";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -66,14 +68,24 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
     notFound();
   }
 
+  const aiTheme = user.templateSlug === "ai-design" ? await getActiveAiTheme(user.activeAiDesignId) : null;
+  const wishes = (
+    await prisma.guestMessage.findMany({
+      where: { userId: user.id, status: { not: "REJECTED" } },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: { guestName: true, message: true, createdAt: true },
+    })
+  ).map((w) => ({ ...w, createdAt: w.createdAt.toISOString() }));
+
   return (
     <InvitationGuard user={user}>
-      <PageContent user={user} to={to} />
+      <PageContent user={user} to={to} aiTheme={aiTheme} wishes={wishes} />
     </InvitationGuard>
   );
 }
 
-function PageContent({ user, to }: { user: import("@/types/user").UserWithPlan; to?: string }) {
+function PageContent({ user, to, aiTheme, wishes }: { user: import("@/types/user").UserWithPlan; to?: string; aiTheme: AiTheme | null; wishes: import("@/lib/rsvp").Wish[] }) {
   // Validate the slug exists in our template registry
   const template = getTemplateBySlug(user.templateSlug || "");
   if (!template) {
@@ -91,6 +103,8 @@ function PageContent({ user, to }: { user: import("@/types/user").UserWithPlan; 
   // Ensure weddingDate is Date object if passed
   const weddingDate = user.weddingDate ? new Date(user.weddingDate) : undefined;
   const weddingData = mapInvitationToWeddingData(user.invitation?.data, to, weddingDate);
+  if (aiTheme) weddingData.aiTheme = aiTheme;
+  weddingData.wishes = wishes;
 
   const eventDate = weddingData.event?.date ? new Date(weddingData.event.date) : new Date();
   const eventName = `Pernikahan ${weddingData.groom.fullName} & ${weddingData.bride.fullName}`;

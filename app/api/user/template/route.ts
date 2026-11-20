@@ -32,6 +32,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "USER_NOT_FOUND" }, { status: 404 });
     }
 
+    // The AI theme engine is applied through /api/ai/design/[id]/apply
+    if (templateSlug === "ai-design" && !(user as unknown as { activeAiDesignId?: string | null }).activeAiDesignId) {
+      return NextResponse.json({ error: "AI_DESIGN_REQUIRED" }, { status: 400 });
+    }
+
     // Check Plan Limits
     const { getPlanLimits } = await import("@/lib/limits");
     const limits = getPlanLimits(user.plan);
