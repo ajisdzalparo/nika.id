@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getMaxGuests, getPlanLimits, type PlanType } from "@/lib/limits";
 import { getTemplateBySlug } from "@/lib/templates";
 import { getActiveAiTheme } from "@/lib/ai-design/server";
+import { isAiDesignEnabled } from "@/lib/system-settings";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 
 function greeting() {
@@ -32,10 +33,11 @@ export default async function UserDashboardPage() {
   const session = await getSession(undefined, "user");
   if (!session) redirect("/login");
 
-  const [user, active, allInvitations] = await Promise.all([
+  const [user, active, allInvitations, aiDesignEnabled] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true } }),
     getActiveInvitation(session.user.id),
     listUserInvitations(session.user.id),
+    isAiDesignEnabled(),
   ]);
   if (!user) redirect("/login");
 
@@ -67,7 +69,7 @@ export default async function UserDashboardPage() {
   const attending = rsvps.filter((r) => r.attendance.toUpperCase() === "HADIR").reduce((n, r) => n + (r.guests || 1), 0);
 
   const steps = [
-    { label: "Pilih desain undangan", done: Boolean(template), href: "/desain-ai" },
+    { label: "Pilih desain undangan", done: Boolean(template), href: aiDesignEnabled ? "/desain-ai" : "/pilih-template" },
     { label: "Isi data kedua mempelai", done: hasCouple, href: "/editor" },
     { label: "Tambahkan jadwal acara", done: hasEvents, href: "/editor" },
     { label: "Unggah foto galeri", done: hasGallery, href: "/editor" },

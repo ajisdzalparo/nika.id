@@ -108,8 +108,13 @@ export async function POST(req: Request) {
       );
     }
     console.error("[MIDTRANS_CHARGE_ERROR]", error);
-    const msg = error instanceof Error ? error.message : "Gagal membuat tagihan Midtrans";
-    return NextResponse.json({ error: "CHARGE_FAILED", message: msg }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "CHARGE_FAILED",
+        message: "Layanan pembayaran otomatis sedang mengalami kendala. Silakan coba sesaat lagi atau gunakan Transfer Manual.",
+      },
+      { status: 500 },
+    );
   }
 }
 

@@ -13,7 +13,7 @@ export function CoverThumb({ theme, data, zoom = 0.4, className = "" }: { theme:
   return (
     <div className={`pointer-events-none relative select-none overflow-hidden ${className}`} style={{ background: theme.palette.background }} aria-hidden="true">
       <div className="absolute left-1/2 top-0 -translate-x-1/2" style={{ zoom, width: 375 }}>
-        <AiDesignTemplate data={{ ...(data ?? MOCK_WEDDING_DATA), guestName: undefined }} theme={theme} embedded />
+        <AiDesignTemplate data={{ ...(data ?? MOCK_WEDDING_DATA), guestName: undefined }} theme={theme} embedded staticCover />
       </div>
     </div>
   );

@@ -5,13 +5,18 @@ import { getSession } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
 import { getCatalog } from "@/lib/catalog";
 import { getPlanLimits, type PlanType } from "@/lib/limits";
+import { isAiDesignEnabled } from "@/lib/system-settings";
 
 export default async function PilihTemplatePage({ searchParams }: { searchParams: Promise<{ pakai?: string }> }) {
   const session = await getSession(undefined, "user");
   if (!session) redirect("/login");
   const { pakai } = await searchParams;
 
-  const [active, items] = await Promise.all([getActiveInvitation(session.user.id), getCatalog()]);
+  const [active, items, aiEnabled] = await Promise.all([
+    getActiveInvitation(session.user.id),
+    getCatalog(),
+    isAiDesignEnabled(),
+  ]);
   const allowedTiers = getPlanLimits((active.plan ?? "FREE") as PlanType).allowedTemplateTypes;
 
   return (
@@ -24,7 +29,7 @@ export default async function PilihTemplatePage({ searchParams }: { searchParams
             <h2 className="font-serif text-5xl font-medium">Pilih desain undangan</h2>
             <p className="max-w-2xl text-zinc-600">Pakai desain yang sudah jadi, lalu ganti kapan saja. Data undangan kalian tetap sama.</p>
           </header>
-          <TemplatePicker items={items} allowedTiers={allowedTiers} highlight={pakai} />
+          <TemplatePicker items={items} allowedTiers={allowedTiers} highlight={pakai} aiEnabled={aiEnabled} />
         </div>
       </div>
     </>

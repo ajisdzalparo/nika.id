@@ -30,6 +30,16 @@ import {
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
 import { SafeImg } from "@/components/common/safe-img";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { CatalogItem } from "@/lib/catalog-shared";
 import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PAID_PLANS, PLAN_LIMITS, getMaxGuests, getUpgradePrice, type PlanType } from "@/lib/limits";
 
@@ -230,6 +240,7 @@ export function UpgradeCheckout({
   const [addonUnits, setAddonUnits] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(() => (midtrans.enabled ? "MIDTRANS" : "MANUAL_TRANSFER"));
   const [busy, setBusy] = useState(false);
+  const [confirmCancelMode, setConfirmCancelMode] = useState<"manual" | "snap" | null>(null);
 
   const totalGuestsAllowed = getMaxGuests(currentPlan, extraGuestQuota);
   const selectedPlanSpec = PLAN_LIMITS[selectedPlan];
@@ -449,8 +460,12 @@ export function UpgradeCheckout({
     }
   };
 
-  const handleCancelOrder = async () => {
-    if (!confirm("Batalkan pengajuan ini dan pilih ulang paket?")) return;
+  const handleCancelOrder = () => {
+    setConfirmCancelMode("manual");
+  };
+
+  const executeCancelOrder = async () => {
+    setConfirmCancelMode(null);
     setBusy(true);
     try {
       await fetch("/api/payment/manual", { method: "DELETE" });
@@ -460,6 +475,7 @@ export function UpgradeCheckout({
       setOrder(null);
       setDraftProof("");
       setSenderName("");
+      toast.success("Pengajuan pembayaran dibatalkan");
       router.refresh();
     } finally {
       setBusy(false);
@@ -487,14 +503,20 @@ export function UpgradeCheckout({
     }
   };
 
-  const handleCancelSnapOrder = async () => {
+  const handleCancelSnapOrder = () => {
     if (!snapOrder) return;
-    if (!confirm("Batalkan tagihan ini dan pilih metode pembayaran lain?")) return;
+    setConfirmCancelMode("snap");
+  };
+
+  const executeCancelSnapOrder = async () => {
+    if (!snapOrder) return;
+    setConfirmCancelMode(null);
     setBusy(true);
     try {
       await fetch(`/api/payment/token?orderId=${encodeURIComponent(snapOrder.id)}`, { method: "DELETE" });
       setTransactions((prev) => prev.map((t) => (t.id === snapOrder.id ? { ...t, status: "FAILED", notes: "Dibatalkan oleh user" } : t)));
       setSnapOrder(null);
+      toast.success("Tagihan pembayaran dibatalkan");
       router.refresh();
     } finally {
       setBusy(false);
@@ -1385,6 +1407,35 @@ export function UpgradeCheckout({
           </section>
         )}
       </div>
+
+      <AlertDialog open={confirmCancelMode !== null} onOpenChange={(open) => !open && setConfirmCancelMode(null)}>
+        <AlertDialogContent className="border-[#E6DFD3] bg-[#FFFDF9] text-[#15130F] sm:rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#15130F]">
+              {confirmCancelMode === "snap" ? "Batalkan tagihan pembayaran?" : "Batalkan pengajuan pembayaran?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed text-[#5E574D]">
+              {confirmCancelMode === "snap"
+                ? "Tagihan Midtrans saat ini akan dibatalkan sehingga Anda dapat memilih ulang paket atau metode pembayaran lain."
+                : "Pengajuan transfer manual saat ini akan dibatalkan dan Anda dapat memilih ulang paket atau metode pembayaran lain."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="rounded-full border-[#DFD7C8] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]">
+              Kembali
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmCancelMode === "snap") void executeCancelSnapOrder();
+                else if (confirmCancelMode === "manual") void executeCancelOrder();
+              }}
+              className="rounded-full bg-[#15130F] text-[#FAF8F4] hover:bg-[#2A261F]"
+            >
+              Ya, batalkan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

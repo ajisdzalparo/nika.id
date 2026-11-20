@@ -49,10 +49,12 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
 export function UserSidebar({
   portalUser,
   activePlan,
+  aiDesignEnabled = true,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   portalUser?: { name: string; email: string; avatar: string };
   activePlan?: PlanType;
+  aiDesignEnabled?: boolean;
 }) {
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -97,7 +99,9 @@ export function UserSidebar({
             <SidebarGroupLabel className="text-[11px] uppercase tracking-[0.18em] text-[#8C8272]">{g.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {g.items.map((item) => (
+                {g.items
+                  .filter((item) => aiDesignEnabled || item.url !== "/desain-ai")
+                  .map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild tooltip={item.title} isActive={pathname === item.url} className="h-10 data-[active=true]:bg-[#1E1B17] data-[active=true]:text-[#F7F3EC] data-[active=true]:font-normal">
                       <Link href={item.url}>

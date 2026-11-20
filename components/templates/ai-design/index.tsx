@@ -15,6 +15,8 @@ interface Props {
   theme?: AiTheme;
   /** Rendered inside a phone frame: no music, no fixed elements, RSVP disabled. */
   embedded?: boolean;
+  /** Render the cover CTA as a non-interactive span (used inside CoverThumb cards wrapped by button/Link). */
+  staticCover?: boolean;
 }
 
 function BottomNav({ theme, data, scrollRoot }: { theme: AiTheme; data: WeddingData; scrollRoot: () => HTMLElement | null }) {
@@ -43,7 +45,7 @@ function BottomNav({ theme, data, scrollRoot }: { theme: AiTheme; data: WeddingD
   );
 }
 
-export default function AiDesignTemplate({ data, theme: themeProp, embedded = false }: Props) {
+export default function AiDesignTemplate({ data, theme: themeProp, embedded = false, staticCover = false }: Props) {
   const theme = themeProp ?? data.aiTheme ?? DEFAULT_AI_THEME;
   const [opened, setOpened] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ export default function AiDesignTemplate({ data, theme: themeProp, embedded = fa
       {!embedded && opened && data.music?.enabled && data.music.url && <MusicToggle url={data.music.url} type={data.music.type} autoPlay />}
 
       {!opened ? (
-        <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} />
+        <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} staticCover={staticCover} />
       ) : !embedded ? (
         <div className="lg:grid lg:grid-cols-[42%_58%] xl:grid-cols-[44%_56%]">
           <DesktopStage theme={theme} data={data} />

@@ -19,6 +19,7 @@ export interface PaymentAndContactSettings {
   /** Static QRIS image (merchant QR) for manual payments, uploaded by the admin */
   manualQrisImage: string;
   midtransEnabled: boolean;
+  aiDesignEnabled: boolean;
 }
 
 const KEYS = {
@@ -32,6 +33,7 @@ const KEYS = {
   manualQrisEnabled: "manual_qris_enabled",
   manualQrisImage: "manual_qris_image",
   midtransEnabled: "midtrans_enabled",
+  aiDesignEnabled: "ai_design_enabled",
 } as const;
 
 function parseEnvBanks(): BankAccount[] {
@@ -114,6 +116,11 @@ export async function isMaintenanceMode(): Promise<boolean> {
   return map[KEYS.maintenanceMode] === "true";
 }
 
+export async function isAiDesignEnabled(): Promise<boolean> {
+  const map = await readSettingMap([KEYS.aiDesignEnabled]);
+  return map[KEYS.aiDesignEnabled] === "true";
+}
+
 export async function getSystemSettings(): Promise<PaymentAndContactSettings> {
   const map = await readSettingMap(Object.values(KEYS));
 
@@ -136,6 +143,7 @@ export async function getSystemSettings(): Promise<PaymentAndContactSettings> {
     manualQrisEnabled: map[KEYS.manualQrisEnabled] !== "false",
     manualQrisImage: map[KEYS.manualQrisImage] ?? (process.env.MANUAL_PAYMENT_QRIS_IMAGE || ""),
     midtransEnabled: map[KEYS.midtransEnabled] !== "false",
+    aiDesignEnabled: map[KEYS.aiDesignEnabled] === "true",
   };
 }
 

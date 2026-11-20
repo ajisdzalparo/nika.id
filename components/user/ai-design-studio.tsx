@@ -50,8 +50,17 @@ function Swatches({ theme, size = "h-5 w-5" }: { theme: AiTheme; size?: string }
   );
 }
 
-export function AiDesignStudio({ previewData, usesSampleData }: { previewData: WeddingData; usesSampleData: boolean }) {
+export function AiDesignStudio({
+  previewData,
+  usesSampleData,
+  aiEnabled: initialAiEnabled = true,
+}: {
+  previewData: WeddingData;
+  usesSampleData: boolean;
+  aiEnabled?: boolean;
+}) {
   const router = useRouter();
+  const [aiEnabled, setAiEnabled] = useState(initialAiEnabled);
   const [designs, setDesigns] = useState<Design[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -72,6 +81,7 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
         setQuota(d.quota ?? null);
         setActiveId(d.activeId ?? null);
         setSelectedId(d.activeId ?? d.designs?.[0]?.id ?? null);
+        if (typeof d.enabled === "boolean") setAiEnabled(d.enabled);
       })
       .catch(() => toast.error("Gagal memuat desain"));
   }, []);
@@ -161,6 +171,14 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
                 </div>
               )}
             </div>
+            {!aiEnabled && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <span>Fitur generate Desain AI sedang dinonaktifkan sementara. Silakan pilih template jadi dari Koleksi Template.</span>
+                <Link href="/pilih-template" className="shrink-0 font-medium text-amber-950 underline underline-offset-4">
+                  Buka Koleksi Template
+                </Link>
+              </div>
+            )}
             <Textarea
               id="ai-prompt"
               value={prompt}
@@ -168,9 +186,9 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Contoh: Pernikahan adat Jawa di pendopo, nuansa hangat cokelat sogan dan emas, elegan tapi tidak ramai, ada sentuhan bunga melati."
               className="min-h-32 resize-none border-zinc-200 bg-zinc-50 text-[15px] leading-relaxed dark:border-zinc-800 dark:bg-zinc-950"
-              disabled={generating}
+              disabled={generating || !aiEnabled}
             />
-            <ReferenceUploader value={references} onChange={setReferences} disabled={generating} />
+            <ReferenceUploader value={references} onChange={setReferences} disabled={generating || !aiEnabled} />
             {selected && (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
                 <span className="text-zinc-600 dark:text-zinc-400">
@@ -197,7 +215,7 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
                   key={s}
                   type="button"
                   onClick={() => setPrompt(s)}
-                  disabled={generating}
+                  disabled={generating || !aiEnabled}
                   className="min-h-9 rounded-full border border-zinc-200 px-3.5 text-[13px] text-zinc-600 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-zinc-900 disabled:opacity-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100"
                 >
                   {s.split(",")[0]}
@@ -206,7 +224,13 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
             </div>
             <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
               <span className="text-xs text-zinc-400">{prompt.length}/600</span>
-              {outOfQuota ? (
+              {!aiEnabled ? (
+                <Button asChild className="h-11 rounded-lg px-6">
+                  <Link href="/pilih-template">
+                    Pilih dari Koleksi Template <IconArrowRight size={16} className="ml-1" />
+                  </Link>
+                </Button>
+              ) : outOfQuota ? (
                 <Button asChild className="h-11 rounded-lg px-6">
                   <Link href="/upgrade">
                     Tambah kuota desain <IconArrowRight size={16} className="ml-1" />

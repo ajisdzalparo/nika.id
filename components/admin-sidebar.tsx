@@ -18,7 +18,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useSession } from "@/lib/auth-client";
 
 const groups: { label: string; items: { title: string; url: string; icon: Icon }[] }[] = [
   {
@@ -47,12 +46,11 @@ export function AdminSidebar({
 }: React.ComponentProps<typeof Sidebar> & {
   adminUser?: { name: string; email: string; avatar: string };
 }) {
-  const { data: session } = useSession();
   const pathname = usePathname();
   const user = adminUser ?? {
-    name: session?.user?.name || "Admin",
-    email: session?.user?.email || "",
-    avatar: session?.user?.image || "",
+    name: "Admin",
+    email: "",
+    avatar: "",
   };
 
   return (

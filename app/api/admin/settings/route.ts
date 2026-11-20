@@ -20,6 +20,7 @@ const PatchSettingsSchema = z.object({
   manualQrisEnabled: z.boolean().optional(),
   manualQrisImage: z.string().trim().max(500).refine((v) => v === "" || /^https?:\/\//.test(v), "URL gambar QRIS tidak valid").optional(),
   midtransEnabled: z.boolean().optional(),
+  aiDesignEnabled: z.boolean().optional(),
 });
 
 export async function GET(request: Request) {
@@ -66,7 +67,7 @@ export async function PATCH(request: Request) {
       ops.push(upsertSetting(SYSTEM_SETTING_KEYS.midtransIsProduction, String(d.midtransIsProduction)));
     }
 
-    for (const key of ["manualTransferEnabled", "manualQrisEnabled", "midtransEnabled"] as const) {
+    for (const key of ["manualTransferEnabled", "manualQrisEnabled", "midtransEnabled", "aiDesignEnabled"] as const) {
       if (typeof d[key] === "boolean") ops.push(upsertSetting(SYSTEM_SETTING_KEYS[key], String(d[key])));
     }
     if (typeof d.manualQrisImage === "string") {

@@ -1,8 +1,13 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
 import { AiThemeSchema, type AiTheme } from "./schema";
 import { AI_DESIGN_SYSTEM_PROMPT, buildUserPrompt, REFERENCE_INSTRUCTIONS } from "./prompt";
 import { normalizeTheme } from "./color";
+import {
+  DEFAULT_OPENROUTER_DESIGN_MODEL,
+  OpenRouterError,
+  openRouterChat,
+  type OpenRouterContentPart,
+} from "@/lib/openrouter";
 
 export class AiDesignError extends Error {
   constructor(
@@ -11,13 +16,6 @@ export class AiDesignError extends Error {
   ) {
     super(message);
   }
-}
-
-let client: Anthropic | null = null;
-function getClient() {
-  if (!process.env.ANTHROPIC_API_KEY) throw new AiDesignError("NOT_CONFIGURED", "ANTHROPIC_API_KEY belum diisi");
-  client ??= new Anthropic();
-  return client;
 }
 
 const MAX_REFERENCES = 3;
@@ -32,7 +30,7 @@ function isOwnStorageUrl(url: string) {
   return Boolean(base) && url.startsWith(`${base}/${bucket}/`);
 }
 
-async function loadReference(url: string): Promise<Anthropic.ImageBlockParam> {
+async function loadReference(url: string): Promise<OpenRouterContentPart> {
   if (!isOwnStorageUrl(url)) throw new AiDesignError("BAD_REFERENCE", "Gambar referensi harus diunggah lewat aplikasi");
   const res = await fetch(url);
   if (!res.ok) throw new AiDesignError("BAD_REFERENCE", "Gambar referensi tidak bisa dibaca");
@@ -40,8 +38,31 @@ async function loadReference(url: string): Promise<Anthropic.ImageBlockParam> {
   if (!IMAGE_TYPES.includes(type)) throw new AiDesignError("BAD_REFERENCE", "Format gambar referensi tidak didukung");
   const bytes = Buffer.from(await res.arrayBuffer());
   if (bytes.length > MAX_BYTES) throw new AiDesignError("BAD_REFERENCE", "Gambar referensi terlalu besar (maks 5MB)");
-  return { type: "image", source: { type: "base64", media_type: type, data: bytes.toString("base64") } };
+  return {
+    type: "image_url",
+    image_url: { url: `data:${type};base64,${bytes.toString("base64")}` },
+  };
 }
+
+function extractJsonObject(raw: string): unknown {
+  const trimmed = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      return JSON.parse(trimmed.slice(start, end + 1));
+    }
+    throw new Error("NO_JSON");
+  }
+}
+
+const THEME_JSON_SCHEMA = JSON.stringify(z.toJSONSchema(AiThemeSchema));
 
 export async function generateAiTheme(
   prompt: string,
@@ -49,31 +70,42 @@ export async function generateAiTheme(
   referenceUrls: string[] = [],
   baseTheme?: AiTheme | null,
 ): Promise<AiTheme> {
-  const anthropic = getClient();
   const images = await Promise.all(referenceUrls.slice(0, MAX_REFERENCES).map(loadReference));
   const text = buildUserPrompt(prompt, couple, baseTheme) + (images.length ? `\n\n${REFERENCE_INSTRUCTIONS}` : "");
 
-  let response;
+  const model = process.env.OPENROUTER_DESIGN_MODEL?.trim() || DEFAULT_OPENROUTER_DESIGN_MODEL;
+  const systemPrompt = `${AI_DESIGN_SYSTEM_PROMPT}\n\nReturn ONLY valid JSON matching this JSON Schema (no markdown, no explanation):\n${THEME_JSON_SCHEMA}`;
+
+  let rawOutput = "";
   try {
-    response = await anthropic.messages.parse({
-      model: "claude-opus-5-5",
-      max_tokens: 16000,
-      output_config: {
-        effort: "medium",
-        format: zodOutputFormat(AiThemeSchema),
-      },
-      system: AI_DESIGN_SYSTEM_PROMPT,
-      // Images first, then the request text
-      messages: [{ role: "user", content: [...images, { type: "text", text }] }],
+    rawOutput = await openRouterChat({
+      model,
+      maxTokens: 4096,
+      temperature: 0.7,
+      jsonMode: true,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: [...images, { type: "text", text }] },
+      ],
     });
   } catch (error) {
-    if (error instanceof Anthropic.RateLimitError) throw new AiDesignError("RATE_LIMITED", "AI sedang sibuk, coba lagi sebentar");
-    if (error instanceof Anthropic.APIError) throw new AiDesignError("UPSTREAM", `AI error ${error.status}: ${error.message}`);
-    throw error;
+    if (error instanceof OpenRouterError) {
+      throw new AiDesignError(error.code, error.message);
+    }
+    throw new AiDesignError("UPSTREAM", error instanceof Error ? error.message : "AI gagal merespons");
   }
 
-  if (response.stop_reason === "refusal") throw new AiDesignError("REFUSED", "Permintaan desain tidak bisa diproses");
-  if (!response.parsed_output) throw new AiDesignError("INVALID_OUTPUT", "Hasil AI tidak valid");
+  let jsonVal: unknown;
+  try {
+    jsonVal = extractJsonObject(rawOutput);
+  } catch {
+    throw new AiDesignError("INVALID_OUTPUT", "Hasil AI tidak berupa JSON valid");
+  }
 
-  return normalizeTheme(response.parsed_output);
+  const parsed = AiThemeSchema.safeParse(jsonVal);
+  if (!parsed.success) {
+    throw new AiDesignError("INVALID_OUTPUT", "Hasil AI tidak sesuai skema tema");
+  }
+
+  return normalizeTheme(parsed.data);
 }

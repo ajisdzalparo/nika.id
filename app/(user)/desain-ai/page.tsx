@@ -5,13 +5,17 @@ import { getActiveInvitation } from "@/lib/active-invitation";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 import { MOCK_WEDDING_DATA } from "@/lib/constants/mock-wedding-data";
 import { AiDesignStudio } from "@/components/user/ai-design-studio";
+import { isAiDesignEnabled } from "@/lib/system-settings";
 import type { WeddingData } from "@/types/wedding";
 
 export default async function DesainAiPage() {
   const session = await getSession(undefined, "user");
   if (!session) redirect("/login");
 
-  const invitation = await getActiveInvitation(session.user.id);
+  const [invitation, aiEnabled] = await Promise.all([
+    getActiveInvitation(session.user.id),
+    isAiDesignEnabled(),
+  ]);
 
   // Preview with the couple's real data; fill gaps (names, photos) with sample data so the design reads well.
   const raw = (invitation.data ?? {}) as Record<string, unknown>;
@@ -24,7 +28,7 @@ export default async function DesainAiPage() {
   return (
     <>
       <SiteHeader user={session.user} />
-      <AiDesignStudio previewData={previewData} usesSampleData={!hasCouple} />
+      <AiDesignStudio previewData={previewData} usesSampleData={!hasCouple} aiEnabled={aiEnabled} />
     </>
   );
 }

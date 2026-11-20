@@ -2,21 +2,65 @@ import Link from "next/link";
 import { IconArrowRight, IconReceipt } from "@tabler/icons-react";
 import { SiteHeader } from "@/components/site-header";
 import { SectionCards } from "@/components/section-cards";
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
+import { ChartAreaInteractive, type VisitorTrafficPoint } from "@/components/chart-area-interactive";
 import { prisma } from "@/lib/prisma";
-import { getAllTemplates } from "@/lib/templates";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+async function loadTrafficSeries(): Promise<{ series: VisitorTrafficPoint[]; totalViews: number }> {
+  const days = 90;
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+
+  const [sumAgg, dailyRows] = await Promise.all([
+    prisma.invitation.aggregate({ _sum: { views: true } }),
+    prisma
+      .$queryRaw<Array<{ day: string; device: string; cnt: bigint | number }>>`
+        SELECT to_char(timezone('Asia/Jakarta', "createdAt"), 'YYYY-MM-DD') AS day,
+               "device",
+               COUNT(*)::bigint AS cnt
+        FROM "InvitationVisit"
+        WHERE "createdAt" >= ${start}
+        GROUP BY 1, 2
+      `
+      .catch(() => [] as Array<{ day: string; device: string; cnt: bigint | number }>),
+  ]);
+
+  const buckets = new Map<string, { desktop: number; mobile: number }>();
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setUTCDate(start.getUTCDate() + i);
+    buckets.set(d.toISOString().slice(0, 10), { desktop: 0, mobile: 0 });
+  }
+
+  for (const row of dailyRows) {
+    const entry = buckets.get(row.day);
+    if (!entry) continue;
+    const count = Number(row.cnt) || 0;
+    if (row.device === "desktop") entry.desktop += count;
+    else entry.mobile += count;
+  }
+
+  const series: VisitorTrafficPoint[] = Array.from(buckets.entries()).map(([date, counts]) => ({
+    date,
+    desktop: counts.desktop,
+    mobile: counts.mobile,
+  }));
+
+  return { series, totalViews: sumAgg._sum.views ?? 0 };
+}
+
 export default async function AdminDashboardPage() {
-  const allTemplates = getAllTemplates();
-  const [userCount, adminCount, messageCount, transactionCount, pendingProofCount, latestUsers] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { role: "admin" } }),
+  const [userCount, adminCount, catalogTemplateCount, messageCount, transactionCount, pendingProofCount, latestUsers, traffic] = await Promise.all([
+    prisma.user.count({ where: { NOT: { role: { equals: "admin", mode: "insensitive" } } } }),
+    prisma.user.count({ where: { role: { equals: "admin", mode: "insensitive" } } }),
+    prisma.catalogTemplate.count({ where: { isActive: true } }),
     prisma.guestMessage.count(),
     prisma.transaction.count(),
     prisma.transaction.count({ where: { status: "PENDING", paymentProof: { not: null } } }),
     prisma.user.findMany({
+      where: { NOT: { role: { equals: "admin", mode: "insensitive" } } },
       orderBy: { createdAt: "desc" },
       take: 5,
       select: {
@@ -27,11 +71,12 @@ export default async function AdminDashboardPage() {
         createdAt: true,
       },
     }),
+    loadTrafficSeries(),
   ]);
 
   const stats = {
     totalUsers: userCount,
-    totalTemplates: allTemplates.length,
+    totalTemplates: catalogTemplateCount,
     totalMessages: messageCount,
     totalTransactions: transactionCount,
     totalAdmins: adminCount,
@@ -77,7 +122,7 @@ export default async function AdminDashboardPage() {
                   <CardDescription>Visualisasi data pengunjung dari undangan yang aktif</CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
-                  <ChartAreaInteractive />
+                  <ChartAreaInteractive data={traffic.series} totalViews={traffic.totalViews} />
                 </CardContent>
               </Card>
 

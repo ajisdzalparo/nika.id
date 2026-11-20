@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { IconTools } from "@tabler/icons-react";
 import { UserSidebar } from "@/components/user-sidebar";
+import { PortalUserProvider } from "@/components/common/portal-user-context";
 import { ActiveInvitationProvider, type SwitchableInvitation } from "@/components/user/active-invitation-context";
 import { CustomerChatWidget } from "@/components/user/customer-chat-widget";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -8,16 +9,17 @@ import { getSession } from "@/lib/auth-helpers";
 import { getActiveInvitation, listUserInvitations } from "@/lib/active-invitation";
 import type { PlanType } from "@/lib/limits";
 import { shellTokens, studioClass } from "@/lib/studio";
-import { isMaintenanceMode } from "@/lib/system-settings";
+import { isAiDesignEnabled, isMaintenanceMode } from "@/lib/system-settings";
 
 export default async function UserLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession(undefined, "user");
   if (!session) redirect("/api/portal/exit?portal=user");
 
-  const [active, allInvitations, maintenance] = await Promise.all([
+  const [active, allInvitations, maintenance, aiDesignEnabled] = await Promise.all([
     getActiveInvitation(session.user.id),
     listUserInvitations(session.user.id),
     isMaintenanceMode(),
+    isAiDesignEnabled(),
   ]);
 
   if (maintenance) {
@@ -54,22 +56,31 @@ export default async function UserLayout({ children }: { children: React.ReactNo
   };
 
   return (
-    <ActiveInvitationProvider active={activeItem} invitations={switchableList}>
-      <SidebarProvider style={shellTokens} className={`${studioClass} bg-[#F1ECE3]`}>
-        <UserSidebar
-          variant="inset"
-          portalUser={{
-            name: session.user.name || "Pengguna",
-            email: session.user.email || "",
-            avatar: session.user.image || "",
-          }}
-          activePlan={activeItem.plan}
-        />
-        <SidebarInset className="bg-[#F7F3EC]">
-          {children}
-          <CustomerChatWidget />
-        </SidebarInset>
-      </SidebarProvider>
-    </ActiveInvitationProvider>
+    <PortalUserProvider
+      user={{
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+      }}
+    >
+      <ActiveInvitationProvider active={activeItem} invitations={switchableList}>
+        <SidebarProvider style={shellTokens} className={`${studioClass} bg-[#F1ECE3]`}>
+          <UserSidebar
+            variant="inset"
+            portalUser={{
+              name: session.user.name || "Pengguna",
+              email: session.user.email || "",
+              avatar: session.user.image || "",
+            }}
+            activePlan={activeItem.plan}
+            aiDesignEnabled={aiDesignEnabled}
+          />
+          <SidebarInset className="bg-[#F7F3EC]">
+            {children}
+            <CustomerChatWidget />
+          </SidebarInset>
+        </SidebarProvider>
+      </ActiveInvitationProvider>
+    </PortalUserProvider>
   );
 }

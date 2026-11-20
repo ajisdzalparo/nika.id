@@ -55,6 +55,8 @@ function normalizeLocalPhone(raw: string, countryCode: string): string {
 export function SystemSettingsManager({ initialSettings }: SystemSettingsManagerProps) {
   const [maintenanceMode, setMaintenanceMode] = useState(initialSettings.maintenanceMode);
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
+  const [aiDesignEnabled, setAiDesignEnabled] = useState(initialSettings.aiDesignEnabled);
+  const [togglingAiDesign, setTogglingAiDesign] = useState(false);
 
   const initialWa = splitWhatsappNumber(initialSettings.manualWhatsapp);
   const [waCountry, setWaCountry] = useState(initialWa.country);
@@ -98,6 +100,30 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
       toast.error("Gagal terhubung ke server");
     } finally {
       setTogglingMaintenance(false);
+    }
+  };
+
+  const handleToggleAiDesign = async (next: boolean) => {
+    setTogglingAiDesign(true);
+    setAiDesignEnabled(next);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aiDesignEnabled: next }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setAiDesignEnabled(!next);
+        return toast.error(d.message || "Gagal memperbarui status Desain AI");
+      }
+      setAiDesignEnabled(Boolean(d.settings?.aiDesignEnabled));
+      toast.success(next ? "Fitur Desain AI diaktifkan" : "Fitur Desain AI dinonaktifkan");
+    } catch {
+      setAiDesignEnabled(!next);
+      toast.error("Gagal terhubung ke server");
+    } finally {
+      setTogglingAiDesign(false);
     }
   };
 
@@ -209,6 +235,44 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
                 disabled={togglingMaintenance}
                 onCheckedChange={handleToggleMaintenance}
                 aria-label="Aktifkan Maintenance Mode"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Fitur Desain AI */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle>Fitur Desain AI (User)</CardTitle>
+              <CardDescription>Kontrol apakah user dapat membuat tema undangan baru menggunakan AI</CardDescription>
+            </div>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                aiDesignEnabled
+                  ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border border-zinc-200 bg-zinc-100 text-zinc-600"
+              }`}
+            >
+              {aiDesignEnabled ? "Aktif" : "Dinonaktifkan"}
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-medium">Izinkan Generate Desain AI</p>
+              <p className="text-sm text-muted-foreground">Matikan sementara jika saldo API AI belum diisi agar user langsung diarahkan ke Koleksi Template</p>
+            </div>
+            <div className="flex items-center gap-2.5">
+              {togglingAiDesign && <IconLoader2 size={16} className="animate-spin text-muted-foreground" />}
+              <Switch
+                checked={aiDesignEnabled}
+                disabled={togglingAiDesign}
+                onCheckedChange={handleToggleAiDesign}
+                aria-label="Aktifkan Fitur Desain AI"
               />
             </div>
           </div>

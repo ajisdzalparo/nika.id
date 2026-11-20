@@ -190,7 +190,7 @@ export function DesktopStage({ theme, data }: { theme: AiTheme; data: WeddingDat
 
 // ─── Cover ───────────────────────────────────────────────────────────────
 
-export function Cover({ theme, data, opened, onOpen, screen, embedded = false }: { theme: AiTheme; data: WeddingData; opened: boolean; onOpen: () => void; screen: string; embedded?: boolean }) {
+export function Cover({ theme, data, opened, onOpen, screen, embedded = false, staticCover = false }: { theme: AiTheme; data: WeddingData; opened: boolean; onOpen: () => void; screen: string; embedded?: boolean; staticCover?: boolean }) {
   const photo = coverPhoto(data);
   const layout = !photo && (theme.layout.cover === "photo-fullbleed" || theme.layout.cover === "split-photo") ? "centered-frame" : theme.layout.cover;
   const date = mainDate(data);
@@ -206,14 +206,24 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false }:
     </div>
   );
 
+  const btnClass = `inline-flex min-h-11 items-center gap-2 px-8 py-3 text-sm font-medium tracking-wide transition-transform duration-300 hover:-translate-y-0.5 ${theme.corners === "sharp" ? "rounded-none" : "rounded-full"}`;
+  const btnStyle = { background: "var(--accent)", color: "var(--on-accent)" };
+
   const button = !opened && (
-    <button
-      onClick={onOpen}
-      className={`inline-flex min-h-11 items-center gap-2 px-8 py-3 text-sm font-medium tracking-wide transition-transform duration-300 hover:-translate-y-0.5 ${theme.corners === "sharp" ? "rounded-none" : "rounded-full"}`}
-      style={{ background: "var(--accent)", color: "var(--on-accent)" }}
-    >
-      {theme.copy.openButton}
-    </button>
+    staticCover ? (
+      <span className={btnClass} style={btnStyle}>
+        {theme.copy.openButton}
+      </span>
+    ) : (
+      <button
+        type="button"
+        onClick={onOpen}
+        className={btnClass}
+        style={btnStyle}
+      >
+        {theme.copy.openButton}
+      </button>
+    )
   );
 
   const nameBlock = (

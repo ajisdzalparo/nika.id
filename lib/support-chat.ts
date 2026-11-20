@@ -1,7 +1,11 @@
 import crypto from "node:crypto";
-import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
 import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PLAN_LIMITS, type PlanType } from "@/lib/limits";
+import {
+  DEFAULT_OPENROUTER_CHAT_MODEL,
+  isOpenRouterConfigured,
+  openRouterChat,
+} from "@/lib/openrouter";
 
 export interface SupportThreadRow {
   id: string;
@@ -451,12 +455,12 @@ export async function generateSupportAiReply(params: {
   const { userMessage, history, userPlan, invitationTitle, isPublicVisitor = false } = params;
   const fallback = buildKnowledgeFallback(userMessage, userPlan, isPublicVisitor);
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!isOpenRouterConfigured()) {
     return fallback;
   }
 
   try {
-    const client = new Anthropic();
+    const model = process.env.OPENROUTER_CHAT_MODEL?.trim() || DEFAULT_OPENROUTER_CHAT_MODEL;
     const recent = history
       .filter((m) => m.sender === "USER" || m.sender === "AI" || m.sender === "ADMIN")
       .slice(-8)
@@ -465,32 +469,33 @@ export async function generateSupportAiReply(params: {
         content: m.content,
       }));
 
-    const res = await client.messages.create({
-      model: "claude-haiku-4-5",
-      max_tokens: 400,
-      system: [
-        "Kamu adalah asisten customer support resmi UNDANGIN YUK (platform undangan pernikahan digital Indonesia).",
-        "Jawab ramah, ringkas, jelas dalam Bahasa Indonesia.",
-        "Fakta layanan:",
-        "- Paket Hemat: Rp49.000 (90 hari, 100 tamu, 10 foto, 1x Desain AI, template Gratis).",
-        "- Paket Premium: Rp79.000 (180 hari, 300 tamu, 20 foto, 5x Desain AI, template Gratis & Premium, Kisah Cinta).",
-        "- Paket Eksklusif: Rp99.000 (Aktif selamanya, tamu & foto tanpa batas, 10x Desain AI, Video, Tanpa Watermark).",
-        "- Add-on +100 tamu: Rp15.000.",
-        "- Upgrade dari paket lebih rendah cukup bayar selisih harga.",
-        "- Pembayaran: Bayar Otomatis (QRIS, BCA, Mandiri, BNI, BRI, Permata VA) dan Transfer Manual.",
-        "- Musik latar mendukung link YouTube, upload audio, atau pilih dari Musik Default.",
-        isPublicVisitor
-          ? 'Pengunjung berada di halaman depan (belum login). Jangan suruh klik "Hubungi Admin" live dashboard. Arahkan ke /register untuk mulai gratis, /desain untuk lihat koleksi, atau tombol "WhatsApp Admin" bila ingin chat langsung ke admin.'
-          : `Konteks user: Undangan aktif "${invitationTitle}", paket saat ini "${PLAN_LIMITS[userPlan].name}". Jika butuh pengecekan admin langsung, sarankan klik tombol "Hubungi Admin" di atas chat.`,
-      ].join("\n"),
-      messages: [...recent, { role: "user", content: userMessage }],
+    const text = await openRouterChat({
+      model,
+      maxTokens: 400,
+      temperature: 0.6,
+      messages: [
+        {
+          role: "system",
+          content: [
+            "Kamu adalah asisten customer support resmi UNDANGIN YUK (platform undangan pernikahan digital Indonesia).",
+            "Jawab ramah, ringkas, jelas dalam Bahasa Indonesia.",
+            "Fakta layanan:",
+            "- Paket Hemat: Rp49.000 (90 hari, 100 tamu, 10 foto, 1x Desain AI, template Gratis).",
+            "- Paket Premium: Rp79.000 (180 hari, 300 tamu, 20 foto, 5x Desain AI, template Gratis & Premium, Kisah Cinta).",
+            "- Paket Eksklusif: Rp99.000 (Aktif selamanya, tamu & foto tanpa batas, 10x Desain AI, Video, Tanpa Watermark).",
+            "- Add-on +100 tamu: Rp15.000.",
+            "- Upgrade dari paket lebih rendah cukup bayar selisih harga.",
+            "- Pembayaran: Bayar Otomatis via Midtrans Snap (Virtual Account, QRIS, e-wallet, kartu) dan Transfer / QRIS Manual.",
+            "- Musik latar mendukung link YouTube, upload audio, atau pilih dari Musik Default.",
+            isPublicVisitor
+              ? 'Pengunjung berada di halaman depan (belum login). Jangan suruh klik "Hubungi Admin" live dashboard. Arahkan ke /register untuk mulai gratis, /desain untuk lihat koleksi, atau tombol "WhatsApp Admin" bila ingin chat langsung ke admin.'
+              : `Konteks user: Undangan aktif "${invitationTitle}", paket saat ini "${PLAN_LIMITS[userPlan].name}". Jika butuh pengecekan admin langsung, sarankan klik tombol "Hubungi Admin" di atas chat.`,
+          ].join("\n"),
+        },
+        ...recent,
+        { role: "user", content: userMessage },
+      ],
     });
-
-    const text = res.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
 
     if (!text) return fallback;
     return { reply: text, suggestAdmin: fallback.suggestAdmin };

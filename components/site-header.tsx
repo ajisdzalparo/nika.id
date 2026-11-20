@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NotificationBell } from "@/components/common/notification-bell";
+import { usePortalUser } from "@/components/common/portal-user-context";
 import { InvitationSwitcher, useActiveInvitationContext } from "@/components/user/active-invitation-context";
 import { useSession } from "@/lib/auth-client";
 
@@ -49,9 +50,10 @@ export function SiteHeader({ user: userProp }: SiteHeaderProps) {
   const hydrated = useHydrated();
   const router = useRouter();
   const { data: session } = useSession();
-  const user = userProp ?? (hydrated ? session?.user : undefined);
-  const activeInvCtx = useActiveInvitationContext();
+  const portalUser = usePortalUser();
   const isAdminRoute = pathname.startsWith("/admin");
+  const user = userProp ?? portalUser ?? (hydrated && !isAdminRoute ? session?.user : undefined);
+  const activeInvCtx = useActiveInvitationContext();
   const slug = activeInvCtx?.active.slug ?? (session?.user as { invitationSlug?: string } | undefined)?.invitationSlug;
   const activeShareReady = activeInvCtx ? activeInvCtx.active.isPublic && activeInvCtx.active.plan !== "FREE" : true;
   const previewHref = slug ? `/${slug}${!activeShareReady ? "?preview=1" : ""}` : null;

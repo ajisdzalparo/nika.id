@@ -6,6 +6,18 @@ import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PAID_PLANS, getUpgradePrice, type 
 import { createNotification } from "@/lib/notifications";
 import { amountWithUniqueCode, getManualPaymentInfo } from "@/lib/payment";
 
+const MANUAL_ORDER_SELECT = {
+  id: true,
+  kind: true,
+  addonUnits: true,
+  plan: true,
+  amount: true,
+  status: true,
+  paymentProof: true,
+  notes: true,
+  createdAt: true,
+} as const;
+
 // GET /api/payment/manual — active invitation's open manual order (if any) and where to transfer
 export async function GET(request: Request) {
   try {
@@ -14,6 +26,7 @@ export async function GET(request: Request) {
     const order = await prisma.transaction.findFirst({
       where: { userId: session.user.id, invitationId: active.id, paymentMethod: "MANUAL_TRANSFER", status: "PENDING" },
       orderBy: { createdAt: "desc" },
+      select: MANUAL_ORDER_SELECT,
     });
     return NextResponse.json({
       order,
@@ -98,6 +111,7 @@ export async function POST(request: Request) {
               ? `Upgrade ${currentPlan} → ${plan} (${active.title})`
               : `Paket ${plan} (${active.title})`,
       },
+      select: MANUAL_ORDER_SELECT,
     });
     const rupiahAmount = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(order.amount);
     const label = kind === "GUEST_ADDON" ? `Add-on +${addonUnits * GUEST_ADDON_SIZE} tamu` : `Paket ${plan}`;
@@ -145,6 +159,7 @@ export async function PATCH(request: Request) {
     const updated = await prisma.transaction.update({
       where: { id: order.id },
       data: { paymentProof: proofUrl, notes: nextNotes },
+      select: MANUAL_ORDER_SELECT,
     });
     const rupiahAmount = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(updated.amount);
     await Promise.all([

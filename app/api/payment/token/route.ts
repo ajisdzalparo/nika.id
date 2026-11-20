@@ -122,8 +122,13 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Midtrans Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Gagal membuat transaksi Midtrans";
-    return NextResponse.json({ error: "SNAP_FAILED", message: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "SNAP_FAILED",
+        message: "Layanan pembayaran otomatis sedang mengalami kendala. Silakan coba sesaat lagi atau gunakan Transfer Manual.",
+      },
+      { status: 500 },
+    );
   }
 }
 

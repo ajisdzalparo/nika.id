@@ -6,6 +6,7 @@ import type { PlanType } from "@/lib/limits";
 import { getAiQuota } from "@/lib/ai-design/server";
 import { generateAiTheme, AiDesignError } from "@/lib/ai-design/generate";
 import { normalizeTheme } from "@/lib/ai-design/color";
+import { isAiDesignEnabled } from "@/lib/system-settings";
 
 const MAX_PROMPT = 600;
 
@@ -19,15 +20,17 @@ async function loadContext(request: Request) {
 export async function GET(request: Request) {
   try {
     const { userId, invitation } = await loadContext(request);
-    const [designs, quota] = await Promise.all([
+    const [designs, quota, enabled] = await Promise.all([
       prisma.aiDesign.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
       getAiQuota(userId, invitation.plan as PlanType),
+      isAiDesignEnabled(),
     ]);
 
     return NextResponse.json({
       designs: designs.map((d) => ({ id: d.id, prompt: d.prompt, createdAt: d.createdAt, theme: normalizeTheme(d.theme) })),
       quota,
       activeId: invitation.activeAiDesignId,
+      enabled,
     });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
@@ -40,6 +43,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const { userId, invitation } = await loadContext(request);
+    if (!(await isAiDesignEnabled())) {
+      return NextResponse.json(
+        { error: "AI_DESIGN_DISABLED", message: "Fitur Desain AI sedang dinonaktifkan sementara oleh admin." },
+        { status: 403 },
+      );
+    }
     const body = await request.json().catch(() => ({}));
     const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
     const baseThemeId = typeof body?.baseThemeId === "string" ? body.baseThemeId : "";
@@ -75,7 +84,13 @@ export async function POST(request: Request) {
     if (error instanceof AiDesignError) {
       const status = error.code === "NOT_CONFIGURED" ? 503 : error.code === "RATE_LIMITED" ? 429 : error.code === "REFUSED" ? 422 : error.code === "BAD_REFERENCE" ? 400 : 502;
       console.error("AI design error:", error.code, error.message);
-      return NextResponse.json({ error: error.code, message: error.code === "UPSTREAM" ? "AI sedang bermasalah, coba lagi." : error.message }, { status });
+      const clientMessage =
+        error.code === "NOT_CONFIGURED"
+          ? "Layanan Desain AI belum tersedia saat ini. Silakan hubungi admin."
+          : error.code === "UPSTREAM" || error.code === "INVALID_OUTPUT"
+            ? "AI sedang bermasalah, coba lagi."
+            : error.message;
+      return NextResponse.json({ error: error.code, message: clientMessage }, { status });
     }
     console.error("AI design error:", error);
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message: "Terjadi kesalahan, coba lagi." }, { status: 500 });

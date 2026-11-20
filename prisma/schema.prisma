@@ -112,8 +112,20 @@ model Invitation {
   rsvps            RSVP[]
   messages         GuestMessage[]
   transactions     Transaction[]
+  visitLogs        InvitationVisit[]
 
   @@index([userId])
+}
+
+model InvitationVisit {
+  id           String     @id @default(cuid())
+  invitationId String
+  device       String     @default("mobile") // "mobile" | "desktop"
+  createdAt    DateTime   @default(now())
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([invitationId, createdAt])
 }
 
 model Guest {

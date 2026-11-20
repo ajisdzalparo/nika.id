@@ -20,7 +20,16 @@ export async function GET(request: Request) {
 
     const { thread, messages } = await getOrCreateUserThread(session.user.id);
     const queue = await getUserQueueInfo(thread.id);
-    return NextResponse.json({ thread: { ...thread, ...queue }, messages });
+    return NextResponse.json({
+      thread: {
+        id: thread.id,
+        mode: thread.mode,
+        status: thread.status,
+        lastMessageAt: thread.lastMessageAt,
+        ...queue,
+      },
+      messages,
+    });
   } catch (error) {
     console.error("[USER_CHAT_GET]", error);
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });

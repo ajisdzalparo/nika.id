@@ -76,15 +76,15 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/pengaturan">
+                <Link href={pathname.startsWith("/admin") ? "/admin/pengaturan-admin" : "/pengaturan"}>
                   <IconUserCircle />
-                  Pengaturan akun
+                  {pathname.startsWith("/admin") ? "Pengaturan sistem" : "Pengaturan akun"}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/upgrade">
+                <Link href={pathname.startsWith("/admin") ? "/admin/transaksi" : "/upgrade"}>
                   <IconCreditCard />
-                  Paket & pembayaran
+                  {pathname.startsWith("/admin") ? "Verifikasi transaksi" : "Paket & pembayaran"}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>

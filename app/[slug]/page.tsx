@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getSession } from "@/lib/auth-helpers";
@@ -91,7 +93,16 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
   const isOwnerPreview = preview === "1" && session?.user?.id === invitation.userId;
 
   if (!isOwnerPreview && invitation.isPublic && invitation.plan !== "FREE" && !invitation.id.startsWith("legacy_")) {
-    await prisma.invitation.update({ where: { id: invitation.id }, data: { views: { increment: 1 } } });
+    const ua = (await headers()).get("user-agent") || "";
+    const device = /mobile|android|iphone|ipad|ipod/i.test(ua) ? "mobile" : "desktop";
+    const visitId = crypto.randomUUID();
+    await Promise.all([
+      prisma.invitation.update({ where: { id: invitation.id }, data: { views: { increment: 1 } } }),
+      prisma.$executeRaw`
+        INSERT INTO "InvitationVisit" ("id", "invitationId", "device", "createdAt")
+        VALUES (${visitId}, ${invitation.id}, ${device}, NOW())
+      `.catch(() => {}),
+    ]);
   }
 
   const aiTheme = invitation.templateSlug === "ai-design" ? await getActiveAiTheme(invitation.activeAiDesignId) : null;

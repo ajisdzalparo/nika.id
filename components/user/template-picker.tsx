@@ -9,7 +9,17 @@ import { IconArrowRight, IconCheck, IconExternalLink, IconLoader2, IconLock, Ico
 import type { CatalogItem } from "@/lib/catalog-shared";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
 
-export function TemplatePicker({ items, allowedTiers, highlight }: { items: CatalogItem[]; allowedTiers: string[]; highlight?: string }) {
+export function TemplatePicker({
+  items,
+  allowedTiers,
+  highlight,
+  aiEnabled = true,
+}: {
+  items: CatalogItem[];
+  allowedTiers: string[];
+  highlight?: string;
+  aiEnabled?: boolean;
+}) {
   const router = useRouter();
   const [cat, setCat] = useState("Semua");
   const [busy, setBusy] = useState<string | null>(null);
@@ -37,18 +47,20 @@ export function TemplatePicker({ items, allowedTiers, highlight }: { items: Cata
 
   return (
     <div className="space-y-8">
-      <Link href="/desain-ai" className="group flex items-center justify-between gap-4 rounded-2xl bg-zinc-950 p-5 text-zinc-50 sm:p-6">
-        <div className="flex items-center gap-4">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15">
-            <IconPalette size={20} className="text-[#C9A45C]" />
-          </span>
-          <div>
-            <p className="font-serif text-2xl">Ingin desain yang unik?</p>
-            <p className="text-sm text-zinc-400">Rancang dengan AI sesuai konsep kalian.</p>
+      {aiEnabled && (
+        <Link href="/desain-ai" className="group flex items-center justify-between gap-4 rounded-2xl bg-zinc-950 p-5 text-zinc-50 sm:p-6">
+          <div className="flex items-center gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15">
+              <IconPalette size={20} className="text-[#C9A45C]" />
+            </span>
+            <div>
+              <p className="font-serif text-2xl">Ingin desain yang unik?</p>
+              <p className="text-sm text-zinc-400">Rancang dengan AI sesuai konsep kalian.</p>
+            </div>
           </div>
-        </div>
-        <IconArrowRight className="shrink-0 transition-transform group-hover:translate-x-1" />
-      </Link>
+          <IconArrowRight className="shrink-0 transition-transform group-hover:translate-x-1" />
+        </Link>
+      )}
 
       <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
         {categories.map((c) => (
