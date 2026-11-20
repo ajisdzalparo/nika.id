@@ -18,8 +18,13 @@ if (process.env.MINIO_SKIP_TLS_VERIFY === "true") {
 
 const bucketName = process.env.MINIO_BUCKET || "uploads";
 
-// Initialize bucket and policy asynchronously if this is in a server environment
-if (typeof window === "undefined") {
+// Initialize bucket and policy asynchronously only at runtime when MinIO credentials are configured
+if (
+  typeof window === "undefined" &&
+  process.env.NEXT_PHASE !== "phase-production-build" &&
+  process.env.MINIO_ACCESS_KEY &&
+  process.env.MINIO_SECRET_KEY
+) {
   ensureBucketExists().catch(console.error);
 }
 
