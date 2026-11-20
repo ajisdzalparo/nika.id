@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import {
   ADMIN_PORTAL_COOKIE,
   USER_PORTAL_COOKIE,
+  buildRedirectUrl,
   extractCookieFromHeader,
   signPortalPayload,
 } from "@/lib/portal-gate";
@@ -43,16 +44,16 @@ export async function GET(request: Request) {
 
   const [session, rawCookie] = await Promise.all([getRawBetterAuthSession(request), Promise.resolve(readRawBetterAuthCookie(request))]);
   if (!session || !rawCookie) {
-    return NextResponse.redirect(new URL(portal === "admin" ? "/admin/login" : "/login", request.url));
+    return NextResponse.redirect(buildRedirectUrl(portal === "admin" ? "/admin/login" : "/login", request));
   }
 
   if (portal === "admin") {
     if (session.user.role?.toLowerCase() !== "admin") {
-      const res = NextResponse.redirect(new URL("/admin/login?ditolak=1", request.url));
+      const res = NextResponse.redirect(buildRedirectUrl("/admin/login?ditolak=1", request));
       res.cookies.delete(ADMIN_PORTAL_COOKIE);
       return res;
     }
-    const res = NextResponse.redirect(new URL("/admin", request.url));
+    const res = NextResponse.redirect(buildRedirectUrl("/admin", request));
     res.cookies.set(
       ADMIN_PORTAL_COOKIE,
       signPortalPayload({ portal: "admin", sessionId: session.session.id, ...rawCookie }),
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
     return res;
   }
 
-  const res = NextResponse.redirect(new URL(next, request.url));
+  const res = NextResponse.redirect(buildRedirectUrl(next, request));
   res.cookies.set(
     USER_PORTAL_COOKIE,
     signPortalPayload({ portal: "user", sessionId: session.session.id, ...rawCookie }),
