@@ -104,7 +104,7 @@ export default function LuxuryModernInvitation({ data }: { data: WeddingData }) 
 
         {/* COUPLE */}
         <section className="py-24 px-8 space-y-24">
-          {[data.groom, data.bride].map((p: any, i) => (
+          {[data.groom, data.bride].map((p, i) => (
             <motion.div key={i} variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true }} className="text-center space-y-6">
               <div className="relative w-60 h-60 mx-auto rounded-full overflow-hidden border-8 border-neutral-800">
                 <Image src={p?.photo || "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee"} alt={p?.fullName} fill className="object-cover" />
@@ -125,7 +125,7 @@ export default function LuxuryModernInvitation({ data }: { data: WeddingData }) 
             Waktu & Lokasi
           </motion.h2>
 
-          {events.map((evt: any, i) => (
+          {events.map((evt, i) => (
             <motion.div key={i} variants={fadeUp} initial="hidden" whileInView="show" className="bg-neutral-900 p-10 rounded-3xl space-y-6">
               <IconCalendar className="mx-auto text-rose-400" />
               <h3 className="text-2xl italic">{evt.title}</h3>
