@@ -89,8 +89,20 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
     steps:
+      - name: Check configured deploy targets
+        id: targets
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          DOKPLOY_WEBHOOK: ${{ secrets.DOKPLOY_WEBHOOK }}
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+        run: |
+          echo "has_vps=$([ -n "$VPS_HOST" ] && [ -n "$VPS_SSH_KEY" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "has_dokploy=$([ -n "$DOKPLOY_WEBHOOK" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "has_coolify=$([ -n "$COOLIFY_WEBHOOK" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
       - name: Deploy via SSH to VPS
-        if: ${{ secrets.VPS_HOST != '' && secrets.VPS_SSH_KEY != '' }}
+        if: steps.targets.outputs.has_vps == 'true'
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -108,11 +120,11 @@ jobs:
             docker image prune -f
 
       - name: Trigger Dokploy Redeploy
-        if: ${{ secrets.DOKPLOY_WEBHOOK != '' }}
+        if: steps.targets.outputs.has_dokploy == 'true'
         run: curl -fsSL -X POST "${{ secrets.DOKPLOY_WEBHOOK }}"
 
       - name: Trigger Coolify Deploy
-        if: ${{ secrets.COOLIFY_WEBHOOK != '' }}
+        if: steps.targets.outputs.has_coolify == 'true'
         run: |
           curl -fsSL --request GET \
             --url "${{ secrets.COOLIFY_WEBHOOK }}" \
