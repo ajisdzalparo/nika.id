@@ -131,8 +131,8 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  baseURL: process.env.BETTER_AUTH_URL || "https://nikayuk.programmer-ngonten.my.id",
-  trustedOrigins: [process.env.BETTER_AUTH_URL, process.env.NEXT_PUBLIC_APP_URL, "https://nikayuk.programmer-ngonten.my.id"].filter(Boolean) as string[],
+  baseURL: process.env.BETTER_AUTH_URL || "https://undanginyuk.ajisdzalparo.com",
+  trustedOrigins: [process.env.BETTER_AUTH_URL, process.env.NEXT_PUBLIC_APP_URL, "https://undanginyuk.ajisdzalparo.com"].filter(Boolean) as string[],
   advanced: {
     crossSubDomainCookies: {
       enabled: true,

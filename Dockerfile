@@ -17,7 +17,7 @@ COPY . .
 
 # Only public build-time variables belong in client bundle ARGs.
 # All server secrets & database URLs are injected at runtime in production.
-ARG NEXT_PUBLIC_APP_URL=https://nikayuk.programmer-ngonten.my.id
+ARG NEXT_PUBLIC_APP_URL=https://undanginyuk.ajisdzalparo.com
 ARG NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true
 
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
