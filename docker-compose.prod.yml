@@ -37,7 +37,7 @@ services:
       - internal
 
   minio:
-    image: minio/minio:latest
+    image: pgsty/silo:latest
     container_name: nikaid-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
