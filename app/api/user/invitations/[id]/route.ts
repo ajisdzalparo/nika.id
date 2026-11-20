@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-helpers";
+import { Prisma } from "@prisma/client";
+import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { ACTIVE_INVITATION_COOKIE, getActiveInvitationIdFromCookie, isSlugTaken, sanitizeSlug } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
 
@@ -41,11 +42,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json({ invitation: updated });
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ error: "SLUG_TAKEN", message: "Slug tautan sudah dipakai." }, { status: 409 });
     }
-    console.error("Update invitation error:", error);
-    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
+    return apiErrorResponse(error, "Gagal memperbarui undangan");
   }
 }
 

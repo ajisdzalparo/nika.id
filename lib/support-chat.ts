@@ -343,7 +343,7 @@ export async function getThreadMessagesForAdmin(threadId: string) {
   `;
 }
 
-function buildKnowledgeFallback(userText: string, plan: PlanType): { reply: string; suggestAdmin: boolean } {
+function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisitor = false): { reply: string; suggestAdmin: boolean } {
   const q = userText.toLowerCase();
   const hasImageOnly = !q.trim() || q === "[lampiran gambar]";
   if (hasImageOnly) {
@@ -353,8 +353,15 @@ function buildKnowledgeFallback(userText: string, plan: PlanType): { reply: stri
       suggestAdmin: false,
     };
   }
-  const wantsAdmin = /(hubungi admin|chat admin|bicara.*admin|minta admin|customer service|\bcs\b|komplain|verifikasi manual|tolong cek)/.test(q);
+  const wantsAdmin = /(hubungi admin|chat admin|bicara.*admin|minta admin|customer service|\bcs\b|komplain|verifikasi manual|tolong cek|whatsapp|\bwa\b)/.test(q);
   if (wantsAdmin) {
+    if (isPublicVisitor) {
+      return {
+        reply:
+          'Untuk berbicara langsung dengan admin, silakan klik tombol **WhatsApp Admin** di atas ya. Tim kami siap bantu jawab pertanyaanmu!',
+        suggestAdmin: false,
+      };
+    }
     return {
       reply:
         'Baik! Jika ingin berbicara langsung dengan admin, silakan klik tombol **"Hubungi Admin"** di bagian atas kotak chat ini agar pesanmu diteruskan langsung ke tim admin.',
@@ -363,8 +370,9 @@ function buildKnowledgeFallback(userText: string, plan: PlanType): { reply: stri
   }
 
   if (/(harga|paket|biaya|hemat|premium|eksklusif|upgrade|selisih|addon|add-on|kuota tamu)/.test(q)) {
-    const statusNote =
-      plan === "EKSKLUSIF"
+    const statusNote = isPublicVisitor
+      ? "Kamu bisa daftar gratis untuk merancang undanganmu dulu, dan baru bayar saat siap dibagikan di /register."
+      : plan === "EKSKLUSIF"
         ? "Paket undangan aktifmu saat ini sudah **Eksklusif** (paket terlengkap dengan tamu & galeri tanpa batas). Detailnya bisa dilihat di /upgrade."
         : plan === "FREE"
           ? "Undanganmu masih dalam **Mode Pratinjau**. Pilih paket kapan saja di /upgrade."
@@ -377,6 +385,13 @@ function buildKnowledgeFallback(userText: string, plan: PlanType): { reply: stri
   }
 
   if (/(bayar|transfer|bukti|konfirmasi|verifikasi|pending|otomatis|midtrans|qris)/.test(q)) {
+    if (isPublicVisitor) {
+      return {
+        reply:
+          "Pembayaran dilakukan sekali per undangan setelah kamu selesai merancang undanganmu:\n• **Bayar Otomatis**: QRIS, BCA, Mandiri, BNI, BRI, & Permata VA — aktif seketika.\n• **Transfer Manual**: kirim bukti transfer di halaman pembayaran atau konsultasi dulu lewat **WhatsApp Admin**.",
+        suggestAdmin: false,
+      };
+    }
     return {
       reply:
         "Pembayaran tersedia di halaman /upgrade:\n• **Bayar Otomatis (QRIS & Virtual Account)**: pilih channel (QRIS, BCA, Mandiri, BNI, BRI, Permata), scan QR atau transfer ke nomor VA, paket langsung aktif otomatis.\n• **Transfer Manual**: transfer nominal + 3 digit kode unik ke rekening tujuan, kirim form konfirmasi + bukti transfer, lalu pantau progress verifikasi tahap 1–4 & riwayatnya.\n\nJika transfer manual perlu dicek cepat, klik **Hubungi Admin** ya.",
@@ -386,24 +401,35 @@ function buildKnowledgeFallback(userText: string, plan: PlanType): { reply: stri
 
   if (/(musik|lagu|youtube|audio|mp3)/.test(q)) {
     return {
-      reply:
-        "Musik latar dapat diatur di /editor (tab Fitur) atau /pengaturan:\n• Pilih lagu dari daftar **Musik Default**\n• Tempel **link YouTube** (`youtube.com`, `youtu.be`, `music.youtube.com`, atau Shorts)\n• Atau **unggah file audio MP3/WAV** sendiri.",
+      reply: isPublicVisitor
+        ? "Setiap undangan bisa dilengkapi musik latar dari daftar **Musik Default**, **link YouTube** (`youtube.com` / `youtu.be`), atau **unggah MP3/WAV** sendiri."
+        : "Musik latar dapat diatur di /editor (tab Fitur) atau /pengaturan:\n• Pilih lagu dari daftar **Musik Default**\n• Tempel **link YouTube** (`youtube.com`, `youtu.be`, `music.youtube.com`, atau Shorts)\n• Atau **unggah file audio MP3/WAV** sendiri.",
       suggestAdmin: false,
     };
   }
 
   if (/(desain|template|ai|tema|preview|pratinjau)/.test(q)) {
     return {
-      reply:
-        "Kamu bisa mengganti desain kapan saja di /pilih-template atau merancang tema khusus lewat /desain-ai tanpa menghapus data undanganmu. Pemilik akun tetap dapat melihat undangan penuh dalam mode pratinjau sebelum membayar.",
+      reply: isPublicVisitor
+        ? "Kamu bisa melihat berbagai pilihan tema di /desain atau merancang desain unik lewat **Desain AI** setelah daftar di /register. Sebelum bayar pun kamu tetap bisa pratinjau hasil undanganmu."
+        : "Kamu bisa mengganti desain kapan saja di /pilih-template atau merancang tema khusus lewat /desain-ai tanpa menghapus data undanganmu. Pemilik akun tetap dapat melihat undangan penuh dalam mode pratinjau sebelum membayar.",
       suggestAdmin: false,
     };
   }
 
-  if (/(rsvp|ucapan|tamu|link|bagikan|share|publik)/.test(q)) {
+  if (/(rsvp|ucapan|tamu|link|bagikan|share|publik|cara buat|mulai|daftar)/.test(q)) {
+    return {
+      reply: isPublicVisitor
+        ? "Cara membuat undangan di **UNDANGIN YUK**:\n• Daftar gratis di /register\n• Pilih template atau rancang tema pakai **Desain AI**\n• Isi data mempelai, jadwal acara, galeri foto, musik & daftar tamu bernama\n• Aktifkan paket saat siap dibagikan lewat WhatsApp."
+        : "Untuk membagikan undangan, aktifkan toggle **Publikasikan** di /undangan. Kelola daftar tamu personal di /manajemen-tamu, dan pantau RSVP serta doa tamu di /buku-tamu.",
+      suggestAdmin: false,
+    };
+  }
+
+  if (isPublicVisitor) {
     return {
       reply:
-        "Untuk membagikan undangan, aktifkan toggle **Publikasikan** di /undangan. Kelola daftar tamu personal di /manajemen-tamu, dan pantau RSVP serta doa tamu di /buku-tamu.",
+        'Saya asisten **UNDANGIN YUK**! Silakan tanya soal **harga paket**, **fitur undangan**, **Desain AI**, atau **cara buat undangan** di /register. Untuk tanya langsung ke tim kami, gunakan tombol **WhatsApp Admin** di atas.',
       suggestAdmin: false,
     };
   }
@@ -417,12 +443,13 @@ function buildKnowledgeFallback(userText: string, plan: PlanType): { reply: stri
 
 export async function generateSupportAiReply(params: {
   userMessage: string;
-  history: SupportMessageRow[];
+  history: Array<{ sender: string; content: string }>;
   userPlan: PlanType;
   invitationTitle: string;
+  isPublicVisitor?: boolean;
 }): Promise<{ reply: string; suggestAdmin: boolean }> {
-  const { userMessage, history, userPlan, invitationTitle } = params;
-  const fallback = buildKnowledgeFallback(userMessage, userPlan);
+  const { userMessage, history, userPlan, invitationTitle, isPublicVisitor = false } = params;
+  const fallback = buildKnowledgeFallback(userMessage, userPlan, isPublicVisitor);
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return fallback;
@@ -450,10 +477,11 @@ export async function generateSupportAiReply(params: {
         "- Paket Eksklusif: Rp99.000 (Aktif selamanya, tamu & foto tanpa batas, 10x Desain AI, Video, Tanpa Watermark).",
         "- Add-on +100 tamu: Rp15.000.",
         "- Upgrade dari paket lebih rendah cukup bayar selisih harga.",
-        "- Pembayaran: Transfer Manual (isi form konfirmasi & unggah bukti di /upgrade, pantau progress tahap 1-4 & riwayat) dan Bayar Otomatis (Midtrans bila aktif).",
+        "- Pembayaran: Bayar Otomatis (QRIS, BCA, Mandiri, BNI, BRI, Permata VA) dan Transfer Manual.",
         "- Musik latar mendukung link YouTube, upload audio, atau pilih dari Musik Default.",
-        `Konteks user: Undangan aktif "${invitationTitle}", paket saat ini "${PLAN_LIMITS[userPlan].name}".`,
-        'Jika user butuh verifikasi manual cepat, kendala bug, refund, atau minta bicara dengan manusia/admin, sarankan klik tombol "Hubungi Admin" di bagian atas chat.',
+        isPublicVisitor
+          ? 'Pengunjung berada di halaman depan (belum login). Jangan suruh klik "Hubungi Admin" live dashboard. Arahkan ke /register untuk mulai gratis, /desain untuk lihat koleksi, atau tombol "WhatsApp Admin" bila ingin chat langsung ke admin.'
+          : `Konteks user: Undangan aktif "${invitationTitle}", paket saat ini "${PLAN_LIMITS[userPlan].name}". Jika butuh pengecekan admin langsung, sarankan klik tombol "Hubungi Admin" di atas chat.`,
       ].join("\n"),
       messages: [...recent, { role: "user", content: userMessage }],
     });

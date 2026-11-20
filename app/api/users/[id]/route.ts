@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
 
 const VALID_ROLES = ["USER", "admin"];
 
@@ -30,8 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("Error fetching user:", error);
-    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
+    return apiErrorResponse(error, "Gagal memuat pengguna");
   }
 }
 
@@ -58,8 +57,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("Error updating user:", error);
-    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
+    return apiErrorResponse(error, "Gagal memperbarui pengguna");
   }
 }
 
@@ -80,7 +78,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting user:", error);
-    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
+    return apiErrorResponse(error, "Gagal menghapus pengguna");
   }
 }

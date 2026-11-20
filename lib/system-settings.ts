@@ -13,6 +13,12 @@ export interface PaymentAndContactSettings {
   midtransServerKey: string;
   midtransClientKey: string;
   midtransIsProduction: boolean;
+  /** Per-method switches set by the super admin (all on by default) */
+  manualTransferEnabled: boolean;
+  manualQrisEnabled: boolean;
+  /** Static QRIS image (merchant QR) for manual payments, uploaded by the admin */
+  manualQrisImage: string;
+  midtransEnabled: boolean;
 }
 
 const KEYS = {
@@ -22,6 +28,10 @@ const KEYS = {
   midtransServerKey: "midtrans_server_key",
   midtransClientKey: "midtrans_client_key",
   midtransIsProduction: "midtrans_is_production",
+  manualTransferEnabled: "manual_transfer_enabled",
+  manualQrisEnabled: "manual_qris_enabled",
+  manualQrisImage: "manual_qris_image",
+  midtransEnabled: "midtrans_enabled",
 } as const;
 
 function parseEnvBanks(): BankAccount[] {
@@ -122,6 +132,10 @@ export async function getSystemSettings(): Promise<PaymentAndContactSettings> {
       KEYS.midtransIsProduction in map
         ? map[KEYS.midtransIsProduction] === "true"
         : process.env.MIDTRANS_IS_PRODUCTION === "true",
+    manualTransferEnabled: map[KEYS.manualTransferEnabled] !== "false",
+    manualQrisEnabled: map[KEYS.manualQrisEnabled] !== "false",
+    manualQrisImage: map[KEYS.manualQrisImage] ?? (process.env.MANUAL_PAYMENT_QRIS_IMAGE || ""),
+    midtransEnabled: map[KEYS.midtransEnabled] !== "false",
   };
 }
 

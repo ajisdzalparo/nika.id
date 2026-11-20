@@ -54,6 +54,50 @@ export function detectRasterImageMime(bytes: Uint8Array): "image/jpeg" | "image/
   return null;
 }
 
+/** Detect real audio MIME type by inspecting container/frame header magic bytes. */
+export function detectAudioMime(bytes: Uint8Array): "audio/mpeg" | "audio/wav" | "audio/ogg" | "audio/mp4" | "audio/webm" | null {
+  if (bytes.length < 12) return null;
+
+  // MP3 with ID3 tag or MPEG ADTS/MP3 frame sync
+  if (
+    (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) ||
+    (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)
+  ) {
+    return "audio/mpeg";
+  }
+
+  // WAV: RIFF....WAVE
+  if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x41 &&
+    bytes[10] === 0x56 &&
+    bytes[11] === 0x45
+  ) {
+    return "audio/wav";
+  }
+
+  // OGG: OggS
+  if (bytes[0] === 0x4f && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53) {
+    return "audio/ogg";
+  }
+
+  // MP4 / M4A: ....ftyp
+  if (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) {
+    return "audio/mp4";
+  }
+
+  // WebM / EBML: 1A 45 DF A3
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) {
+    return "audio/webm";
+  }
+
+  return null;
+}
+
 /** Validate that an attachment URL strictly points to our own MinIO/S3 bucket and is a safe raster image. */
 export function isOwnSafeChatImageUrl(url: unknown): url is string {
   if (typeof url !== "string" || url.length > 500) return false;

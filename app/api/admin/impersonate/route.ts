@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
 import { USER_PORTAL_COOKIE, signPortalPayload } from "@/lib/portal-gate";
 
 export async function POST(request: Request) {
@@ -37,7 +37,6 @@ export async function POST(request: Request) {
     }
     return res;
   } catch (error) {
-    console.error("Impersonation error:", error);
-    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
+    return apiErrorResponse(error, "Gagal melakukan impersonasi");
   }
 }

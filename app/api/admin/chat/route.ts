@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
 import { emitThreadMessage, emitThreadState, setTypingState } from "@/lib/chat-realtime";
 import { checkChatRateLimit, isOwnSafeChatImageUrl, sanitizeChatText } from "@/lib/chat-security";
 import { createNotification } from "@/lib/notifications";
@@ -10,13 +10,6 @@ import {
   listAllAdminThreads,
   setSupportThreadMode,
 } from "@/lib/support-chat";
-
-function handleAuthError(error: unknown) {
-  if (error instanceof Error && (error.message === "Unauthorized" || error.message === "Forbidden")) {
-    return NextResponse.json({ error: error.message.toUpperCase() }, { status: error.message === "Forbidden" ? 403 : 401 });
-  }
-  return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
-}
 
 export async function GET(request: Request) {
   try {
@@ -30,7 +23,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ threads, activeThreadId, messages });
   } catch (error) {
-    return handleAuthError(error);
+    return apiErrorResponse(error, "Gagal memuat chat");
   }
 }
 
@@ -152,6 +145,6 @@ export async function POST(request: Request) {
     const [messages, nextThreads] = await Promise.all([getThreadMessagesForAdmin(threadId), listAllAdminThreads()]);
     return NextResponse.json({ messages, threads: nextThreads, mode: "ADMIN", status: "OPEN" });
   } catch (error) {
-    return handleAuthError(error);
+    return apiErrorResponse(error, "Gagal memproses chat admin");
   }
 }

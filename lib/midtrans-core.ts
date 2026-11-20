@@ -67,8 +67,8 @@ export async function createCoreCharge(params: {
   customer: { first_name?: string | null; email?: string | null };
   item: { id: string; price: number; name: string };
 }): Promise<MidtransPaymentDetails> {
-  const { enabled, core } = await getMidtransClients();
-  if (!enabled) throw new Error("MIDTRANS_NOT_CONFIGURED");
+  const { checkoutEnabled, core } = await getMidtransClients();
+  if (!checkoutEnabled) throw new Error("MIDTRANS_NOT_CONFIGURED");
 
   const overrideUrl = getAppWebhookUrl();
   const axiosDefaults = (core as unknown as { httpClient?: { http_client?: { defaults?: { headers?: { common?: Record<string, string> } } } } })

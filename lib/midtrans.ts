@@ -3,9 +3,12 @@ import { getSystemSettings } from "@/lib/system-settings";
 
 export async function getMidtransConfig() {
   const settings = await getSystemSettings();
+  // `enabled`: keys are configured (webhooks and status checks keep working for open payments).
+  // `checkoutEnabled`: admins also allow new Midtrans payments.
   const enabled = Boolean(settings.midtransServerKey && settings.midtransClientKey);
   return {
     enabled,
+    checkoutEnabled: enabled && settings.midtransEnabled,
     serverKey: settings.midtransServerKey,
     clientKey: settings.midtransClientKey,
     isProduction: settings.midtransIsProduction,

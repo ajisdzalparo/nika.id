@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
 import { createNotification } from "@/lib/notifications";
 import { activateTransaction } from "@/lib/payment";
 
@@ -38,7 +38,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json(transaction);
   } catch (error) {
-    console.error("Error updating transaction:", error);
-    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
+    return apiErrorResponse(error, "Gagal memperbarui transaksi");
   }
 }

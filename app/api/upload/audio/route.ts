@@ -1,21 +1,27 @@
 import { NextResponse } from "next/server";
-import { requireAnyAuth } from "@/lib/auth-helpers";
+import { apiErrorResponse, requireAnyAuth } from "@/lib/auth-helpers";
+import { checkChatRateLimit, detectAudioMime } from "@/lib/chat-security";
 import { uploadFile } from "@/lib/storage";
+
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+const AUDIO_EXT_MAP = {
+  "audio/mpeg": "mp3",
+  "audio/wav": "wav",
+  "audio/ogg": "ogg",
+  "audio/mp4": "m4a",
+  "audio/webm": "webm",
+} as const;
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAnyAuth(request).catch((err) => {
-      if (err.message === "Unauthorized") return "UNAUTHORIZED";
-      if (err.message === "Forbidden") return "FORBIDDEN";
-      throw err;
-    });
+    const session = await requireAnyAuth(request);
 
-    if (session === "UNAUTHORIZED") {
-      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
-    }
-
-    if (session === "FORBIDDEN") {
-      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    if (!checkChatRateLimit(`upload:audio:${session.user.id}`, 15, 60_000)) {
+      return NextResponse.json(
+        { error: "RATE_LIMITED", message: "Terlalu banyak unggahan audio. Tunggu sebentar." },
+        { status: 429 },
+      );
     }
 
     const formData = await request.formData();
@@ -25,50 +31,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    // Validate audio file types (MIME + extension fallback for browsers sending generic octet-stream)
-    const allowedTypes = [
-      "audio/mpeg",
-      "audio/mp3",
-      "audio/wav",
-      "audio/wave",
-      "audio/x-wav",
-      "audio/ogg",
-      "audio/x-m4a",
-      "audio/m4a",
-      "audio/mp4",
-      "audio/aac",
-      "audio/webm",
-    ];
-    const allowedExt = /\.(mp3|wav|ogg|m4a|aac|webm)$/i;
-    const contentType = file.type || "audio/mpeg";
-    if (!allowedTypes.includes(file.type) && !allowedExt.test(file.name)) {
-      return NextResponse.json({ error: `Tipe file ${file.type || "tidak dikenal"} tidak didukung. Gunakan MP3, WAV, OGG, M4A, atau AAC.` }, { status: 400 });
-    }
-
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
+    if (file.size > MAX_SIZE) {
       return NextResponse.json({ error: `Ukuran file (${(file.size / 1024 / 1024).toFixed(2)}MB) melebihi batas 10MB` }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Upload to MinIO / S3
-    const url = await uploadFile(file.name, buffer, contentType);
+    // Verify container/frame magic bytes and force canonical audio Content-Type
+    const detectedMime = detectAudioMime(buffer);
+    if (!detectedMime) {
+      return NextResponse.json(
+        { error: "Tipe file audio tidak valid. Gunakan MP3, WAV, OGG, M4A, atau WebM audio." },
+        { status: 400 },
+      );
+    }
 
+    const url = await uploadFile(`audio-${Date.now()}.${AUDIO_EXT_MAP[detectedMime]}`, buffer, detectedMime);
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("Error uploading audio:", error);
-    
-    // Check for specific storage errors if possible
-    const errorMessage = error instanceof Error ? error.message : "INTERNAL_SERVER_ERROR";
-    const status = (error instanceof Error && error.message === "Unauthorized") ? 401 : 500;
-    
-    return NextResponse.json(
-      { error: errorMessage }, 
-      { status }
-    );
+    return apiErrorResponse(error, "Gagal mengunggah audio");
   }
 }
-

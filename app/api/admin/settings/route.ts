@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
 import { getSystemSettings, SYSTEM_SETTING_KEYS, upsertSetting } from "@/lib/system-settings";
 
 const BankSchema = z.object({
@@ -16,14 +16,11 @@ const PatchSettingsSchema = z.object({
   midtransServerKey: z.string().trim().max(200).optional(),
   midtransClientKey: z.string().trim().max(200).optional(),
   midtransIsProduction: z.boolean().optional(),
+  manualTransferEnabled: z.boolean().optional(),
+  manualQrisEnabled: z.boolean().optional(),
+  manualQrisImage: z.string().trim().max(500).refine((v) => v === "" || /^https?:\/\//.test(v), "URL gambar QRIS tidak valid").optional(),
+  midtransEnabled: z.boolean().optional(),
 });
-
-function handleAuthError(error: unknown) {
-  if (error instanceof Error && (error.message === "Unauthorized" || error.message === "Forbidden")) {
-    return NextResponse.json({ error: error.message.toUpperCase() }, { status: error.message === "Forbidden" ? 403 : 401 });
-  }
-  return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message: "Gagal memproses pengaturan" }, { status: 500 });
-}
 
 export async function GET(request: Request) {
   try {
@@ -31,7 +28,7 @@ export async function GET(request: Request) {
     const settings = await getSystemSettings();
     return NextResponse.json({ settings });
   } catch (error) {
-    return handleAuthError(error);
+    return apiErrorResponse(error, "Gagal memuat pengaturan");
   }
 }
 
@@ -69,10 +66,17 @@ export async function PATCH(request: Request) {
       ops.push(upsertSetting(SYSTEM_SETTING_KEYS.midtransIsProduction, String(d.midtransIsProduction)));
     }
 
+    for (const key of ["manualTransferEnabled", "manualQrisEnabled", "midtransEnabled"] as const) {
+      if (typeof d[key] === "boolean") ops.push(upsertSetting(SYSTEM_SETTING_KEYS[key], String(d[key])));
+    }
+    if (typeof d.manualQrisImage === "string") {
+      ops.push(upsertSetting(SYSTEM_SETTING_KEYS.manualQrisImage, d.manualQrisImage));
+    }
+
     await Promise.all(ops);
     const settings = await getSystemSettings();
     return NextResponse.json({ settings });
   } catch (error) {
-    return handleAuthError(error);
+    return apiErrorResponse(error, "Gagal menyimpan pengaturan");
   }
 }

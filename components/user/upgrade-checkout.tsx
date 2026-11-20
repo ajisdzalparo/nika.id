@@ -88,6 +88,10 @@ interface UpgradeCheckoutProps {
   initialTransactions: TransactionHistoryItem[];
   initialBanks: BankAccount[];
   initialWhatsapp: string | null;
+  /** Static QRIS image for manual payment (null when disabled by admin) */
+  initialQris: string | null;
+  /** False when the admin turned off both manual transfer and manual QRIS */
+  manualEnabled: boolean;
   catalogItems: CatalogItem[];
   midtrans: {
     enabled: boolean;
@@ -163,6 +167,8 @@ export function UpgradeCheckout({
   initialTransactions,
   initialBanks,
   initialWhatsapp,
+  initialQris,
+  manualEnabled,
   catalogItems,
   midtrans,
 }: UpgradeCheckoutProps) {
@@ -179,6 +185,7 @@ export function UpgradeCheckout({
   const [submittingProof, setSubmittingProof] = useState(false);
   const [banks, setBanks] = useState<BankAccount[]>(initialBanks);
   const [whatsapp, setWhatsapp] = useState<string | null>(initialWhatsapp);
+  const [qris, setQris] = useState<string | null>(initialQris);
 
   const [checkoutKind, setCheckoutKind] = useState<CheckoutKind>("PLAN");
   const [selectedPlan, setSelectedPlan] = useState<PlanType>(() => getDefaultSelectedPlan(currentPlan));
@@ -285,6 +292,7 @@ export function UpgradeCheckout({
       setSenderName("");
       setBanks(data.banks ?? []);
       setWhatsapp(data.whatsapp ?? null);
+      setQris(data.qrisImage ?? null);
       if (data.order) {
         const newItem: TransactionHistoryItem = {
           id: data.order.id,
@@ -714,7 +722,17 @@ export function UpgradeCheckout({
                 </div>
 
                 <div className="space-y-3 border-t border-[#EFEAE0] pt-5">
-                  <p className="text-sm font-semibold text-[#15130F]">Rekening Tujuan Transfer</p>
+                  {qris && (
+                    <div className="flex flex-col items-center gap-3 rounded-xl border border-[#E6DFD3] bg-white p-5 text-center sm:flex-row sm:text-left">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={qris} alt="Kode QRIS pembayaran" className="h-48 w-48 shrink-0 rounded-lg object-contain" />
+                      <div className="space-y-1.5">
+                        <p className="text-sm font-semibold text-[#15130F]">Scan QRIS</p>
+                        <p className="text-sm text-[#5E574D]">Buka e-wallet atau m-banking, pindai kode ini, lalu bayar <strong className="font-semibold text-[#15130F]">{rupiah(order.amount)}</strong> tepat sampai 3 digit terakhir.</p>
+                      </div>
+                    </div>
+                  )}
+                  {(banks.length > 0 || !qris) && <p className="text-sm font-semibold text-[#15130F]">{qris ? "Atau transfer ke rekening" : "Rekening Tujuan Transfer"}</p>}
                   {banks.length > 0 ? (
                     <div className="grid gap-3 sm:grid-cols-2">
                       {banks.map((b) => (
@@ -728,11 +746,11 @@ export function UpgradeCheckout({
                         </div>
                       ))}
                     </div>
-                  ) : (
+                  ) : !qris ? (
                     <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                       Rekening tujuan belum diatur oleh admin. Silakan hubungi admin untuk informasi transfer.
                     </p>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="flex flex-wrap gap-3 border-t border-[#EFEAE0] pt-5">
@@ -1226,7 +1244,8 @@ export function UpgradeCheckout({
                     </div>
                   </div>
 
-                  {/* Option 2: Transfer Manual */}
+                  {/* Option 2: Transfer / QRIS manual (hidden when the admin disabled both) */}
+                  {manualEnabled && (
                   <button
                     type="button"
                     onClick={() => setPaymentMethod("MANUAL_TRANSFER")}
@@ -1246,16 +1265,19 @@ export function UpgradeCheckout({
                       </span>
                       <div className="min-w-0 flex-1 space-y-1">
                         <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#15130F]">
-                          <IconBuildingBank size={15} className="text-[#8A6A2F]" /> Transfer manual
+                          <IconBuildingBank size={15} className="text-[#8A6A2F]" /> {banks.length > 0 && qris ? "Transfer bank / QRIS manual" : qris ? "QRIS manual" : "Transfer bank manual"}
                         </span>
                         <p className="text-xs leading-relaxed text-[#6B6358]">
-                          {banks.length > 0
-                            ? `Ke rekening ${banks.map((b) => b.bank).join(", ")}, lalu unggah bukti transfer untuk diverifikasi admin.`
-                            : "Transfer ke rekening bank tujuan, lalu unggah bukti transfer di halaman berikutnya."}
+                          {[banks.length > 0 ? `transfer ke ${banks.map((b) => b.bank).join(", ")}` : "", qris ? "scan QRIS" : ""].filter(Boolean).join(" atau ").replace(/^./, (c) => c.toUpperCase())}
+                          , lalu unggah bukti pembayaran untuk diverifikasi admin.
                         </p>
                       </div>
                     </div>
                   </button>
+                  )}
+                  {!manualEnabled && !midtrans.enabled && (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Metode pembayaran sedang tidak tersedia. Silakan hubungi admin.</p>
+                  )}
                 </div>
 
                 {/* Total Breakdown */}

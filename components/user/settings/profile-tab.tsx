@@ -36,20 +36,24 @@ export function ProfileTab({ user }: ProfileTabProps) {
       const res = await fetch("/api/user/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name }),
       });
-      if (!res.ok) throw new Error("Gagal update profil");
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.message || "Gagal update profil");
       toast.success("Profil berhasil diperbarui");
       router.refresh();
-    } catch {
-      toast.error("Terjadi kesalahan");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdatePassword = async () => {
-    if (!newPassword) return;
+    if (newPassword.length < 8) {
+      toast.error("Password baru minimal 8 karakter");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/user/profile", {
@@ -57,11 +61,12 @@ export function ProfileTab({ user }: ProfileTabProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: newPassword }),
       });
-      if (!res.ok) throw new Error("Gagal update password");
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.message || "Gagal update password");
       toast.success("Password berhasil diperbarui");
       setNewPassword("");
-    } catch {
-      toast.error("Terjadi kesalahan");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
     } finally {
       setLoading(false);
     }
@@ -86,7 +91,7 @@ export function ProfileTab({ user }: ProfileTabProps) {
             <Label htmlFor="profile-email" className="text-xs font-bold text-zinc-500 uppercase">
               Email Address
             </Label>
-            <Input id="profile-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-zinc-50/50 dark:bg-zinc-950/50 border-zinc-200 dark:border-zinc-800 rounded-lg focus-visible:ring-primary" />
+            <Input id="profile-email" type="email" value={email} readOnly disabled className="bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-500" />
           </div>
           <Button onClick={handleUpdateProfile} disabled={loading} className="w-full sm:w-auto rounded-lg mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
             {loading ? <IconLoader className="animate-spin w-4 h-4 mr-2" /> : null}

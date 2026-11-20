@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import type { Session } from "@/lib/auth";
 import {
@@ -82,4 +83,18 @@ export async function requireAdmin(request?: Request) {
     throw new Error("Forbidden");
   }
   return session;
+}
+
+/** Shared HTTP error responder for API routes guarded by requireAuth / requireAdmin / requireAnyAuth. */
+export function apiErrorResponse(error: unknown, fallbackMessage = "INTERNAL_SERVER_ERROR") {
+  if (error instanceof Error) {
+    if (error.message === "Unauthorized") {
+      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+    }
+    if (error.message === "Forbidden") {
+      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    }
+  }
+  console.error(`[API_ERROR] ${fallbackMessage}:`, error);
+  return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message: fallbackMessage }, { status: 500 });
 }

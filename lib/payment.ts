@@ -13,8 +13,13 @@ export type { BankAccount };
  */
 export async function getManualPaymentInfo() {
   const settings = await getSystemSettings();
+  const banks = settings.manualTransferEnabled ? settings.manualBanks : [];
+  const qrisImage = settings.manualQrisEnabled && settings.manualQrisImage ? settings.manualQrisImage : null;
   return {
-    banks: settings.manualBanks,
+    banks,
+    qrisImage,
+    /** Manual payment is offered when at least one destination (bank or QRIS) is enabled */
+    manualEnabled: banks.length > 0 || Boolean(qrisImage),
     whatsapp: settings.manualWhatsapp || null,
   };
 }

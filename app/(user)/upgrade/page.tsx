@@ -108,9 +108,11 @@ export default async function UpgradePage() {
         initialTransactions={initialTransactions}
         initialBanks={manualInfo.banks}
         initialWhatsapp={manualInfo.whatsapp}
+        initialQris={manualInfo.qrisImage}
+        manualEnabled={manualInfo.manualEnabled}
         catalogItems={catalogItems}
         midtrans={{
-          enabled: midtrans.enabled,
+          enabled: midtrans.checkoutEnabled,
           clientKey: midtrans.clientKey,
           isProduction: midtrans.isProduction,
         }}

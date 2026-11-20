@@ -1,40 +1,41 @@
-"use client";
-
 import React from "react";
 import { WeddingData } from "@/types/wedding";
+import { SectionHeader } from "../shared";
 
-interface LoveStorySectionProps {
-  data: WeddingData;
-}
-
-export function LoveStorySection({ data }: LoveStorySectionProps) {
-  if (!data.loveStory?.enabled || data.loveStory.chapters.length === 0) return null;
+export function LoveStorySection({ data }: { data: WeddingData }) {
+  if (!data.loveStory?.enabled || data.loveStory.chapters.length === 0) {
+    return null;
+  }
 
   return (
-    <section className="py-20 px-6 bg-[#FBF7F4]">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-12 space-y-3">
-          <p className="text-xs uppercase tracking-[0.4em] text-rose-400 font-semibold">Cerita Kami</p>
-          <h2 className="text-3xl sm:text-4xl font-serif italic text-gray-900">Love Story</h2>
-          <div className="h-px w-16 bg-rose-300 mx-auto" />
-        </div>
+    <section className="px-5 py-20 sm:px-8 sm:py-24">
+      <div className="mx-auto max-w-3xl space-y-12">
+        <SectionHeader
+          kicker="Perjalanan Kami"
+          title="Kisah Cinta"
+          subtitle="Setiap langkah kecil mempertemukan dua hati hingga bermuara pada ikatan yang suci."
+        />
 
-        <div className="relative">
-          {/* Timeline line */}
-          <div className="absolute left-6 top-0 bottom-0 w-px bg-rose-200" />
+        <div className="relative space-y-6 before:absolute before:bottom-4 before:left-5 before:top-4 before:w-px before:bg-[#DDD1C0] sm:before:left-6">
+          {data.loveStory.chapters.map((chapter, idx) => (
+            <article
+              key={`${chapter.title}-${idx}`}
+              className="relative pl-14 sm:pl-16"
+            >
+              <span className="absolute left-0 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-[#C8B08A] bg-[#FFFDF9] font-serif text-xs tracking-wider text-[#8C6D3F] shadow-xs sm:h-12 sm:w-12 sm:text-sm">
+                {String(idx + 1).padStart(2, "0")}
+              </span>
 
-          <div className="space-y-10">
-            {data.loveStory.chapters.map((chapter, i) => (
-              <div key={i} className="relative pl-16">
-                {/* Timeline dot */}
-                <div className="absolute left-4 top-1 w-5 h-5 rounded-full bg-gradient-to-br from-rose-400 to-pink-400 border-4 border-[#FBF7F4] shadow" />
-                <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                  <h4 className="text-lg font-bold text-gray-900 mb-2">{chapter.title}</h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">{chapter.content}</p>
-                </div>
+              <div className="border border-[#DFD4C4] bg-[#FFFDF9] p-6 shadow-[0_14px_38px_-28px_rgba(31,28,24,0.25)] sm:p-7">
+                <h3 className="font-serif text-xl font-normal text-[#1F1C18]">
+                  {chapter.title}
+                </h3>
+                <p className="mt-2.5 text-sm leading-relaxed text-[#5D554B]">
+                  {chapter.content}
+                </p>
               </div>
-            ))}
-          </div>
+            </article>
+          ))}
         </div>
       </div>
     </section>

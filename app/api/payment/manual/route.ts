@@ -36,6 +36,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const kind = body?.kind === "GUEST_ADDON" ? "GUEST_ADDON" : "PLAN";
 
+    if (!(await getManualPaymentInfo()).manualEnabled) {
+      return NextResponse.json({ error: "MANUAL_DISABLED", message: "Pembayaran manual sedang tidak tersedia" }, { status: 400 });
+    }
+
     const active = await getActiveInvitation(session.user.id, typeof body?.invitationId === "string" ? body.invitationId : undefined);
     const currentPlan = (active.plan ?? "FREE") as PlanType;
 

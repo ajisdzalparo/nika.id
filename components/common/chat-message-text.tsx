@@ -8,6 +8,8 @@ const ROUTE_LABELS: Record<string, string> = {
   "/pilih-template": "Lihat Koleksi Template",
   "/editor": "Buka Editor",
   "/desain-ai": "Buka Desain AI",
+  "/desain": "Lihat Koleksi Desain",
+  "/register": "Daftar Gratis",
   "/pengaturan": "Buka Pengaturan",
   "/manajemen-tamu": "Buka Daftar Tamu",
   "/buku-tamu": "Buka RSVP & Ucapan",
@@ -16,7 +18,7 @@ const ROUTE_LABELS: Record<string, string> = {
 };
 
 const TOKEN_RE =
-  /(\*\*[^*]+\*\*|`[^`]+`|\(\/(?:upgrade|pilih-template|editor|desain-ai|pengaturan|manajemen-tamu|buku-tamu|undangan|dashboard)\)|\/(?:upgrade|pilih-template|editor|desain-ai|pengaturan|manajemen-tamu|buku-tamu|undangan|dashboard)(?![a-z0-9-/]))/g;
+  /(\*\*[^*]+\*\*|`[^`]+`|\(\/(?:upgrade|pilih-template|editor|desain-ai|desain|register|pengaturan|manajemen-tamu|buku-tamu|undangan|dashboard)\)|\/(?:upgrade|pilih-template|editor|desain-ai|desain|register|pengaturan|manajemen-tamu|buku-tamu|undangan|dashboard)(?![a-z0-9-/]))/g;
 
 const IMAGE_LINE_RE = /^!\[([^\]]*)\]\((https?:\/\/[^\s)]+\.(?:jpe?g|png|webp|gif)(?:\?[^\s)]*)?)\)$/i;
 

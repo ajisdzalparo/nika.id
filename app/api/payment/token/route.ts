@@ -12,8 +12,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { enabled, snap } = await getMidtransClients();
-  if (!enabled) {
+  const { checkoutEnabled, snap } = await getMidtransClients();
+  if (!checkoutEnabled) {
     return NextResponse.json(
       { error: "MIDTRANS_NOT_CONFIGURED", message: "Pembayaran otomatis belum dikonfigurasi di server. Gunakan Transfer Manual." },
       { status: 503 },
