@@ -1,7 +1,7 @@
 import crypto from "crypto";
+import { ADMIN_PORTAL_COOKIE, USER_PORTAL_COOKIE } from "./portal-constants";
 
-export const USER_PORTAL_COOKIE = "uy_portal_user";
-export const ADMIN_PORTAL_COOKIE = "uy_portal_admin";
+export { ADMIN_PORTAL_COOKIE, USER_PORTAL_COOKIE };
 
 export interface PortalPayload {
   portal: "user" | "admin";

@@ -1,17 +1,43 @@
-name: Build and Deploy to Production
+name: CI/CD Build and Deploy
 
 on:
   push:
     branches:
+      - dev
+      - prod
+  pull_request:
+    branches:
+      - dev
       - prod
 
 env:
   REGISTRY: ghcr.io
-  # We will lowercase this in the job steps
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  verify:
+    name: Typecheck & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: TypeScript Check
+        run: bunx tsc --noEmit
+
+      - name: ESLint Check
+        run: bunx eslint app components lib
+
   build-and-push:
+    name: Build & Push Docker Image
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,31 +79,41 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_APP_URL=https://nikayuk.programmer-ngonten.my.id
-            BETTER_AUTH_URL=https://nikayuk.programmer-ngonten.my.id
             NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true
-            MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}
-            MINIO_PORT=${{ secrets.MINIO_PORT }}
-            MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}
-            MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}
-            MINIO_BUCKET=${{ secrets.MINIO_BUCKET }}
-            MINIO_USE_SSL=${{ secrets.MINIO_USE_SSL }}
-            MINIO_PUBLIC_URL=${{ secrets.MINIO_PUBLIC_URL }}
-            MINIO_SKIP_TLS_VERIFY=${{ secrets.MINIO_SKIP_TLS_VERIFY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy:
+    name: Deploy to VPS
     needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
     steps:
+      - name: Deploy via SSH to VPS
+        if: ${{ secrets.VPS_HOST != '' && secrets.VPS_SSH_KEY != '' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER || 'atmarbyte' }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/projects/undangin-yuk
+            COMPOSE_FILE="docker-compose.prod.yml"
+            [ -f "$COMPOSE_FILE" ] || COMPOSE_FILE="docker-compose.yml"
+            docker compose -f "$COMPOSE_FILE" pull app
+            docker compose -f "$COMPOSE_FILE" up -d
+            docker exec nikaid-app sh -c 'npx --yes prisma@6 db push --skip-generate || bunx prisma@6 db push --skip-generate' || true
+            docker image prune -f
+
       - name: Trigger Dokploy Redeploy
-        if: success()
-        run: |
-          curl -X POST "${{ secrets.DOKPLOY_WEBHOOK }}"
+        if: ${{ secrets.DOKPLOY_WEBHOOK != '' }}
+        run: curl -fsSL -X POST "${{ secrets.DOKPLOY_WEBHOOK }}"
 
       - name: Trigger Coolify Deploy
-        if: success()
+        if: ${{ secrets.COOLIFY_WEBHOOK != '' }}
         run: |
-          curl --request GET \
+          curl -fsSL --request GET \
             --url "${{ secrets.COOLIFY_WEBHOOK }}" \
             --header "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"

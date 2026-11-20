@@ -5,6 +5,8 @@ import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { shellTokens, studioClass } from "@/lib/studio";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession(undefined, "admin");
 
