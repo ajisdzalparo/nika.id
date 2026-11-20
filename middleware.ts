@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { ADMIN_PORTAL_COOKIE, USER_PORTAL_COOKIE } from "@/lib/portal-gate";
+import { ADMIN_PORTAL_COOKIE, USER_PORTAL_COOKIE } from "@/lib/portal-constants";
 
 const protectedRoutes = ["/dashboard", "/undangan", "/editor", "/pilih-template", "/desain-ai", "/buku-tamu", "/manajemen-tamu", "/pengaturan", "/upgrade"];
 const adminRoutes = ["/admin", "/templates", "/users", "/moderasi", "/transaksi", "/pengaturan-admin"];
