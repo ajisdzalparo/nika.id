@@ -25,7 +25,7 @@ export function ClosingSection({ data }: ClosingSectionProps) {
       </section>
 
       <footer className="py-8 px-6 bg-gray-900 text-center">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">Design with 💕 by nika.id</p>
+        <p className="text-[10px] uppercase tracking-[0.3em] text-gray-500">Design with 💕 by undangin yuk</p>
       </footer>
     </>
   );

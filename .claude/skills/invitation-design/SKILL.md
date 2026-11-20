@@ -1,11 +1,11 @@
 ---
 name: invitation-design
-description: Design rules for nika.id UI — the AI theme engine (components/templates/ai-design), invitation templates, the dashboard and the marketing pages. Use before creating or changing any page, component, template, or the AI design prompt, so the result looks crafted instead of generic AI output.
+description: Design rules for undangin yuk UI — the AI theme engine (components/templates/ai-design), invitation templates, the dashboard and the marketing pages. Use before creating or changing any page, component, template, or the AI design prompt, so the result looks crafted instead of generic AI output.
 ---
 
 # Invitation design rules
 
-nika.id sells taste. A wedding invitation is shown to hundreds of guests; if it looks like a
+undangin yuk sells taste. A wedding invitation is shown to hundreds of guests; if it looks like a
 generic AI landing page, the product fails. Follow these rules for every UI change.
 
 ## The look we avoid ("slop")

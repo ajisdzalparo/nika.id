@@ -36,8 +36,8 @@ function Card({ item, rank }: { item: CatalogItem; rank?: number }) {
           {rank}
         </span>
       )}
-      <div className="overflow-hidden rounded-[22px] border-[5px] border-[#1E1B17] bg-white transition-transform duration-500 group-hover:-translate-y-1">
-        <Cover item={item} className="aspect-[9/17] w-full" />
+      <div className="overflow-hidden rounded-[22px] border-[5px] border-[#1E1B17] bg-white transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_20px_40px_-18px_rgba(30,27,23,0.28)]">
+        <Cover item={item} className="aspect-[9/17] w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]" />
       </div>
       <div className="mt-3 space-y-1.5 px-1">
         <p className="truncate font-(family-name:--font-landing-display) text-xl" style={{ color: L.ink }}>
@@ -71,7 +71,7 @@ function Row({ title, items, ranked = false, onSeeAll }: { title: string; items:
           ].map(([d, Icon, label]) => {
             const I = Icon as typeof IconChevronLeft;
             return (
-              <button key={label as string} onClick={() => scroll(d as number)} aria-label={label as string} className="hidden h-10 w-10 items-center justify-center rounded-full border transition-colors hover:bg-white md:flex" style={{ borderColor: L.line, color: L.ink }}>
+              <button key={label as string} onClick={() => scroll(d as number)} aria-label={label as string} className="flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-300 hover:bg-white active:scale-95" style={{ borderColor: L.line, color: L.ink }}>
                 <I size={18} />
               </button>
             );
@@ -100,8 +100,8 @@ function FeaturedCarousel({ items }: { items: CatalogItem[] }) {
 
   return (
     <section className="relative overflow-hidden pt-24 md:pt-28" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-      <div key={it.id} className="mx-auto grid max-w-6xl items-center gap-10 px-4 animate-in fade-in duration-700 md:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="space-y-6">
+      <div key={it.id} className="mx-auto grid max-w-6xl items-center gap-10 px-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
           <Eyebrow>
             Desain unggulan · {it.category}
           </Eyebrow>
@@ -112,26 +112,55 @@ function FeaturedCarousel({ items }: { items: CatalogItem[] }) {
             {it.description}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href={`/preview/t/${it.slug}`} className="flex h-13 items-center justify-center gap-2 rounded-full px-7 text-[15px] font-medium" style={{ background: L.ink, color: L.bg }}>
+            <Link href={`/preview/t/${it.slug}`} className="flex h-13 items-center justify-center gap-2 rounded-full px-7 text-[15px] font-medium transition-all duration-300 hover:-translate-y-0.5 hover:opacity-95" style={{ background: L.ink, color: L.bg }}>
               Coba langsung <IconArrowRight size={18} />
             </Link>
-            <Link href={`/pilih-template?pakai=${it.slug}`} className="flex h-13 items-center justify-center rounded-full border px-7 text-[15px] font-medium hover:bg-white" style={{ borderColor: L.line, color: L.ink }}>
+            <Link href={`/pilih-template?pakai=${it.slug}`} className="flex h-13 items-center justify-center rounded-full border px-7 text-[15px] font-medium transition-all duration-300 hover:-translate-y-0.5 hover:bg-white" style={{ borderColor: L.line, color: L.ink }}>
               Pakai desain ini
             </Link>
           </div>
-          <div className="flex items-center gap-2 pt-2">
-            {items.map((x, k) => (
-              <button key={x.id} onClick={() => setI(k)} aria-label={`Tampilkan ${x.name}`} className="flex h-11 items-center">
-                <span className={`block h-1 rounded-full transition-all duration-300 ${k === i ? "w-10 bg-[#1E1B17]" : "w-5 bg-[#CFC5B4]"}`} />
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+            <div className="flex items-center gap-2">
+              {items.map((x, k) => (
+                <button key={x.id} onClick={() => setI(k)} aria-label={`Tampilkan ${x.name}`} className="flex h-11 items-center">
+                  <span className={`relative block h-1.5 overflow-hidden rounded-full transition-all duration-300 ${k === i ? "w-12 bg-[#CFC5B4]" : "w-5 bg-[#CFC5B4]/70 hover:bg-[#A59B8C]"}`}>
+                    {k === i && (
+                      <span
+                        key={`${it.id}-${paused ? "paused" : "play"}`}
+                        className={`absolute inset-0 rounded-full bg-[#1E1B17] ${paused ? "w-full" : "animate-uy-progress"}`}
+                      />
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {items.length > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setI((x) => (x - 1 + items.length) % items.length)}
+                  aria-label="Desain unggulan sebelumnya"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-300 hover:bg-white active:scale-95"
+                  style={{ borderColor: L.line, color: L.ink }}
+                >
+                  <IconChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={() => setI((x) => (x + 1) % items.length)}
+                  aria-label="Desain unggulan berikutnya"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-300 hover:bg-white active:scale-95"
+                  style={{ borderColor: L.line, color: L.ink }}
+                >
+                  <IconChevronRight size={18} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center animate-in fade-in zoom-in-95 duration-500">
           {it.kind === "ENGINE" && it.theme ? (
             <Phone theme={it.theme} zoom={0.72} />
           ) : (
-            <div className="overflow-hidden rounded-[38px] border-[7px] border-[#111]">
+            <div className="overflow-hidden rounded-[38px] border-[7px] border-[#111] shadow-[0_30px_60px_-20px_rgba(30,27,23,.45)]">
               <Cover item={it} className="h-[520px] w-[270px]" />
             </div>
           )}

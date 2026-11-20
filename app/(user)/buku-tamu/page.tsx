@@ -1,31 +1,31 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
+import { InvitationSwitcher } from "@/components/user/active-invitation-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth-helpers";
+import { getActiveInvitation } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { IconMessage, IconUsers, IconCheck, IconX, IconQuestionMark, IconQuote } from "@tabler/icons-react";
+import { IconMessage, IconUsers, IconCheck, IconX, IconQuote } from "@tabler/icons-react";
 
 export default async function BukuTamuPage() {
-  const rawHeaders = await headers();
-  const session = await auth.api.getSession({
-    headers: Object.fromEntries(rawHeaders),
-  });
+  const session = await getSession(undefined, "user");
 
   if (!session) redirect("/login");
 
+  const active = await getActiveInvitation(session.user.id);
+
   const [attendees, messages] = await Promise.all([
     prisma.rSVP.findMany({
-      where: { userId: session.user.id },
+      where: { invitationId: active.id },
       orderBy: { createdAt: "desc" },
     }),
     prisma.guestMessage.findMany({
-      where: { userId: session.user.id },
+      where: { invitationId: active.id },
       orderBy: { createdAt: "desc" },
     }),
   ]);
@@ -44,10 +44,18 @@ export default async function BukuTamuPage() {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-[#8A6A2F]">{active.title}</p>
               <h1 className="font-serif text-3xl md:text-4xl font-medium text-zinc-900 dark:text-zinc-50 tracking-tight">Komentar & Kehadiran</h1>
               <p className="text-zinc-500 dark:text-zinc-400 mt-1">Pantau siapa saja yang akan hadir di hari bahagiamu.</p>
             </div>
-            <Button className="rounded-full px-6 shadow-none bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200">Download Data</Button>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <InvitationSwitcher compact />
+              <Button asChild className="rounded-full px-6 shadow-none bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200">
+                <a href="/api/user/rsvp/export" download>
+                  Download Data (CSV)
+                </a>
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards - Glass & Minimalist */}

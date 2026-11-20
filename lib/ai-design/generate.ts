@@ -47,10 +47,11 @@ export async function generateAiTheme(
   prompt: string,
   couple?: { groom?: string; bride?: string },
   referenceUrls: string[] = [],
+  baseTheme?: AiTheme | null,
 ): Promise<AiTheme> {
   const anthropic = getClient();
   const images = await Promise.all(referenceUrls.slice(0, MAX_REFERENCES).map(loadReference));
-  const text = buildUserPrompt(prompt, couple) + (images.length ? `\n\n${REFERENCE_INSTRUCTIONS}` : "");
+  const text = buildUserPrompt(prompt, couple, baseTheme) + (images.length ? `\n\n${REFERENCE_INSTRUCTIONS}` : "");
 
   let response;
   try {

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-helpers";
+import { requireAnyAuth } from "@/lib/auth-helpers";
 import { uploadFile } from "@/lib/storage";
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAuth(request).catch((err) => {
+    const session = await requireAnyAuth(request).catch((err) => {
       if (err.message === "Unauthorized") return "UNAUTHORIZED";
       if (err.message === "Forbidden") return "FORBIDDEN";
       throw err;
@@ -25,23 +25,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    // Validate audio file types
-    const allowedTypes = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/x-m4a", "audio/m4a"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: `File type ${file.type} not allowed. Must be MP3, WAV, or OGG` }, { status: 400 });
+    // Validate audio file types (MIME + extension fallback for browsers sending generic octet-stream)
+    const allowedTypes = [
+      "audio/mpeg",
+      "audio/mp3",
+      "audio/wav",
+      "audio/wave",
+      "audio/x-wav",
+      "audio/ogg",
+      "audio/x-m4a",
+      "audio/m4a",
+      "audio/mp4",
+      "audio/aac",
+      "audio/webm",
+    ];
+    const allowedExt = /\.(mp3|wav|ogg|m4a|aac|webm)$/i;
+    const contentType = file.type || "audio/mpeg";
+    if (!allowedTypes.includes(file.type) && !allowedExt.test(file.name)) {
+      return NextResponse.json({ error: `Tipe file ${file.type || "tidak dikenal"} tidak didukung. Gunakan MP3, WAV, OGG, M4A, atau AAC.` }, { status: 400 });
     }
 
-    // Optional: Validate file size (e.g., max 10MB)
+    // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      return NextResponse.json({ error: `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds 10MB limit` }, { status: 400 });
+      return NextResponse.json({ error: `Ukuran file (${(file.size / 1024 / 1024).toFixed(2)}MB) melebihi batas 10MB` }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Upload to MinIO
-    const url = await uploadFile(file.name, buffer, file.type);
+    // Upload to MinIO / S3
+    const url = await uploadFile(file.name, buffer, contentType);
 
     return NextResponse.json({ url });
   } catch (error) {

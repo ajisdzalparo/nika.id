@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { IconMenu2, IconX, IconHeart } from "@tabler/icons-react";
+import { IconMenu2, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -32,14 +32,9 @@ export function Navbar() {
     <header className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b", isScrolled ? "bg-background/80 backdrop-blur-md border-border py-3" : "bg-transparent border-transparent py-5")}>
       <div className="container mx-auto px-4 md:px-6">
         <nav className="flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground transition-transform group-hover:scale-110">
-              <IconHeart size={18} fill="currentColor" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-foreground">
-              nika<span className="text-primary">.id</span>
-            </span>
+          <Link href="/" className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="UNDANGIN YUK" className="h-8 w-auto object-contain" />
           </Link>
 
           <div className="hidden md:flex items-center gap-8">

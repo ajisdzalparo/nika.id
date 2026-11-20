@@ -62,6 +62,7 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
   const [applying, setApplying] = useState(false);
   const [step, setStep] = useState(0);
   const [presetKey, setPresetKey] = useState("malam-keemasan");
+  const [preserveContext, setPreserveContext] = useState(true);
 
   useEffect(() => {
     fetch("/api/ai/design")
@@ -91,7 +92,12 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
     if (prompt.trim().length < 8 && !references.length) return toast.error("Ceritakan gaya yang Anda inginkan, atau lampirkan screenshot referensi.");
     setGenerating(true);
     try {
-      const res = await fetch("/api/ai/design", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt, references }) });
+      const baseThemeId = preserveContext && selected ? selected.id : undefined;
+      const res = await fetch("/api/ai/design", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, references, baseThemeId }),
+      });
       const d = await res.json();
       if (!res.ok) {
         if (d.quota) setQuota(d.quota);
@@ -165,6 +171,26 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
               disabled={generating}
             />
             <ReferenceUploader value={references} onChange={setReferences} disabled={generating} />
+            {selected && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-xs dark:border-zinc-800 dark:bg-zinc-950">
+                <span className="text-zinc-600 dark:text-zinc-400">
+                  {preserveContext ? (
+                    <>
+                      Mengingat konteks gaya <strong className="font-medium text-zinc-900 dark:text-zinc-100">{selected.theme.name}</strong>
+                    </>
+                  ) : (
+                    "Membuat gaya baru dari awal (tanpa konteks sebelumnya)"
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPreserveContext((v) => !v)}
+                  className="font-medium text-[#8A6A2F] hover:underline"
+                >
+                  {preserveContext ? "Mulai gaya baru" : "Ikuti gaya aktif"}
+                </button>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               {INSPIRATIONS.map((s) => (
                 <button
@@ -220,8 +246,8 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
                 </div>
               </dl>
               {activeId === selected.id ? (
-                <div className="flex h-11 items-center gap-2 rounded-lg bg-emerald-50 px-4 text-sm font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                  <IconCheck size={18} /> Sedang dipakai di undangan Anda
+                <div className="flex h-11 items-center gap-2 rounded-lg border border-[#DFD2BC] bg-[#F5EFE3] px-4 text-sm font-medium text-[#5C4620]">
+                  <IconCheck size={17} className="text-[#8A6A2F]" /> Sedang dipakai di undangan Anda
                 </div>
               ) : (
                 <Button onClick={apply} disabled={applying} className="h-11 w-full rounded-lg">
@@ -264,7 +290,7 @@ export function AiDesignStudio({ previewData, usesSampleData }: { previewData: W
                     <div className="space-y-1 bg-white p-3 dark:bg-zinc-900">
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">{d.theme.name}</p>
-                        {d.id === activeId && <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">Aktif</span>}
+                        {d.id === activeId && <span className="shrink-0 rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-2 py-0.5 text-[10px] font-medium text-[#6E5426]">Aktif</span>}
                       </div>
                       <p className="line-clamp-1 text-xs text-zinc-500">{d.prompt}</p>
                     </div>

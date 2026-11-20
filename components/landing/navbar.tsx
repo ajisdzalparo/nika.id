@@ -15,9 +15,12 @@ const links = [
 
 export function Wordmark({ light = false }: { light?: boolean }) {
   return (
-    <span className="font-(family-name:--font-landing-display) text-[26px] font-semibold leading-none tracking-tight" style={{ color: light ? "#F3EBDD" : L.ink }}>
-      nika<span style={{ color: light ? L.accentBright : L.accent }}>.id</span>
-    </span>
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={light ? "/logo-light.png" : "/logo.png"}
+      alt="UNDANGIN YUK"
+      className="h-8 w-auto object-contain sm:h-9"
+    />
   );
 }
 
@@ -38,7 +41,7 @@ export function LandingNavbar() {
       style={{ background: scrolled || open ? "rgba(247,243,236,.92)" : "transparent", borderBottom: `1px solid ${scrolled || open ? L.line : "transparent"}`, backdropFilter: scrolled ? "blur(10px)" : undefined }}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
-        <Link href="/" aria-label="nika.id beranda">
+        <Link href="/" aria-label="UNDANGIN YUK beranda">
           <Wordmark />
         </Link>
 

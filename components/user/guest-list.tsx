@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { IconCopy, IconTrash, IconBrandWhatsapp, IconUsers, IconShare, IconSearch, IconUserPlus } from "@tabler/icons-react";
+import { IconCopy, IconTrash, IconBrandWhatsapp, IconUsers, IconSearch, IconUserPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -12,22 +12,24 @@ interface Guest {
   name: string;
 }
 
-import { PlanType, getPlanLimits } from "@/lib/limits";
+import { PlanType, getMaxGuests, getPlanLimits } from "@/lib/limits";
 
 interface GuestListProps {
   initialGuests: Guest[];
   invitationSlug: string;
   userPlan: PlanType;
+  extraGuestQuota?: number;
 }
 
-export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestListProps) {
+export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQuota = 0 }: GuestListProps) {
   const [guests, setGuests] = useState<Guest[]>(initialGuests);
   const [newName, setNewName] = useState("");
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
   const limits = getPlanLimits(userPlan);
-  const isLimitReached = guests.length >= limits.maxGuests;
+  const maxGuests = getMaxGuests(userPlan, extraGuestQuota);
+  const isLimitReached = guests.length >= maxGuests;
 
   const baseUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/${invitationSlug}`;
 
@@ -110,7 +112,7 @@ export function GuestList({ initialGuests, invitationSlug, userPlan }: GuestList
             <div>
               <h3 className="font-serif text-lg font-medium">Tambah Tamu</h3>
               <p className="text-xs text-muted-foreground">
-                Total: {guests.length} / {limits.maxGuests === Infinity ? "Unlimited" : limits.maxGuests}
+                Total: {guests.length} / {maxGuests === Infinity ? "Unlimited" : maxGuests}
               </p>
             </div>
           </div>

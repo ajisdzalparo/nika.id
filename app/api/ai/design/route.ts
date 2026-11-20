@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import { getActiveInvitation } from "@/lib/active-invitation";
 import type { PlanType } from "@/lib/limits";
 import { getAiQuota } from "@/lib/ai-design/server";
 import { generateAiTheme, AiDesignError } from "@/lib/ai-design/generate";
@@ -8,29 +9,25 @@ import { normalizeTheme } from "@/lib/ai-design/color";
 
 const MAX_PROMPT = 600;
 
-async function loadUser(request: Request) {
+async function loadContext(request: Request) {
   const session = await requireAuth(request);
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true, plan: true, activeAiDesignId: true, invitation: { select: { data: true } } },
-  });
-  if (!user) throw new Error("Unauthorized");
-  return user;
+  const invitation = await getActiveInvitation(session.user.id);
+  return { userId: session.user.id, invitation };
 }
 
-// GET /api/ai/design — the user's designs, quota and active design
+// GET /api/ai/design — the user's designs, quota and active design for the active invitation
 export async function GET(request: Request) {
   try {
-    const user = await loadUser(request);
+    const { userId, invitation } = await loadContext(request);
     const [designs, quota] = await Promise.all([
-      prisma.aiDesign.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } }),
-      getAiQuota(user.id, user.plan as PlanType),
+      prisma.aiDesign.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+      getAiQuota(userId, invitation.plan as PlanType),
     ]);
 
     return NextResponse.json({
       designs: designs.map((d) => ({ id: d.id, prompt: d.prompt, createdAt: d.createdAt, theme: normalizeTheme(d.theme) })),
       quota,
-      activeId: user.activeAiDesignId,
+      activeId: invitation.activeAiDesignId,
     });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
@@ -42,23 +39,32 @@ export async function GET(request: Request) {
 // POST /api/ai/design { prompt } — generate a new theme (uses one quota)
 export async function POST(request: Request) {
   try {
-    const user = await loadUser(request);
+    const { userId, invitation } = await loadContext(request);
     const body = await request.json().catch(() => ({}));
     const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+    const baseThemeId = typeof body?.baseThemeId === "string" ? body.baseThemeId : "";
     const references: string[] = Array.isArray(body?.references) ? body.references.filter((u: unknown): u is string => typeof u === "string").slice(0, 3) : [];
 
     if (prompt.length < 8 && !references.length) return NextResponse.json({ error: "PROMPT_TOO_SHORT", message: "Ceritakan gaya yang diinginkan minimal beberapa kata." }, { status: 400 });
     if (prompt.length > MAX_PROMPT) return NextResponse.json({ error: "PROMPT_TOO_LONG", message: `Maksimal ${MAX_PROMPT} karakter.` }, { status: 400 });
 
-    const quota = await getAiQuota(user.id, user.plan as PlanType);
+    const quota = await getAiQuota(userId, invitation.plan as PlanType);
     if (quota.remaining <= 0) {
       return NextResponse.json({ error: "QUOTA_EXCEEDED", message: "Kuota desain AI paket Anda sudah habis.", quota }, { status: 402 });
     }
 
-    const data = (user.invitation?.data ?? {}) as { groom?: { nickname?: string }; bride?: { nickname?: string } };
-    const theme = await generateAiTheme(prompt || "Buat tema undangan pernikahan berdasarkan screenshot referensi.", { groom: data.groom?.nickname, bride: data.bride?.nickname }, references);
+    const baseRow = baseThemeId ? await prisma.aiDesign.findFirst({ where: { id: baseThemeId, userId }, select: { theme: true } }) : null;
+    const baseTheme = baseRow ? normalizeTheme(baseRow.theme) : null;
 
-    const design = await prisma.aiDesign.create({ data: { userId: user.id, prompt: prompt || "(dari screenshot referensi)", theme } });
+    const data = (invitation.data ?? {}) as { groom?: { nickname?: string }; bride?: { nickname?: string } };
+    const theme = await generateAiTheme(
+      prompt || "Buat tema undangan pernikahan berdasarkan screenshot referensi.",
+      { groom: data.groom?.nickname, bride: data.bride?.nickname },
+      references,
+      baseTheme,
+    );
+
+    const design = await prisma.aiDesign.create({ data: { userId, prompt: prompt || "(dari screenshot referensi)", theme } });
 
     return NextResponse.json({
       design: { id: design.id, prompt: design.prompt, createdAt: design.createdAt, theme },

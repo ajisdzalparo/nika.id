@@ -1,4 +1,4 @@
-import { AiThemeSchema, DEFAULT_AI_THEME, type AiTheme } from "./schema";
+import { AiThemeSchema, DEFAULT_AI_THEME, ThemeAssetsSchema, type AiTheme } from "./schema";
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -46,5 +46,14 @@ export function normalizeTheme(input: unknown): AiTheme {
   palette.muted = ensureContrast(palette.muted, palette.background, 3, palette.ink, palette.ink);
   palette.onAccent = ensureContrast(palette.onAccent, palette.accent, 4.5, "#1F1B16", "#FFFFFF");
 
-  return { ...theme, palette };
+  const rawAssets = typeof input === "object" && input !== null ? (input as { assets?: unknown }).assets : undefined;
+  const parsedAssets = ThemeAssetsSchema.safeParse(rawAssets);
+  const assets = parsedAssets.success && (parsedAssets.data.backgroundImage || parsedAssets.data.ornamentImage)
+    ? {
+        ...(parsedAssets.data.backgroundImage ? { backgroundImage: parsedAssets.data.backgroundImage } : {}),
+        ...(parsedAssets.data.ornamentImage ? { ornamentImage: parsedAssets.data.ornamentImage } : {}),
+      }
+    : undefined;
+
+  return assets ? { ...theme, palette, assets } : { ...theme, palette };
 }

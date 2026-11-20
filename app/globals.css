@@ -347,3 +347,59 @@
   --ring: #8a6a2f;
   --radius: 0.75rem;
 }
+
+@keyframes uy-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes uy-sway {
+  0%,
+  100% {
+    transform: rotate(-1.5deg) translateY(0px);
+  }
+  50% {
+    transform: rotate(1.5deg) translateY(-2px);
+  }
+}
+
+@keyframes uy-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-uy-float {
+  animation: uy-float 6s ease-in-out infinite;
+}
+
+.animate-uy-float-delayed {
+  animation: uy-float 7s ease-in-out 1.4s infinite;
+}
+
+.animate-uy-sway {
+  animation: uy-sway 7s ease-in-out infinite;
+  transform-origin: center top;
+}
+
+.animate-uy-progress {
+  animation: uy-progress 7s linear forwards;
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-uy-float,
+  .animate-uy-float-delayed,
+  .animate-uy-sway,
+  .animate-uy-progress {
+    animation: none !important;
+  }
+}

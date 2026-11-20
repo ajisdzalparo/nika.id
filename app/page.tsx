@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 
 export const metadata: Metadata = {
-  title: "nika.id · Undangan pernikahan digital dengan Desain AI",
+  title: "UNDANGIN YUK · Undangan pernikahan digital dengan Desain AI",
   description: "Rancang undangan pernikahan digital sesuai konsep kalian dengan AI. RSVP, amplop digital, musik, galeri, dan kirim ke tamu lewat WhatsApp.",
 };
 

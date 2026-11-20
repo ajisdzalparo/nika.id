@@ -7,7 +7,7 @@ import { getCatalog } from "@/lib/catalog";
 import { studioDisplay } from "@/lib/studio";
 
 export const metadata: Metadata = {
-  title: "Koleksi desain undangan · nika.id",
+  title: "Koleksi desain undangan · UNDANGIN YUK",
   description: "Jelajahi desain undangan pernikahan digital: adat, minimalis, floral, luxury, dan lainnya. Coba langsung di HP sebelum memilih.",
 };
 

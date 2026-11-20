@@ -57,7 +57,8 @@ export async function ensureBucketExists() {
  */
 export async function uploadFile(fileName: string, fileBuffer: Buffer, contentType: string) {
   try {
-    const objectName = `${Date.now()}-${fileName}`;
+    const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const objectName = `${Date.now()}-${safeName}`;
     await minioClient.putObject(bucketName, objectName, fileBuffer, fileBuffer.length, {
       "Content-Type": contentType,
     });

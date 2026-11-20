@@ -39,7 +39,7 @@ function VerificationSentContent() {
       </div>
 
       <ol className="space-y-3 border-y border-zinc-200 py-5 text-[15px] text-zinc-700">
-        {["Buka kotak masuk email", "Cari email dari nika.id (cek juga folder spam)", "Klik tombol verifikasi"].map((s, i) => (
+        {["Buka kotak masuk email", "Cari email dari UNDANGIN YUK (cek juga folder spam)", "Klik tombol verifikasi"].map((s, i) => (
           <li key={s} className="flex gap-4">
             <span className="font-serif text-xl italic leading-none text-[#8A6A2F]">{i + 1}</span>
             {s}

@@ -25,6 +25,7 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
               tier: row.tier === "Premium" ? "Premium" : "Gratis",
               kind: row.kind === "CODE" ? "CODE" : "ENGINE",
               theme: row.theme ? normalizeTheme(row.theme) : null,
+              defaultMusic: (row.defaultMusic as { type: "youtube" | "upload"; url: string; title?: string } | null) ?? null,
               componentSlug: row.componentSlug,
               thumbnail: row.thumbnail ?? "",
               referenceUrl: row.referenceUrl ?? "",

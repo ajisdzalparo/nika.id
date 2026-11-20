@@ -1,9 +1,10 @@
 import { SiteHeader } from "@/components/site-header";
+import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { UsersClient, type User } from "@/components/admin/users-client";
 
 export default async function UsersPage(props: { searchParams: Promise<{ q?: string; page?: string; limit?: string }> }) {
-  const searchParams = await props.searchParams;
+  const [searchParams, session] = await Promise.all([props.searchParams, getSession(undefined, "admin")]);
   const q = searchParams.q || "";
   const page = parseInt(searchParams.page || "1");
   const limit = parseInt(searchParams.limit || "10");
@@ -45,7 +46,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ q?: str
             </div>
           </div>
 
-          <UsersClient initialUsers={serializedUsers as User[]} totalPages={totalPages} currentPage={page} totalCount={totalCount} />
+          <UsersClient initialUsers={serializedUsers as User[]} totalPages={totalPages} currentPage={page} totalCount={totalCount} currentUserId={session?.user?.id} />
 
           <div className="rounded-lg border bg-card p-6 mt-8">
             <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">Verifikasi Pembayaran</h2>

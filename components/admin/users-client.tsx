@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, Trash2, ExternalLink, LogIn, Calendar, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Trash2, ExternalLink, LogIn, Calendar, Heart, ChevronLeft, ChevronRight, ShieldCheck, ShieldOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +28,10 @@ interface UsersClientProps {
   totalPages: number;
   currentPage: number;
   totalCount: number;
+  currentUserId?: string;
 }
 
-export function UsersClient({ initialUsers, totalPages, currentPage, totalCount }: UsersClientProps) {
+export function UsersClient({ initialUsers, totalPages, currentPage, totalCount, currentUserId }: UsersClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -39,6 +40,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isImpersonating, setIsImpersonating] = useState<string | null>(null);
+  const [isUpdatingRole, setIsUpdatingRole] = useState<string | null>(null);
 
   // Sync state with URL when URL changes (back/forward)
   useEffect(() => {
@@ -102,6 +104,29 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount 
       toast.error("Gagal melakukan impersonasi");
     } finally {
       setIsImpersonating(null);
+    }
+  };
+
+  const handleToggleAdmin = async (user: User) => {
+    const isAdmin = user.role?.toLowerCase() === "admin";
+    const nextRole = isAdmin ? "USER" : "admin";
+    setIsUpdatingRole(user.id);
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: nextRole }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || "Gagal mengubah role");
+      }
+      toast.success(nextRole === "admin" ? `${user.name || user.email} dijadikan admin` : `Akses admin ${user.name || user.email} dicabut`);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal mengubah role");
+    } finally {
+      setIsUpdatingRole(null);
     }
   };
 
@@ -210,10 +235,46 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount 
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.role === "ADMIN" ? "default" : "secondary"}>{user.role}</Badge>
+                    <Badge variant={user.role?.toLowerCase() === "admin" ? "default" : "secondary"}>
+                      {user.role?.toLowerCase() === "admin" ? "Admin" : user.role}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1 opacity-100 transition-opacity">
+                      {user.id !== currentUserId && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 gap-1 px-2 text-xs"
+                              disabled={isUpdatingRole === user.id}
+                              title={user.role?.toLowerCase() === "admin" ? "Cabut akses admin" : "Jadikan admin"}
+                            >
+                              {user.role?.toLowerCase() === "admin" ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5 text-[#8A6A2F]" />}
+                              <span className="hidden sm:inline">{user.role?.toLowerCase() === "admin" ? "Cabut admin" : "Jadikan admin"}</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {user.role?.toLowerCase() === "admin" ? `Cabut akses admin ${user.name || user.email}?` : `Jadikan ${user.name || user.email} sebagai admin?`}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {user.role?.toLowerCase() === "admin"
+                                  ? "User ini tidak lagi dapat mengakses panel admin."
+                                  : "User ini akan memiliki akses penuh ke panel admin, termasuk mengelola template, pengguna, dan transaksi."}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Batal</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleToggleAdmin(user)}>
+                                {user.role?.toLowerCase() === "admin" ? "Cabut admin" : "Jadikan admin"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                       <Button variant="ghost" size="icon-sm" title="Login As" onClick={() => handleImpersonate(user.id)} disabled={isImpersonating === user.id}>
                         <LogIn className={`h-4 w-4 ${isImpersonating === user.id ? "animate-pulse" : ""}`} />
                       </Button>

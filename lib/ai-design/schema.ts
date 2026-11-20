@@ -80,7 +80,13 @@ export const AiThemeSchema = z.object({
   }),
 });
 
-export type AiTheme = z.infer<typeof AiThemeSchema>;
+export const ThemeAssetsSchema = z.object({
+  backgroundImage: z.string().optional(),
+  ornamentImage: z.string().optional(),
+});
+
+export type ThemeAssets = z.infer<typeof ThemeAssetsSchema>;
+export type AiTheme = z.infer<typeof AiThemeSchema> & { assets?: ThemeAssets };
 
 export const DEFAULT_AI_THEME: AiTheme = {
   name: "Sekar Arum",

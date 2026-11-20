@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -6,9 +5,10 @@ import { IconArrowRight, IconCheck, IconPalette } from "@tabler/icons-react";
 import { SiteHeader } from "@/components/site-header";
 import { Phone } from "@/components/landing/primitives";
 import { ShareLink } from "@/components/user/dashboard-parts";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth-helpers";
+import { getActiveInvitation, listUserInvitations } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
-import { getPlanLimits, type PlanType } from "@/lib/limits";
+import { getMaxGuests, getPlanLimits, type PlanType } from "@/lib/limits";
 import { getTemplateBySlug } from "@/lib/templates";
 import { getActiveAiTheme } from "@/lib/ai-design/server";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
@@ -29,54 +29,58 @@ function daysUntil(date: Date | string | null | undefined) {
 }
 
 export default async function UserDashboardPage() {
-  const session = await auth.api.getSession({ headers: Object.fromEntries(await headers()) });
+  const session = await getSession(undefined, "user");
   if (!session) redirect("/login");
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      invitation: true,
-      _count: { select: { messages: true, guests: true } },
-      messages: { orderBy: { createdAt: "desc" }, take: 3 },
-      rsvps: { select: { attendance: true, guests: true } },
-    },
-  });
+  const [user, active, allInvitations] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true } }),
+    getActiveInvitation(session.user.id),
+    listUserInvitations(session.user.id),
+  ]);
   if (!user) redirect("/login");
 
-  const raw = (user.invitation?.data ?? {}) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
-  const data = mapInvitationToWeddingData(raw, "Bapak & Ibu Tamu", user.weddingDate ?? undefined);
-  const plan = user.plan as PlanType;
+  const [guestCount, messages, rsvps] = await Promise.all([
+    prisma.guest.count({ where: { invitationId: active.id } }),
+    prisma.guestMessage.findMany({ where: { invitationId: active.id }, orderBy: { createdAt: "desc" }, take: 3 }),
+    prisma.rSVP.findMany({ where: { invitationId: active.id }, select: { attendance: true, guests: true } }),
+  ]);
+  const messageCount = await prisma.guestMessage.count({ where: { invitationId: active.id } });
+
+  const raw = (active.data ?? {}) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const data = mapInvitationToWeddingData(raw, "Bapak & Ibu Tamu", active.weddingDate ?? undefined);
+  const plan = active.plan as PlanType;
   const limits = getPlanLimits(plan);
-  const template = user.templateSlug ? getTemplateBySlug(user.templateSlug) : undefined;
-  const aiTheme = user.templateSlug === "ai-design" ? await getActiveAiTheme((user as { activeAiDesignId?: string | null }).activeAiDesignId) : null;
+  const maxGuests = getMaxGuests(plan, active.extraGuestQuota ?? 0);
+  const template = active.templateSlug ? getTemplateBySlug(active.templateSlug) : undefined;
+  const aiTheme = active.templateSlug === "ai-design" ? await getActiveAiTheme(active.activeAiDesignId) : null;
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nikayuk.programmer-ngonten.my.id";
-  const url = `${baseUrl}/${user.invitationSlug ?? ""}`;
+  const url = `${baseUrl}/${active.slug ?? ""}`;
 
   const hasCouple = Boolean(raw.groom?.fullName || raw.groom?.name) && Boolean(raw.bride?.fullName || raw.bride?.name);
   const hasEvents = Boolean(raw.events?.length || raw.event?.date);
   const hasGallery = data.gallery.length > 0;
   const couple = hasCouple ? `${data.groom.nickname} & ${data.bride.nickname}` : "kami";
 
-  const daysLeft = daysUntil(hasEvents ? (data.events[0]?.date ?? data.event?.date) : user.weddingDate);
+  const daysLeft = daysUntil(hasEvents ? (data.events[0]?.date ?? data.event?.date) : active.weddingDate);
 
-  const attending = user.rsvps.filter((r) => r.attendance.toUpperCase() === "HADIR").reduce((n, r) => n + (r.guests || 1), 0);
+  const attending = rsvps.filter((r) => r.attendance.toUpperCase() === "HADIR").reduce((n, r) => n + (r.guests || 1), 0);
 
   const steps = [
     { label: "Pilih desain undangan", done: Boolean(template), href: "/desain-ai" },
     { label: "Isi data kedua mempelai", done: hasCouple, href: "/editor" },
     { label: "Tambahkan jadwal acara", done: hasEvents, href: "/editor" },
     { label: "Unggah foto galeri", done: hasGallery, href: "/editor" },
-    { label: "Masukkan daftar tamu", done: user._count.guests > 0, href: "/manajemen-tamu" },
+    { label: "Masukkan daftar tamu", done: guestCount > 0, href: "/manajemen-tamu" },
   ];
   const doneCount = steps.filter((s) => s.done).length;
   const nextStep = steps.find((s) => !s.done);
 
   const stats = [
-    { label: "Dilihat", value: user.views, href: undefined },
+    { label: "Dilihat", value: active.views, href: undefined },
     { label: "Akan hadir", value: attending, href: "/buku-tamu" },
-    { label: "Ucapan", value: user._count.messages, href: "/buku-tamu" },
-    { label: "Tamu terdaftar", value: user._count.guests, href: "/manajemen-tamu" },
+    { label: "Ucapan", value: messageCount, href: "/buku-tamu" },
+    { label: "Tamu terdaftar", value: guestCount, href: "/manajemen-tamu" },
   ];
 
   return (
@@ -84,6 +88,17 @@ export default async function UserDashboardPage() {
       <SiteHeader user={session.user} />
       <div className="flex-1 px-4 pb-16 pt-8 lg:px-8 lg:pt-10">
         <div className="mx-auto max-w-6xl space-y-8">
+          {/* Active invitation banner */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] px-4 py-3 text-sm">
+            <span className="text-[#6B6358]">
+              Undangan aktif: <strong className="font-medium text-[#1E1B17]">{active.title}</strong>{" "}
+              <span className="text-xs">({allInvitations.length} undangan di akun)</span>
+            </span>
+            <Link href="/undangan" className="font-medium text-[#8A6A2F] hover:underline">
+              Kelola / buat undangan baru →
+            </Link>
+          </div>
+
           {/* Greeting */}
           <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div className="space-y-2">
@@ -127,10 +142,12 @@ export default async function UserDashboardPage() {
                 <div className="flex flex-col justify-between gap-6">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${user.invitation?.isPublic === false ? "bg-[#B8AD9A]" : "bg-emerald-600"}`} />
-                      <span className="text-sm text-[#6B6358]">{user.invitation?.isPublic === false ? "Undangan disembunyikan" : "Undangan aktif"}</span>
+                      <span className={`h-2 w-2 rounded-full ${plan === "FREE" ? "bg-[#C9A45C]" : active.isPublic === false ? "bg-[#B8AD9A]" : "bg-emerald-600"}`} />
+                      <span className="text-sm text-[#6B6358]">
+                        {plan === "FREE" ? "Mode pratinjau (belum diterbitkan)" : active.isPublic === false ? "Undangan disembunyikan" : "Undangan aktif"}
+                      </span>
                     </div>
-                    <h3 className="font-(family-name:--font-landing-display) text-3xl text-[#1E1B17]">{aiTheme?.name ?? template?.name ?? "Undangan kalian"}</h3>
+                    <h3 className="font-(family-name:--font-landing-display) text-3xl text-[#1E1B17]">{aiTheme?.name ?? template?.name ?? active.title}</h3>
                     <p className="text-[15px] leading-relaxed text-[#6B6358]">
                       {aiTheme ? aiTheme.mood : template ? template.description : "Pilih desain, isi data, lalu bagikan link ini ke tamu."}
                     </p>
@@ -141,9 +158,14 @@ export default async function UserDashboardPage() {
                       <Link href="/desain-ai" className="inline-flex min-h-11 items-center gap-1 font-medium text-[#1E1B17] underline-offset-4 hover:underline">
                         Ganti desain
                       </Link>
+                      {active.slug && (
+                        <Link href={`/${active.slug}${plan === "FREE" || !active.isPublic ? "?preview=1" : ""}`} target="_blank" className="inline-flex min-h-11 items-center gap-1 font-medium text-[#8A6A2F] underline-offset-4 hover:underline">
+                          {plan === "FREE" || !active.isPublic ? "Pratinjau undangan" : "Buka undangan"}
+                        </Link>
+                      )}
                     </div>
                   </div>
-                  {user.invitationSlug && <ShareLink url={url} couple={couple} />}
+                  {active.slug && <ShareLink url={url} couple={couple} />}
                 </div>
               </section>
 
@@ -176,9 +198,9 @@ export default async function UserDashboardPage() {
                     Semua <IconArrowRight size={15} />
                   </Link>
                 </div>
-                {user.messages.length ? (
+                {messages.length ? (
                   <ul className="divide-y divide-[#EDE6DA]">
-                    {user.messages.map((m) => (
+                    {messages.map((m) => (
                       <li key={m.id} className="space-y-1 py-4 first:pt-0 last:pb-0">
                         <p className="text-sm font-medium text-[#1E1B17]">{m.guestName}</p>
                         <p className="line-clamp-2 text-[15px] leading-relaxed text-[#6B6358]">{m.message}</p>
@@ -227,19 +249,21 @@ export default async function UserDashboardPage() {
                 <p className="text-[11px] uppercase tracking-[0.2em] text-[#C9A45C]">Paket kalian</p>
                 <p className="mt-2 font-(family-name:--font-landing-display) text-3xl">{limits.name}</p>
                 <ul className="mt-4 space-y-2 text-sm text-[#CFC5B4]">
-                  <li>{limits.maxGuests === Infinity ? "Tamu tanpa batas" : `Hingga ${limits.maxGuests} tamu bernama`}</li>
+                  <li>{maxGuests === Infinity ? "Tamu tanpa batas" : `Hingga ${maxGuests} tamu bernama`}</li>
                   <li>{limits.aiDesignQuota}× desain AI</li>
                   <li>
-                    {user.planExpiresAt
-                      ? `Aktif sampai ${new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(user.planExpiresAt)}`
-                      : limits.activeDays === null
-                        ? "Aktif selamanya"
-                        : `Masa aktif ${limits.activeDays} hari`}
+                    {plan === "FREE"
+                      ? "Pratinjau gratis · aktifkan paket untuk terbit"
+                      : active.planExpiresAt
+                        ? `Aktif sampai ${new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric" }).format(active.planExpiresAt)}`
+                        : limits.activeDays === null
+                          ? "Aktif selamanya"
+                          : `Masa aktif ${limits.activeDays} hari`}
                   </li>
                 </ul>
-                {plan !== "GOLD" && (
+                {plan !== "EKSKLUSIF" && (
                   <Link href="/upgrade" className="mt-5 flex h-11 items-center justify-center rounded-full bg-[#F3EBDD] text-sm font-medium text-[#15130F] transition-opacity hover:opacity-90">
-                    Tingkatkan paket
+                    {plan === "FREE" ? "Aktifkan paket" : "Tingkatkan paket"}
                   </Link>
                 )}
               </section>

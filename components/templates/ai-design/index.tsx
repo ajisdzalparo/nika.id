@@ -7,7 +7,7 @@ import { DEFAULT_AI_THEME, type AiTheme } from "@/lib/ai-design/schema";
 import { MusicToggle } from "@/components/common/music-toggle";
 import { fontHref, themeFonts, themeStyle } from "./theme";
 import { EdgeSprigs } from "./ornaments";
-import { Closing, Countdown, Couple, Cover, Events, Gallery, Gift, Opening, Rsvp, Story, Video } from "./sections";
+import { Closing, Countdown, Couple, Cover, DesktopStage, Events, Gallery, Gift, Opening, Rsvp, Story, Video } from "./sections";
 
 interface Props {
   data: WeddingData;
@@ -56,30 +56,64 @@ export default function AiDesignTemplate({ data, theme: themeProp, embedded = fa
 
   return (
     <div ref={rootRef} className="relative overflow-x-clip antialiased" style={themeStyle(theme)}>
+      {theme.assets?.backgroundImage && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+          style={{ backgroundImage: `url(${theme.assets.backgroundImage})` }}
+        />
+      )}
       {themeFonts(theme).map((f) => (
         <link key={f} rel="stylesheet" href={fontHref(f)} precedence="default" />
       ))}
 
       {!embedded && opened && data.music?.enabled && data.music.url && <MusicToggle url={data.music.url} type={data.music.type} autoPlay />}
 
-      <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} />
-
-      {opened && (
-        <main className="animate-in fade-in duration-700">
-          <div id="pembuka" />
-          <Opening theme={theme} data={data} />
-          <EdgeSprigs theme={theme} />
-          <Couple theme={theme} data={data} />
-          <Countdown theme={theme} data={data} />
-          <Events theme={theme} data={data} />
-          <Story theme={theme} data={data} />
-          <Gallery theme={theme} data={data} />
-          <Video theme={theme} data={data} />
-          <Gift theme={theme} data={data} />
-          <Rsvp theme={theme} data={data} preview={embedded} />
-          <Closing theme={theme} data={data} />
-          <BottomNav theme={theme} data={data} scrollRoot={() => rootRef.current} />
-        </main>
+      {!opened ? (
+        <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} />
+      ) : !embedded ? (
+        <div className="lg:grid lg:grid-cols-[42%_58%] xl:grid-cols-[44%_56%]">
+          <DesktopStage theme={theme} data={data} />
+          <div className="relative min-w-0">
+            <div className="lg:hidden">
+              <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} />
+            </div>
+            <main className="animate-in fade-in duration-700">
+              <div id="pembuka" />
+              <Opening theme={theme} data={data} />
+              <EdgeSprigs theme={theme} />
+              <Couple theme={theme} data={data} />
+              <Countdown theme={theme} data={data} />
+              <Events theme={theme} data={data} />
+              <Story theme={theme} data={data} />
+              <Gallery theme={theme} data={data} />
+              <Video theme={theme} data={data} />
+              <Gift theme={theme} data={data} />
+              <Rsvp theme={theme} data={data} preview={embedded} />
+              <Closing theme={theme} data={data} />
+              <BottomNav theme={theme} data={data} scrollRoot={() => rootRef.current} />
+            </main>
+          </div>
+        </div>
+      ) : (
+        <>
+          <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} />
+          <main className="animate-in fade-in duration-700">
+            <div id="pembuka" />
+            <Opening theme={theme} data={data} />
+            <EdgeSprigs theme={theme} />
+            <Couple theme={theme} data={data} />
+            <Countdown theme={theme} data={data} />
+            <Events theme={theme} data={data} />
+            <Story theme={theme} data={data} />
+            <Gallery theme={theme} data={data} />
+            <Video theme={theme} data={data} />
+            <Gift theme={theme} data={data} />
+            <Rsvp theme={theme} data={data} preview={embedded} />
+            <Closing theme={theme} data={data} />
+            <BottomNav theme={theme} data={data} scrollRoot={() => rootRef.current} />
+          </main>
+        </>
       )}
     </div>
   );

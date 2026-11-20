@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-helpers";
+import { requireAnyAuth } from "@/lib/auth-helpers";
 import { uploadFile } from "@/lib/storage";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -7,7 +7,7 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "im
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAuth(request).catch((err) => {
+    const session = await requireAnyAuth(request).catch((err) => {
       if (err.message === "Unauthorized") return "UNAUTHORIZED";
       if (err.message === "Forbidden") return "FORBIDDEN";
       throw err;

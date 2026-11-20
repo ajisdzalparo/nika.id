@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowUpRight, IconBook, IconEdit, IconHome, IconPalette, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
+import { IconArrowUpRight, IconBook, IconEdit, IconHome, IconListDetails, IconPalette, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
+import { InvitationSwitcher } from "@/components/user/active-invitation-context";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +27,7 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
     label: "Undangan",
     items: [
       { title: "Beranda", url: "/dashboard", icon: IconHome },
+      { title: "Daftar Undangan", url: "/undangan", icon: IconListDetails },
       { title: "Editor Undangan", url: "/editor", icon: IconEdit },
       { title: "Desain AI", url: "/desain-ai", icon: IconPalette },
       { title: "Koleksi Template", url: "/pilih-template", icon: IconTemplate },
@@ -44,13 +46,20 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
   },
 ];
 
-export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function UserSidebar({
+  portalUser,
+  activePlan,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  portalUser?: { name: string; email: string; avatar: string };
+  activePlan?: PlanType;
+}) {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const plan = ((session?.user as { plan?: PlanType } | undefined)?.plan ?? "FREE") as PlanType;
+  const plan = activePlan ?? (((session?.user as { plan?: PlanType } | undefined)?.plan ?? "FREE") as PlanType);
   const limits = getPlanLimits(plan);
 
-  const user = {
+  const user = portalUser ?? {
     name: session?.user?.name || "Pengguna",
     email: session?.user?.email || "",
     avatar: session?.user?.image || "",
@@ -58,19 +67,28 @@ export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="gap-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" tooltip="nika.id" className="hover:bg-transparent">
-              <Link href="/dashboard">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#1E1B17] font-(family-name:--font-landing-display) text-lg italic text-[#F3EBDD]">n</span>
-                <span className="font-(family-name:--font-landing-display) text-[24px] font-semibold leading-none tracking-tight">
-                  nika<span className="text-[#8A6A2F]">.id</span>
-                </span>
+            <SidebarMenuButton asChild size="lg" tooltip="UNDANGIN YUK" className="hover:bg-transparent">
+              <Link href="/dashboard" className="flex items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo-mark.png"
+                  alt="UNDANGIN YUK"
+                  className="hidden size-7 shrink-0 object-contain group-data-[collapsible=icon]:block"
+                />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo.png"
+                  alt="UNDANGIN YUK"
+                  className="h-8 w-auto object-contain group-data-[collapsible=icon]:hidden"
+                />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <InvitationSwitcher />
       </SidebarHeader>
 
       <SidebarContent>
@@ -100,7 +118,7 @@ export function UserSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) 
           <p className="text-[11px] uppercase tracking-[0.18em] text-[#8C8272]">Paket</p>
           <p className="mt-1 font-(family-name:--font-landing-display) text-xl">{limits.name}</p>
           <p className="mt-2 flex items-center gap-1 text-sm text-[#8A6A2F]">
-            {plan === "GOLD" ? "Lihat detail paket" : "Tingkatkan paket"} <IconArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            {plan === "EKSKLUSIF" ? "Lihat detail paket" : plan === "FREE" ? "Aktifkan paket" : "Tingkatkan paket"} <IconArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </p>
         </Link>
         <NavUser user={user} />

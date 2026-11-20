@@ -1,11 +1,10 @@
+import { IconMapPin, IconPlus, IconTrash } from "@tabler/icons-react";
+import { LocationPicker, mapsLink, type PickedLocation } from "@/components/common/location-picker";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IconMapPin, IconTrash, IconPlus } from "@tabler/icons-react";
 import { WeddingData, WeddingEvent } from "@/types/wedding";
-import { LocationPicker, mapsLink, type PickedLocation } from "@/components/common/location-picker";
 
 interface AcaraSectionProps {
   data: WeddingData;
@@ -40,96 +39,134 @@ export function AcaraSection({ data, setData }: AcaraSectionProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Daftar Acara</h2>
-        <Button variant="outline" size="sm" onClick={addEvent}>
-          <IconPlus className="h-4 w-4 mr-2" /> Tambah Acara
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-serif text-xl font-medium text-[#1E1B17]">Rangkaian Acara</h2>
+          <p className="text-xs text-[#6B6358]">Tambahkan Akad Nikah, Resepsi, atau Unduh Mantu beserta pin lokasinya.</p>
+        </div>
+        <Button variant="outline" onClick={addEvent} className="h-10 rounded-full border-[#CFC5B4] bg-[#FFFDF9] px-4 text-sm text-[#1E1B17] hover:bg-[#EFE8DC]">
+          <IconPlus className="mr-1.5 h-4 w-4" /> Tambah Acara
         </Button>
       </div>
 
-      {data.events?.map((event, index) => (
-        <Card key={event.id} className="border-none shadow-lg relative">
-          <Button variant="ghost" size="icon" className="absolute top-2 right-2 z-10" onClick={() => removeEvent(index)}>
-            <IconTrash className="h-4 w-4 text-red-500" />
-          </Button>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              <Input className="border-none text-lg font-bold p-0 focus-visible:ring-0 w-auto" value={event.title || ""} onChange={(e) => updateEvent(index, "title", e.target.value)} />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tanggal</Label>
-                <Input type="date" value={typeof event.date === "string" ? event.date : ""} onChange={(e) => updateEvent(index, "date", e.target.value)} />
+      <div className="space-y-5">
+        {data.events?.map((event, index) => (
+          <section key={event.id} className="relative rounded-2xl border border-[#E1D8C9] bg-[#F7F3EC]/55 p-5 sm:p-6">
+            <div className="mb-5 flex items-center justify-between gap-3 border-b border-[#E1D8C9]/80 pb-4">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EFE8DC] font-serif text-sm italic text-[#8A6A2F]">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <Input
+                  className="h-10 border-none bg-transparent px-1 font-serif text-xl font-medium text-[#1E1B17] shadow-none focus-visible:ring-0"
+                  value={event.title || ""}
+                  onChange={(e) => updateEvent(index, "title", e.target.value)}
+                  placeholder="Judul Acara (mis. Akad Nikah)"
+                />
               </div>
-              <div className="space-y-2">
-                <Label>Waktu</Label>
-                <Input type="time" value={event.time || ""} onChange={(e) => updateEvent(index, "time", e.target.value)} />
-              </div>
+              {data.events.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeEvent(index)}
+                  aria-label="Hapus acara"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#6B6358] transition-colors hover:bg-[#EFE8DC] hover:text-red-600"
+                >
+                  <IconTrash className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label>Nama Tempat / Gedung</Label>
-              <Input value={event.venue || ""} onChange={(e) => updateEvent(index, "venue", e.target.value)} placeholder="Gedung Serbaguna XYZ" />
-            </div>
-            <div className="space-y-2">
-              <Label>Alamat Lengkap</Label>
-              <Textarea value={event.address || ""} onChange={(e) => updateEvent(index, "address", e.target.value)} placeholder="Jl. Merdeka No. 1..." />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <IconMapPin className="h-4 w-4 text-[#8A6A2F]" />
-                Lokasi di peta
-              </Label>
-              <LocationPicker value={{ lat: event.lat, lng: event.lng }} onChange={(loc) => setLocation(index, loc)} />
-              <details className="text-sm">
-                <summary className="flex min-h-9 cursor-pointer items-center text-zinc-500">Atau tempel link Google Maps sendiri</summary>
-                <Input className="mt-2" value={event.mapUrl || ""} onChange={(e) => updateEvent(index, "mapUrl", e.target.value)} placeholder="https://maps.app.goo.gl/..." />
-              </details>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
 
-      <Card className="border-none shadow-lg">
-        <CardHeader>
-          <CardTitle>Fitur Acara Lanjutan</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-base">Live Streaming</Label>
-              <p className="text-sm text-muted-foreground italic">Aktifkan link untuk tamu yang hadir online</p>
-            </div>
-            <input
-              type="checkbox"
-              className="h-5 w-5 rounded border-gray-300 text-pink-500"
-              checked={data.streaming?.enabled}
-              onChange={(e) => setData((prev) => ({ ...prev, streaming: { ...prev.streaming!, enabled: e.target.checked } }))}
-            />
-          </div>
-          {data.streaming?.enabled && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Platform</Label>
-                <Input value={data.streaming.platform} onChange={(e) => setData((prev) => ({ ...prev, streaming: { ...prev.streaming!, platform: e.target.value } }))} placeholder="Zoom / YouTube / IG Live" />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Tanggal</Label>
+                  <Input type="date" value={typeof event.date === "string" ? event.date : ""} onChange={(e) => updateEvent(index, "date", e.target.value)} className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Waktu</Label>
+                  <Input type="time" value={event.time || ""} onChange={(e) => updateEvent(index, "time", e.target.value)} className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Link Streaming</Label>
-                <Input value={data.streaming.url} onChange={(e) => setData((prev) => ({ ...prev, streaming: { ...prev.streaming!, url: e.target.value } }))} placeholder="https://..." />
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Tempat / Gedung</Label>
+                <Input value={event.venue || ""} onChange={(e) => updateEvent(index, "venue", e.target.value)} placeholder="Gedung Serbaguna / Kediaman Mempelai" className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Alamat Lengkap</Label>
+                <Textarea value={event.address || ""} onChange={(e) => updateEvent(index, "address", e.target.value)} placeholder="Jl. Merdeka No. 1, Bandung" className="min-h-20 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">
+                  <IconMapPin className="h-3.5 w-3.5 text-[#8A6A2F]" />
+                  Lokasi di Peta
+                </Label>
+                <LocationPicker value={{ lat: event.lat, lng: event.lng }} onChange={(loc) => setLocation(index, loc)} />
+                <details className="text-xs text-[#6B6358]">
+                  <summary className="flex min-h-9 cursor-pointer items-center hover:text-[#1E1B17]">Atau tempel link Google Maps sendiri</summary>
+                  <Input className="mt-1.5 h-10 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" value={event.mapUrl || ""} onChange={(e) => updateEvent(index, "mapUrl", e.target.value)} placeholder="https://maps.app.goo.gl/..." />
+                </details>
+              </div>
+            </div>
+          </section>
+        ))}
+      </div>
+
+      {/* Fitur Acara Lanjutan */}
+      <section className="rounded-2xl border border-[#E1D8C9] bg-[#F7F3EC]/55 p-5 sm:p-6 space-y-5">
+        <h3 className="font-serif text-xl font-medium text-[#1E1B17]">Fitur Acara Lanjutan</h3>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label className="text-sm font-medium text-[#1E1B17]">Live Streaming</Label>
+              <p className="text-xs text-[#6B6358]">Aktifkan tautan siaran langsung untuk tamu yang hadir online</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={Boolean(data.streaming?.enabled)}
+              onClick={() => setData((prev) => ({ ...prev, streaming: { ...prev.streaming!, enabled: !prev.streaming?.enabled } }))}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${data.streaming?.enabled ? "bg-[#1E1B17]" : "bg-[#CFC5B4]"}`}
+            >
+              <span className={`inline-block h-4.5 w-4.5 transform rounded-full bg-[#FFFDF9] transition-transform ${data.streaming?.enabled ? "translate-x-5.5" : "translate-x-1"}`} />
+            </button>
+          </div>
+
+          {data.streaming?.enabled && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Platform</Label>
+                <Input value={data.streaming.platform || ""} onChange={(e) => setData((prev) => ({ ...prev, streaming: { ...prev.streaming!, platform: e.target.value } }))} placeholder="Zoom / YouTube / IG Live" className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Link Streaming</Label>
+                <Input value={data.streaming.url || ""} onChange={(e) => setData((prev) => ({ ...prev, streaming: { ...prev.streaming!, url: e.target.value } }))} placeholder="https://..." className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
               </div>
             </div>
           )}
-          <div className="h-px bg-gray-100" />
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="text-base">Protokol Kesehatan</Label>
-              <p className="text-sm text-muted-foreground italic">Tampilkan anjuran prokes pada undangan</p>
+
+          <div className="h-px bg-[#E1D8C9]" />
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label className="text-sm font-medium text-[#1E1B17]">Protokol Kesehatan</Label>
+              <p className="text-xs text-[#6B6358]">Tampilkan anjuran protokol kesehatan pada undangan</p>
             </div>
-            <input type="checkbox" className="h-5 w-5 rounded border-gray-300 text-pink-500" checked={data.protocol?.enabled} onChange={(e) => setData((prev) => ({ ...prev, protocol: { ...prev.protocol!, enabled: e.target.checked } }))} />
+            <button
+              type="button"
+              role="switch"
+              aria-checked={Boolean(data.protocol?.enabled)}
+              onClick={() => setData((prev) => ({ ...prev, protocol: { ...prev.protocol!, enabled: !prev.protocol?.enabled } }))}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${data.protocol?.enabled ? "bg-[#1E1B17]" : "bg-[#CFC5B4]"}`}
+            >
+              <span className={`inline-block h-4.5 w-4.5 transform rounded-full bg-[#FFFDF9] transition-transform ${data.protocol?.enabled ? "translate-x-5.5" : "translate-x-1"}`} />
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   );
 }

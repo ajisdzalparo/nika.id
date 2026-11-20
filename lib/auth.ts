@@ -71,7 +71,7 @@ export const auth = betterAuth({
                           Halo <strong>${user.name || "Pengguna"}</strong>,
                         </p>
                         <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
-                          Terima kasih telah mendaftar di <strong>nika.id</strong>! Klik tombol di bawah untuk memverifikasi alamat email Anda dan mulai membuat undangan pernikahan digital yang indah.
+                          Terima kasih telah mendaftar di <strong>UNDANGIN YUK</strong>! Klik tombol di bawah untuk memverifikasi alamat email Anda dan mulai membuat undangan pernikahan digital yang indah.
                         </p>
                         <table width="100%" cellpadding="0" cellspacing="0">
                           <tr>
@@ -94,10 +94,10 @@ export const auth = betterAuth({
                     <tr>
                       <td style="background-color: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
                         <p style="color: #9ca3af; font-size: 13px; margin: 0;">
-                          Email ini dikirim oleh <strong style="color: #ec4899;">nika.id</strong>
+                          Email ini dikirim oleh <strong style="color: #ec4899;">UNDANGIN YUK</strong>
                         </p>
                         <p style="color: #9ca3af; font-size: 12px; margin: 8px 0 0 0;">
-                          Jika Anda tidak mendaftar di nika.id, abaikan email ini.
+                          Jika Anda tidak mendaftar di UNDANGIN YUK, abaikan email ini.
                         </p>
                       </td>
                     </tr>
@@ -111,9 +111,9 @@ export const auth = betterAuth({
 
       await mailer.sendMail({
         // Gmail always sends from GMAIL_USER; EMAIL_FROM only sets the display name
-        from: `"${process.env.EMAIL_FROM_NAME || "nika.id"}" <${process.env.GMAIL_USER}>`,
+        from: `"${process.env.EMAIL_FROM_NAME || "UNDANGIN YUK"}" <${process.env.GMAIL_USER}>`,
         to: user.email,
-        subject: "Verifikasi Email Anda - nika.id",
+        subject: "Verifikasi Email Anda - UNDANGIN YUK",
         html: emailHtml,
       });
     },

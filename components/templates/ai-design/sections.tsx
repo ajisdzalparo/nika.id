@@ -52,7 +52,16 @@ function frameStyle(theme: AiTheme): CSSProperties {
   }
 }
 
-function Reveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+type RevealVariant = "up" | "left" | "right" | "scale";
+
+const REVEAL_HIDDEN: Record<RevealVariant, string> = {
+  up: "opacity-0 translate-y-4",
+  left: "opacity-0 -translate-x-5",
+  right: "opacity-0 translate-x-5",
+  scale: "opacity-0 scale-[0.96]",
+};
+
+function Reveal({ children, className = "", delay = 0, variant = "up" }: { children: ReactNode; className?: string; delay?: number; variant?: RevealVariant }) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
   useEffect(() => {
@@ -67,7 +76,7 @@ function Reveal({ children, className = "", delay = 0 }: { children: ReactNode; 
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-500 ease-out motion-reduce:transition-none ${shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 motion-reduce:opacity-100 motion-reduce:translate-y-0"} ${className}`}
+      className={`transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${shown ? "opacity-100 translate-x-0 translate-y-0 scale-100" : `${REVEAL_HIDDEN[variant]} motion-reduce:opacity-100 motion-reduce:translate-x-0 motion-reduce:translate-y-0 motion-reduce:scale-100`} ${className}`}
     >
       {children}
     </div>
@@ -113,7 +122,7 @@ function Photo({ src, alt, className, fallback }: { src?: string; alt: string; c
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} className={`${className} object-cover`} loading="lazy" />;
+  return <img src={src} alt={alt} className={`${className} object-cover object-[50%_20%]`} loading="lazy" />;
 }
 
 function Section({ id, children, className = "" }: { id?: string; children: ReactNode; className?: string }) {
@@ -124,9 +133,64 @@ function Section({ id, children, className = "" }: { id?: string; children: Reac
   );
 }
 
+// ─── Desktop Sticky Stage (shown on lg+ when opened & not embedded) ──────
+
+export function DesktopStage({ theme, data }: { theme: AiTheme; data: WeddingData }) {
+  const photo = coverPhoto(data);
+  const date = mainDate(data);
+  const script = isScript(theme.typography.names);
+
+  return (
+    <aside
+      className="relative hidden overflow-hidden border-r lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between lg:p-10 xl:p-12"
+      style={{ borderColor: "color-mix(in srgb, var(--ink) 10%, transparent)", background: "var(--surface)" }}
+    >
+      {photo ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.18) 42%, rgba(0,0,0,0.78) 100%)" }} />
+          <Corners theme={theme} size="w-24 h-24" opacity="opacity-85" />
+          <div className="relative z-10">
+            <Label theme={theme} className="text-white/85!">
+              {theme.copy.coverEyebrow}
+            </Label>
+          </div>
+          <div className="relative z-10 space-y-3 text-white" style={{ ["--muted" as string]: "rgba(255,255,255,.82)" }}>
+            <Names theme={theme} className={script ? "text-6xl xl:text-7xl" : "text-5xl uppercase xl:text-6xl"}>
+              {data.groom.nickname} &amp; {data.bride.nickname}
+            </Names>
+            {date && <p className="text-sm tracking-[0.2em] text-white/85">{fmtDate(date)}</p>}
+          </div>
+        </>
+      ) : (
+        <div className="relative flex h-full w-full flex-col items-center justify-center gap-6 px-8 text-center" style={frameStyle({ ...theme, frame: theme.frame === "none" ? "hairline" : theme.frame })}>
+          <Corners theme={theme} />
+          <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
+          <Names theme={theme} className={script ? "text-6xl" : "text-5xl uppercase"}>
+            {data.groom.nickname}
+          </Names>
+          <span className="text-2xl" style={{ fontFamily: "var(--font-display)", color: "var(--accent)" }}>
+            &amp;
+          </span>
+          <Names theme={theme} className={script ? "text-6xl" : "text-5xl uppercase"}>
+            {data.bride.nickname}
+          </Names>
+          <Divider theme={theme} />
+          {date && (
+            <p className="text-sm tracking-[0.18em]" style={{ color: "var(--muted)" }}>
+              {fmtDate(date)}
+            </p>
+          )}
+        </div>
+      )}
+    </aside>
+  );
+}
+
 // ─── Cover ───────────────────────────────────────────────────────────────
 
-export function Cover({ theme, data, opened, onOpen, screen }: { theme: AiTheme; data: WeddingData; opened: boolean; onOpen: () => void; screen: string }) {
+export function Cover({ theme, data, opened, onOpen, screen, embedded = false }: { theme: AiTheme; data: WeddingData; opened: boolean; onOpen: () => void; screen: string; embedded?: boolean }) {
   const photo = coverPhoto(data);
   const layout = !photo && (theme.layout.cover === "photo-fullbleed" || theme.layout.cover === "split-photo") ? "centered-frame" : theme.layout.cover;
   const date = mainDate(data);
@@ -173,10 +237,47 @@ export function Cover({ theme, data, opened, onOpen, screen }: { theme: AiTheme;
   );
 
   if (layout === "photo-fullbleed") {
+    if (!embedded && !opened) {
+      return (
+        <section className={`relative min-h-svh overflow-hidden lg:grid lg:grid-cols-[1.08fr_1fr]`}>
+          {/* Photo stage: full-bleed on mobile, clean portrait half on desktop so faces are never cropped */}
+          <div className="relative flex min-h-svh flex-col items-center justify-end overflow-hidden px-6 pb-16 text-center lg:min-h-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
+            <div className="absolute inset-0 lg:hidden" style={{ background: "linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.35) 45%, var(--bg) 100%)" }} />
+            <div className="absolute inset-0 hidden lg:block" style={{ background: "linear-gradient(180deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.45) 100%)" }} />
+            <div className="lg:hidden">
+              <Corners theme={theme} size="w-28 h-28" opacity="opacity-90" />
+            </div>
+            <div className="relative z-10 space-y-6 text-white lg:hidden" style={{ ["--muted" as string]: "rgba(255,255,255,.82)" }}>
+              <Label theme={theme} className="text-white/85!">
+                {theme.copy.coverEyebrow}
+              </Label>
+              {nameBlock}
+              {dateLine}
+              {guest}
+              {button}
+            </div>
+          </div>
+
+          {/* Desktop editorial invitation card on right half */}
+          <div className="relative hidden flex-col items-center justify-center gap-7 px-10 py-16 text-center lg:flex">
+            <Corners theme={theme} size="w-28 h-28" opacity="opacity-85" />
+            <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
+            {nameBlock}
+            <Divider theme={theme} />
+            {dateLine}
+            {guest}
+            {button}
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className={`relative flex ${screen} flex-col items-center justify-end overflow-hidden px-6 pb-16 text-center`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.35) 45%, var(--bg) 100%)" }} />
         <Corners theme={theme} size="w-28 h-28" opacity="opacity-90" />
         <div className="relative z-10 space-y-6 text-white" style={{ ["--muted" as string]: "rgba(255,255,255,.82)" }}>
@@ -194,12 +295,13 @@ export function Cover({ theme, data, opened, onOpen, screen }: { theme: AiTheme;
 
   if (layout === "split-photo") {
     return (
-      <section className={`relative grid ${screen} grid-rows-[1.15fr_1fr]`}>
+      <section className={`relative grid ${screen} grid-rows-[1.15fr_1fr] ${!embedded ? "lg:grid-cols-2 lg:grid-rows-1" : ""}`}>
         <div className="relative overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
         </div>
-        <div className="flex flex-col items-center justify-center gap-5 px-6 py-10 text-center">
+        <div className="relative flex flex-col items-center justify-center gap-5 px-6 py-10 text-center lg:px-12">
+          <Corners theme={theme} size="w-20 h-20" opacity="opacity-70" />
           <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
           {nameBlock}
           {dateLine}
@@ -228,7 +330,7 @@ export function Cover({ theme, data, opened, onOpen, screen }: { theme: AiTheme;
 
   if (layout === "typographic") {
     return (
-      <section className={`relative flex ${screen} flex-col justify-center gap-8 px-8 py-16`}>
+      <section className={`relative flex ${screen} flex-col justify-center gap-8 px-8 py-16 ${!embedded ? "mx-auto max-w-2xl" : ""}`}>
         <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
         <div className="space-y-2">
           <Names theme={theme} className={script ? "text-7xl" : "text-[3.4rem] uppercase sm:text-7xl"}>
@@ -255,8 +357,8 @@ export function Cover({ theme, data, opened, onOpen, screen }: { theme: AiTheme;
 
   // centered-frame
   return (
-    <section className={`relative flex ${screen} items-center justify-center p-4`}>
-      <div className="relative flex h-full min-h-[inherit] w-full flex-col items-center justify-center gap-7 px-6 py-16 text-center" style={frameStyle({ ...theme, frame: theme.frame === "none" ? "hairline" : theme.frame })}>
+    <section className={`relative flex ${screen} items-center justify-center p-4 ${!embedded ? "lg:p-8" : ""}`}>
+      <div className={`relative flex h-full min-h-[inherit] w-full flex-col items-center justify-center gap-7 px-6 py-16 text-center ${!embedded ? "lg:max-w-2xl" : ""}`} style={frameStyle({ ...theme, frame: theme.frame === "none" ? "hairline" : theme.frame })}>
         <Corners theme={theme} />
         <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
         {nameBlock}
@@ -322,7 +424,7 @@ function Parents({ theme, person, role }: { theme: AiTheme; person: Person; role
   );
 }
 
-function PersonBlock({ theme, person, role, align = "center" }: { theme: AiTheme; person: Person; role: "Putra" | "Putri"; align?: "center" | "left" | "right" }) {
+function PersonBlock({ theme, person, role, align = "center", variant = "up" }: { theme: AiTheme; person: Person; role: "Putra" | "Putri"; align?: "center" | "left" | "right"; variant?: RevealVariant }) {
   const layout = theme.layout.couple;
   const script = isScript(theme.typography.names);
   const textAlign = align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center";
@@ -341,7 +443,7 @@ function PersonBlock({ theme, person, role, align = "center" }: { theme: AiTheme
     );
 
   return (
-    <Reveal className={`space-y-5 ${textAlign}`}>
+    <Reveal variant={variant} className={`space-y-5 ${textAlign}`}>
       {photo}
       <div className="space-y-2">
         <Names theme={theme} className={script ? "text-5xl" : "text-4xl uppercase"}>
@@ -358,7 +460,7 @@ function PersonBlock({ theme, person, role, align = "center" }: { theme: AiTheme
 
 export function Couple({ theme, data }: { theme: AiTheme; data: WeddingData }) {
   const amp = (
-    <Reveal className="py-2 text-center">
+    <Reveal variant="scale" className="py-2 text-center">
       <span className="text-5xl" style={{ fontFamily: "var(--font-names)", color: "var(--accent)" }}>
         &amp;
       </span>
@@ -373,24 +475,24 @@ export function Couple({ theme, data }: { theme: AiTheme; data: WeddingData }) {
       </Reveal>
       {theme.layout.couple === "side-by-side" ? (
         <div className="grid grid-cols-2 gap-5">
-          <PersonBlock theme={theme} person={data.groom} role="Putra" />
-          <PersonBlock theme={theme} person={data.bride} role="Putri" />
+          <PersonBlock theme={theme} person={data.groom} role="Putra" variant="left" />
+          <PersonBlock theme={theme} person={data.bride} role="Putri" variant="right" />
         </div>
       ) : theme.layout.couple === "editorial" ? (
         <div className="space-y-12">
           <div className="pr-10">
-            <PersonBlock theme={theme} person={data.groom} role="Putra" align="left" />
+            <PersonBlock theme={theme} person={data.groom} role="Putra" align="left" variant="left" />
           </div>
           {amp}
           <div className="pl-10">
-            <PersonBlock theme={theme} person={data.bride} role="Putri" align="right" />
+            <PersonBlock theme={theme} person={data.bride} role="Putri" align="right" variant="right" />
           </div>
         </div>
       ) : (
         <div className="space-y-10">
-          <PersonBlock theme={theme} person={data.groom} role="Putra" />
+          <PersonBlock theme={theme} person={data.groom} role="Putra" variant="left" />
           {amp}
-          <PersonBlock theme={theme} person={data.bride} role="Putri" />
+          <PersonBlock theme={theme} person={data.bride} role="Putri" variant="right" />
         </div>
       )}
     </Section>
@@ -509,7 +611,7 @@ export function Events({ theme, data }: { theme: AiTheme; data: WeddingData }) {
           {events.map((ev, i) => (
             <li key={ev.id ?? i} className="relative">
               <span className="absolute -left-[38.5px] top-1.5 h-3.5 w-3.5 rounded-full" style={{ background: "var(--accent)", boxShadow: "0 0 0 5px var(--bg)" }} />
-              <Reveal className="space-y-3" delay={i * 80}>
+              <Reveal variant="right" className="space-y-3" delay={i * 80}>
                 <Label theme={theme}>{fmtDate(ev.date)}</Label>
                 <h3 className="text-3xl" style={{ fontFamily: "var(--font-display)" }}>
                   {ev.title}
@@ -531,7 +633,7 @@ export function Events({ theme, data }: { theme: AiTheme; data: WeddingData }) {
           {events.map((ev, i) => {
             const d = validDate(ev.date);
             return (
-              <Reveal key={ev.id ?? i} delay={i * 80}>
+              <Reveal key={ev.id ?? i} variant={i % 2 === 0 ? "left" : "right"} delay={i * 80}>
                 <article className={`grid grid-cols-[88px_1fr] overflow-hidden ${cardShape(theme)}`} style={{ background: "var(--surface)", ...frameStyle(theme) }}>
                   <div className="flex flex-col items-center justify-center gap-1 border-r border-dashed py-6" style={{ borderColor: "color-mix(in srgb, var(--accent) 55%, transparent)", background: "var(--accent-soft)" }}>
                     <span className="text-[11px] uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
@@ -605,7 +707,7 @@ export function Story({ theme, data }: { theme: AiTheme; data: WeddingData }) {
       </Reveal>
       <div className="space-y-10">
         {chapters.map((c, i) => (
-          <Reveal key={i} delay={i * 60} className="space-y-3 text-center">
+          <Reveal key={i} variant={i % 2 === 0 ? "left" : "right"} delay={i * 60} className="space-y-3 text-center">
             <p className="text-xs tabular-nums tracking-[0.3em]" style={{ color: "var(--accent)" }}>
               {String(i + 1).padStart(2, "0")}
             </p>
@@ -653,9 +755,9 @@ export function Gallery({ theme, data }: { theme: AiTheme; data: WeddingData }) 
       ) : (
         <div className="mx-auto max-w-xl columns-2 gap-3 px-6 [&>*]:mb-3">
           {photos.map((src, i) => (
-            <Reveal key={i} delay={(i % 4) * 60}>
+            <Reveal key={i} variant="scale" delay={(i % 4) * 60}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="" loading="lazy" className={`w-full object-cover ${i % 3 === 0 ? "aspect-3/4" : "aspect-square"} ${shape}`} />
+              <img src={src} alt="" loading="lazy" className={`w-full object-cover transition-transform duration-700 hover:scale-[1.03] ${i % 3 === 0 ? "aspect-3/4" : "aspect-square"} ${shape}`} />
             </Reveal>
           ))}
         </div>
@@ -899,7 +1001,7 @@ export function Closing({ theme, data }: { theme: AiTheme; data: WeddingData }) 
         ) : null}
       </Reveal>
       <p className="relative mt-20 text-xs tracking-wide" style={{ color: "var(--muted)" }}>
-        Dibuat dengan <Link href="/" className="underline underline-offset-4">nika.id</Link>
+        Dibuat dengan <Link href="/" className="underline underline-offset-4">UNDANGIN YUK</Link>
       </p>
     </section>
   );

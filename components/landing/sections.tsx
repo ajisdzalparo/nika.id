@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { SafeImg } from "@/components/common/safe-img";
 import {
@@ -8,6 +8,8 @@ import {
   IconBrandWhatsapp,
   IconCalendarEvent,
   IconCheck,
+  IconChevronLeft,
+  IconChevronRight,
   IconGift,
   IconMapPin,
   IconMessageCircle,
@@ -18,7 +20,7 @@ import {
 import { AI_THEME_PRESETS } from "@/lib/ai-design/presets";
 import type { CatalogItem } from "@/lib/catalog-shared";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
-import { PLAN_LIMITS, type PlanType } from "@/lib/limits";
+import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PAID_PLANS, PLAN_LIMITS, type PlanType } from "@/lib/limits";
 import { Display, Eyebrow, L, Phone, Reveal, Rule } from "./primitives";
 import { Wordmark } from "./navbar";
 
@@ -99,8 +101,10 @@ export function AiDemo() {
           </Reveal>
         </div>
 
-        <Reveal delay={100} className="flex flex-col items-center gap-4">
-          <Phone key={current.key} theme={theme} zoom={0.8} interactive />
+        <Reveal delay={100} direction="scale" className="flex flex-col items-center gap-4">
+          <div key={current.key} className="animate-in fade-in zoom-in-95 duration-500">
+            <Phone theme={theme} zoom={0.8} interactive />
+          </div>
           <p className="text-xs text-[#8C8272]">Tema: {theme.name} · ketuk “Buka Undangan” untuk melihat isinya</p>
         </Reveal>
       </div>
@@ -108,31 +112,97 @@ export function AiDemo() {
   );
 }
 
-// ─── Koleksi desain ──────────────────────────────────────────────────────
+// ─── Koleksi desain (Karosel) ────────────────────────────────────────────
 
 export function Collection({ items }: { items: CatalogItem[] }) {
   const templates = items;
   const categories = ["Semua", ...Array.from(new Set(templates.map((t) => t.category)))];
   const [cat, setCat] = useState("Semua");
   const shown = cat === "Semua" ? templates : templates.filter((t) => t.category === cat);
+  const totalSlides = shown.length + (cat === "Semua" ? 1 : 0);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const scrollToSlide = useCallback((idx: number) => {
+    const track = trackRef.current;
+    if (!track || totalSlides === 0) return;
+    const clamped = ((idx % totalSlides) + totalSlides) % totalSlides;
+    const card = track.children[clamped] as HTMLElement | undefined;
+    if (!card) return;
+    track.scrollTo({ left: card.offsetLeft - track.offsetLeft, behavior: "smooth" });
+    setActiveSlide(clamped);
+  }, [totalSlides]);
+
+  const chooseCategory = (c: string) => {
+    setCat(c);
+    setActiveSlide(0);
+    trackRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const cards = Array.from(track.children) as HTMLElement[];
+        if (!cards.length) return;
+        const left = track.scrollLeft + track.offsetLeft;
+        let closest = 0;
+        let best = Infinity;
+        cards.forEach((el, i) => {
+          const d = Math.abs(el.offsetLeft - left);
+          if (d < best) {
+            best = d;
+            closest = i;
+          }
+        });
+        setActiveSlide(closest);
+      });
+    };
+    track.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      track.removeEventListener("scroll", onScroll);
+    };
+  }, [cat, totalSlides]);
+
+  useEffect(() => {
+    if (paused || totalSlides < 2) return;
+    const id = setInterval(() => {
+      scrollToSlide((activeSlide + 1) % totalSlides);
+    }, 5500);
+    return () => clearInterval(id);
+  }, [paused, activeSlide, totalSlides, scrollToSlide]);
 
   return (
-    <section id="koleksi" className="scroll-mt-16 py-24 md:py-32">
+    <section
+      id="koleksi"
+      className="scroll-mt-16 py-24 md:py-32"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+    >
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <Reveal className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="max-w-xl space-y-4">
             <Eyebrow>Koleksi desain</Eyebrow>
             <Display className="text-[2.5rem] sm:text-5xl">Atau mulai dari desain yang sudah jadi.</Display>
-            <Link href="/desain" className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-medium" style={{ color: L.accent }}>
-              Lihat semua koleksi <IconArrowRight size={16} />
-            </Link>
+            <div className="flex flex-wrap items-center gap-5">
+              <Link href="/desain" className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-medium transition-transform hover:translate-x-0.5" style={{ color: L.accent }}>
+                Lihat semua koleksi <IconArrowRight size={16} />
+              </Link>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {categories.map((c) => (
               <button
                 key={c}
-                onClick={() => setCat(c)}
-                className="h-10 rounded-full border px-4 text-sm transition-colors"
+                onClick={() => chooseCategory(c)}
+                className="h-10 rounded-full border px-4 text-sm transition-all duration-300"
                 style={c === cat ? { background: L.ink, color: L.bg, borderColor: L.ink } : { borderColor: L.line, color: L.muted }}
               >
                 {c}
@@ -142,57 +212,108 @@ export function Collection({ items }: { items: CatalogItem[] }) {
         </Reveal>
       </div>
 
-      <div className="mx-auto mt-12 flex max-w-6xl snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 [scrollbar-width:none] md:px-6">
-        {cat === "Semua" && (
-          <a href="#desain-ai" className="group w-[250px] shrink-0 snap-start sm:w-[280px]">
-            <div className="relative flex aspect-[3/4.2] flex-col justify-between overflow-hidden rounded-2xl p-6" style={{ background: L.night, color: "#F3EBDD" }}>
-              <Eyebrow light>Desain AI</Eyebrow>
-              <div className="space-y-5">
-                <div className="flex -space-x-2">
-                  {Object.values(AI_THEME_PRESETS).map(({ theme }) => (
-                    <span key={theme.name} className="h-9 w-9 rounded-full ring-2 ring-[#15130F]" style={{ background: `linear-gradient(135deg, ${theme.palette.background} 50%, ${theme.palette.accent} 50%)` }} />
-                  ))}
+      {/* Carousel track */}
+      <div className="relative mx-auto mt-10 max-w-6xl">
+        <div
+          ref={trackRef}
+          className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-4 pb-6 pt-2 [scrollbar-width:none] md:px-6"
+        >
+          {cat === "Semua" && (
+            <a href="#desain-ai" className="group w-[250px] shrink-0 snap-start sm:w-[280px]">
+              <div className="relative flex aspect-[3/4.2] flex-col justify-between overflow-hidden rounded-[26px] p-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_24px_48px_-20px_rgba(21,19,15,0.45)]" style={{ background: L.night, color: "#F3EBDD" }}>
+                <Eyebrow light>Desain AI</Eyebrow>
+                <div className="space-y-5">
+                  <div className="flex -space-x-2">
+                    {Object.values(AI_THEME_PRESETS).map(({ theme }) => (
+                      <span key={theme.name} className="h-9 w-9 rounded-full ring-2 ring-[#15130F] transition-transform duration-500 group-hover:scale-105" style={{ background: `linear-gradient(135deg, ${theme.palette.background} 50%, ${theme.palette.accent} 50%)` }} />
+                    ))}
+                  </div>
+                  <p className="font-(family-name:--font-landing-display) text-3xl leading-tight">Desain unik yang hanya dimiliki kalian.</p>
+                  <span className="inline-flex items-center gap-2 text-sm transition-transform duration-300 group-hover:translate-x-1" style={{ color: L.accentBright }}>
+                    Coba sekarang <IconArrowRight size={16} />
+                  </span>
                 </div>
-                <p className="font-(family-name:--font-landing-display) text-3xl leading-tight">Desain unik yang hanya dimiliki kalian.</p>
-                <span className="inline-flex items-center gap-2 text-sm" style={{ color: L.accentBright }}>
-                  Coba sekarang <IconArrowRight size={16} />
-                </span>
               </div>
-            </div>
-            <div className="mt-4">
-              <p className="font-(family-name:--font-landing-display) text-xl" style={{ color: L.ink }}>
-                Rancang dengan AI
-              </p>
-              <p className="text-sm" style={{ color: L.muted }}>
-                Sesuai konsep kalian
-              </p>
-            </div>
-          </a>
-        )}
-        {shown.map((t) => (
-          <Link key={t.slug} href={`/preview/t/${t.slug}`} className="group w-[250px] shrink-0 snap-start sm:w-[280px]">
-            <div className="relative aspect-[3/4.2] overflow-hidden rounded-2xl border" style={{ borderColor: L.line, background: L.surface }}>
-              {t.kind === "ENGINE" && t.theme ? (
-                <CoverThumb theme={t.theme} zoom={0.7} className="h-full w-full" />
-              ) : (
-                <SafeImg src={t.thumbnail} alt={t.name} className="absolute inset-0 h-full w-full transition-transform duration-700 group-hover:scale-[1.03]" />
-              )}
-            </div>
-            <div className="mt-4 flex items-start justify-between gap-3">
-              <div>
+              <div className="mt-4">
                 <p className="font-(family-name:--font-landing-display) text-xl" style={{ color: L.ink }}>
-                  {t.name}
+                  Rancang dengan AI
                 </p>
                 <p className="text-sm" style={{ color: L.muted }}>
-                  {t.category}
+                  Sesuai konsep kalian
                 </p>
               </div>
-              <span className="mt-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[11px]" style={{ borderColor: L.line, color: t.tier === "Premium" ? L.accent : L.muted }}>
-                {t.tier}
-              </span>
+            </a>
+          )}
+          {shown.map((t) => (
+            <Link key={t.slug} href={`/preview/t/${t.slug}`} className="group w-[250px] shrink-0 snap-start sm:w-[280px]">
+              <div className="relative aspect-[3/4.2] overflow-hidden rounded-[26px] border transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_24px_48px_-20px_rgba(30,27,23,0.22)]" style={{ borderColor: L.line, background: L.surface }}>
+                {t.kind === "ENGINE" && t.theme ? (
+                  <CoverThumb theme={t.theme} zoom={0.7} className="h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]" />
+                ) : (
+                  <SafeImg src={t.thumbnail} alt={t.name} className="absolute inset-0 h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]" />
+                )}
+                <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-end opacity-0 transition-all duration-300 group-hover:opacity-100">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#1E1B17]/90 px-3 py-1.5 text-xs font-medium text-[#F7F3EC] backdrop-blur-sm">
+                    Pratinjau <IconArrowRight size={13} />
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-(family-name:--font-landing-display) text-xl" style={{ color: L.ink }}>
+                    {t.name}
+                  </p>
+                  <p className="text-sm" style={{ color: L.muted }}>
+                    {t.category}
+                  </p>
+                </div>
+                <span className="mt-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[11px]" style={{ borderColor: L.line, color: t.tier === "Premium" ? L.accent : L.muted }}>
+                  {t.tier}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Carousel controls & progress dots */}
+        {totalSlides > 1 && (
+          <div className="mt-2 flex items-center justify-between gap-4 px-4 md:px-6">
+            <div className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
+              {Array.from({ length: totalSlides }).map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => scrollToSlide(idx)}
+                  aria-label={`Desain ${idx + 1}`}
+                  className="flex h-11 items-center px-0.5"
+                >
+                  <span
+                    className={`block h-1.5 rounded-full transition-all duration-300 ${
+                      idx === activeSlide ? "w-8 bg-[#1E1B17]" : "w-2 bg-[#CFC5B4] hover:bg-[#A59B8C]"
+                    }`}
+                  />
+                </button>
+              ))}
             </div>
-          </Link>
-        ))}
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => scrollToSlide(activeSlide - 1)}
+                aria-label="Desain sebelumnya"
+                className="flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-300 hover:bg-white active:scale-95"
+                style={{ borderColor: L.line, color: L.ink }}
+              >
+                <IconChevronLeft size={18} />
+              </button>
+              <button
+                onClick={() => scrollToSlide(activeSlide + 1)}
+                aria-label="Desain berikutnya"
+                className="flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-300 hover:bg-white active:scale-95"
+                style={{ borderColor: L.line, color: L.ink }}
+              >
+                <IconChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -262,11 +383,11 @@ export function Features() {
             <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#DCF3C8] p-3 text-[14px] leading-relaxed text-[#1E2A1A] shadow-sm">
               <p>Kepada Yth. Bapak Andi Wijaya,</p>
               <p className="mt-2">Tanpa mengurangi rasa hormat, kami mengundang Bapak untuk hadir di pernikahan kami.</p>
-              <p className="mt-2 break-all text-[#1C6EA4] underline">nika.id/adit-sarah?to=Bapak+Andi</p>
+              <p className="mt-2 break-all text-[#1C6EA4] underline">undanginyuk.id/adit-sarah?to=Bapak+Andi</p>
               <p className="mt-1 text-right text-[11px] text-[#6B7A63]">09.41 ✓✓</p>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: L.muted }}>
-              <IconBrandWhatsapp size={16} /> Terkirim dari daftar tamu nika.id
+              <IconBrandWhatsapp size={16} /> Terkirim dari daftar tamu UNDANGIN YUK
             </div>
           </div>
         </Reveal>
@@ -316,8 +437,8 @@ function planFeatures(key: PlanType) {
 }
 
 export function Pricing() {
-  const keys = Object.keys(PLAN_LIMITS) as PlanType[];
-  const featured = keys[keys.length - 1];
+  const keys = PAID_PLANS;
+  const featured = "EKSKLUSIF";
   return (
     <section id="harga" className="scroll-mt-16 border-t py-24 md:py-32" style={{ borderColor: L.line, background: L.surface }}>
       <div className="mx-auto max-w-6xl px-4 md:px-6">
@@ -325,7 +446,7 @@ export function Pricing() {
           <Eyebrow>Harga</Eyebrow>
           <Display className="text-[2.5rem] sm:text-5xl">Sekali bayar untuk satu acara.</Display>
           <p className="text-[17px]" style={{ color: L.muted }}>
-            Tanpa langganan. Naik paket kapan saja dengan membayar selisihnya.
+            Coba dan pratinjau undangan gratis sebelum bayar. Upgrade kapan saja cukup bayar selisih, atau tambah kuota +{GUEST_ADDON_SIZE} tamu {rupiah(GUEST_ADDON_PRICE)}.
           </p>
         </Reveal>
         <div className="grid gap-5 md:grid-cols-3">
@@ -462,7 +583,7 @@ export function LandingFooter() {
         </div>
       </div>
       <p className="mx-auto mt-12 max-w-6xl px-4 text-xs md:px-6" style={{ color: L.muted }}>
-        © {new Date().getFullYear()} nika.id
+        © {new Date().getFullYear()} UNDANGIN YUK
       </p>
     </footer>
   );

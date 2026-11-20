@@ -1,9 +1,9 @@
-# nika.id — konteks proyek untuk AI berikutnya
+# undangin yuk — konteks proyek untuk AI berikutnya
 
 Salin seluruh file ini ke AI lain sebagai konteks awal. Ditulis 20 Nov 2026. Semua perubahan di bawah **belum di-commit** (branch `dev`, main branch `prod`).
 
 ## Produk
-SaaS undangan pernikahan digital (Indonesia). User mendaftar (email/password atau Google), membuat undangan dengan **Desain AI** atau **memakai template katalog**, mengisi data, lalu membagikan link `/<invitationSlug>?to=<nama tamu>` lewat WhatsApp. Ada RSVP + ucapan tamu, amplop digital, musik, galeri, countdown. Monetisasi: paket per acara (sekarang `FREE / SILVER / GOLD` di `lib/limits.ts`).
+SaaS undangan pernikahan digital (Indonesia) dengan nama brand **UNDANGIN YUK**. User mendaftar (email/password atau Google), membuat undangan dengan **Desain AI** atau **memakai template katalog**, mengisi data, lalu membagikan link `/<invitationSlug>?to=<nama tamu>` lewat WhatsApp. Ada RSVP + ucapan tamu, amplop digital, musik (YouTube atau upload audio ke S3/MinIO), galeri, countdown. Monetisasi: paket per acara (`HEMAT` Rp49rb / `PREMIUM` Rp79rb / `EKSKLUSIF` Rp99rb + add-on `+100 tamu` Rp15rb di `lib/limits.ts`, `FREE` hanya untuk mode pratinjau sebelum bayar).
 
 ## Stack
 Next.js 16 (App Router, Turbopack) · React 19 · Tailwind v4 · shadcn/ui · Prisma 6 + PostgreSQL · better-auth (email + Google OAuth, plugin admin) · MinIO (S3) untuk upload · Midtrans (pembayaran) · nodemailer + Gmail SMTP (email verifikasi) · `@anthropic-ai/sdk` (Claude Opus 5.5, structured output) · Bun sebagai package manager.
@@ -36,18 +36,13 @@ bun run dev                              # http://localhost:3000
 - **UI/desain**: palet gading-tinta-emas. Lingkup `.studio` di `app/globals.css` memetakan ulang warna Tailwind (zinc/gray/pink/purple/amber) + token shadcn; `lib/studio.ts` (font Cormorant Garamond + token sidebar). Landing: `app/page.tsx` + `components/landing/*`. Dashboard: `app/(user)/dashboard`, `components/user-sidebar.tsx`, `components/site-header.tsx`. Aturan desain anti-slop: `.claude/skills/invitation-design/SKILL.md` (**baca sebelum mengubah UI**).
 
 ## Sudah selesai di sesi ini
-Google login · Gmail SMTP · Postgres lokal · Desain AI (mesin tema, studio, kuota, preset) · redesign landing, dashboard, semua halaman user/auth/admin · verifikasi email asli (bukan simulasi) · ucapan tamu tampil di undangan · perbaikan bug RSVP (`type` hilang, case `HADIR`) · CMS template + halaman koleksi `/desain` + pilih template · MinIO lokal + upload thumbnail · AI dengan screenshot referensi (admin + user) · jadikan desain user sebagai template · pemilih lokasi peta di editor acara (`components/common/location-picker.tsx`, Leaflet + OpenStreetMap/Nominatim, menyimpan `lat/lng` + link Google Maps) dan peta OSM di kartu acara undangan · login admin terpisah di `/admin/login` (halaman admin ada di route group `app/admin/(panel)`, layout-nya mengarahkan non-admin ke `/admin/login?ditolak=1`; login user selalu ke `/dashboard`) · fallback thumbnail rusak (`components/common/safe-img.tsx`) · upgrade paket via transfer manual: `app/(user)/upgrade` + `app/api/payment/manual` (nominal + kode unik 3 digit, upload bukti), admin menyetujui di `/admin/transaksi` → `lib/payment.ts` `activateTransaction` mengaktifkan plan. Rekening dari env `MANUAL_PAYMENT_BANKS` (`Bank|Nomor|Atas nama;...`) dan `MANUAL_PAYMENT_WHATSAPP`. Midtrans (`app/api/payment/token`) masih ada tapi tidak dipakai UI.
+Google login · Gmail SMTP · Postgres lokal · Desain AI (mesin tema, studio, kuota, preset, base prompt + konteks gaya) · redesign landing, dashboard, semua halaman user/auth/admin · rebrand ke **UNDANGIN YUK** · karosel desain & animasi landing + template (reveal kiri/kanan/scale + gerak ornamen lembut + layout desktop split responsif) · editor undangan redesign + musik latar YouTube/upload S3 + musik default per template & di pengaturan superadmin (show/hide) · fix `next/image` unoptimized untuk MinIO lokal · toast Sonner tema studio · pricing baru (`HEMAT` Rp49rb / `PREMIUM` Rp79rb / `EKSKLUSIF` Rp99rb, bayar selisih upgrade, add-on +100 tamu Rp15rb, pratinjau pemilik `?preview=1` sebelum bayar) · **multi-undangan per akun** (`/undangan`, buat/edit/hapus undangan, pilih undangan aktif, toggle `isPublic` untuk memilih yang dibagikan, tamu/RSVP/ucapan/pembayaran per undangan) · upload aset gambar tema di admin + tombol "Jadikan admin" di `/admin/users` · hapus route berisiko `app/api/templates/upload` · verifikasi email asli · pemilih lokasi peta di editor acara · login admin terpisah di `/admin/login` · fallback thumbnail rusak (`components/common/safe-img.tsx`) · upgrade paket via transfer manual + Midtrans.
 
 ## Belum dikerjakan / keputusan tertunda
 1. Catatan peta: tile `tile.openstreetmap.org` dan Nominatim punya batas pemakaian; untuk trafik besar pakai penyedia tile/geocoding berbayar (mis. MapTiler) lewat env.
-2. **Animasi template lebih hidup** (masuk dari samping, ornamen bergerak halus, layout lebih bebas) — diminta user, mengacu gaya our-wedding.link (hanya inspirasi, jangan menyalin).
-3. **Pricing baru** belum diterapkan: Hemat Rp49rb / Premium Rp79rb / Eksklusif Rp99rb, tanpa paket gratis, batas tamu 100 / 300 / tanpa batas, kuota AI 1/5/10, add-on +100 tamu Rp15rb, upgrade bayar selisih, user bisa preview sebelum bayar. Ubah `lib/limits.ts`, enum `Plan`, halaman upgrade, Midtrans, migrasi user FREE.
-4. **Multi-undangan per akun**: pindahkan slug/template/plan/tamu/RSVP dari `User` ke `Invitation`, pembayaran per undangan.
-5. **Upload aset admin** (latar/ornamen gambar ke tema) dan tombol "Jadikan admin" di halaman Pengguna.
-6. Migration Prisma tertinggal dari schema (`prisma/migrations` belum memuat Plan, Transaction, AiDesign, CatalogTemplate) — buat migration sebelum deploy.
-7. Production env (Coolify): isi `GOOGLE_*`, `GMAIL_*`, `MINIO_*` (SSL, port 443), `ANTHROPIC_API_KEY`.
-8. Route lama `app/api/templates/upload` (menulis file .tsx saat runtime) tidak dipakai lagi dan berisiko — hapus.
-9. Testimoni landing dihapus (palsu); gambar `public/templates/*.png` berisi foto orang, bukan screenshot template — ganti.
+2. Migration Prisma tertinggal dari schema (`prisma/migrations` belum memuat perubahan `Plan`, `Invitation` multi-undangan, `Transaction`, `AiDesign`, `CatalogTemplate`, `DefaultMusic`) — buat migration baseline/baru sebelum deploy produksi.
+3. Production env (Coolify): isi `GOOGLE_*`, `GMAIL_*`, `MINIO_*` (SSL, port 443), `ANTHROPIC_API_KEY`.
+4. Gambar `public/templates/*.png` masih berisi foto placeholder, bukan screenshot template — ganti. (Catatan: `components/home/testimonials.tsx` sudah tidak dipakai di landing baru.)
 
 ## Konvensi
 - Bahasa UI: Indonesia yang hangat dan sopan. Mobile-first (375px), tap target ≥44px.

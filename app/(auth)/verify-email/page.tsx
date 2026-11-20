@@ -15,13 +15,18 @@ function VerifyEmailContent() {
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    authClient.verifyEmail({ query: { token } }).then(({ error }) => {
+    authClient.verifyEmail({ query: { token } }).then(async ({ error }) => {
       if (cancelled) return;
       if (error) {
         setStatus("error");
         setMessage(error.message || "Link verifikasi tidak valid atau sudah kedaluwarsa.");
         return;
       }
+      await fetch("/api/portal/enter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ portal: "user" }),
+      }).catch(() => {});
       setStatus("success");
       setTimeout(() => router.push("/dashboard"), 2500);
     });

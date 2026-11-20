@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     question: "Bagaimana cara membagikan undangan?",
-    answer: "Anda akan mendapatkan link unik (contoh: nika.id/nama-anda) yang bisa langsung di-copy dan dibagikan melalui WhatsApp, Telegram, atau Media Sosial lainnya.",
+    answer: "Anda akan mendapatkan link unik (contoh: undanginyuk.id/nama-anda) yang bisa langsung di-copy dan dibagikan melalui WhatsApp, Telegram, atau Media Sosial lainnya.",
   },
 ];
 

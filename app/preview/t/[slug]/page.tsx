@@ -13,6 +13,13 @@ export default async function CatalogPreviewPage({ params }: { params: Promise<{
   if (item.kind === "CODE" && item.componentSlug) redirect(`/preview/${item.componentSlug}`);
   if (!item.theme) notFound();
 
+  const previewData = item.defaultMusic?.url
+    ? {
+        ...MOCK_WEDDING_DATA,
+        music: { enabled: true, type: item.defaultMusic.type, url: item.defaultMusic.url },
+      }
+    : MOCK_WEDDING_DATA;
+
   return (
     <div className="relative">
       <div className="fixed left-1/2 top-4 z-100 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-2 rounded-full border border-[#E1D8C9] bg-[#FFFDF9]/95 p-1.5 shadow-lg backdrop-blur">
@@ -26,7 +33,7 @@ export default async function CatalogPreviewPage({ params }: { params: Promise<{
           Pakai desain
         </Link>
       </div>
-      <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={item.theme} />
+      <AiDesignTemplate data={previewData} theme={item.theme} />
     </div>
   );
 }

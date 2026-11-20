@@ -2,9 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { templates as codeTemplates } from "@/lib/templates";
 import { AI_THEME_PRESETS } from "@/lib/ai-design/presets";
 import { normalizeTheme } from "@/lib/ai-design/color";
-import { CATALOG_CATEGORIES, type CatalogItem } from "@/lib/catalog-shared";
+import { CATALOG_CATEGORIES, type CatalogItem, type TemplateDefaultMusic } from "@/lib/catalog-shared";
 
-export { CATALOG_CATEGORIES, type CatalogItem };
+export { CATALOG_CATEGORIES, type CatalogItem, type TemplateDefaultMusic };
 
 export const CATALOG_TIERS = ["Gratis", "Premium"] as const;
 
@@ -13,6 +13,17 @@ type Row = Awaited<ReturnType<typeof prisma.catalogTemplate.findMany>>[number];
 // Older code templates used English category names; show them under the Indonesian ones.
 const CATEGORY_ALIASES: Record<string, string> = { Elegant: "Elegan", Minimalist: "Minimalis", Pastel: "Floral" };
 const normalizeCategory = (c: string) => CATEGORY_ALIASES[c] ?? c;
+
+function parseDefaultMusic(raw: unknown): TemplateDefaultMusic | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as { type?: unknown; url?: unknown; title?: unknown };
+  if (typeof r.url !== "string" || !r.url.trim()) return null;
+  return {
+    type: r.type === "youtube" ? "youtube" : "upload",
+    url: r.url.trim(),
+    ...(typeof r.title === "string" && r.title.trim() ? { title: r.title.trim() } : {}),
+  };
+}
 
 export function toCatalogItem(row: Row): CatalogItem {
   return {
@@ -24,6 +35,7 @@ export function toCatalogItem(row: Row): CatalogItem {
     tier: row.tier,
     kind: row.kind === "CODE" ? "CODE" : "ENGINE",
     theme: row.kind === "CODE" || !row.theme ? null : normalizeTheme(row.theme),
+    defaultMusic: parseDefaultMusic(row.defaultMusic),
     componentSlug: row.componentSlug,
     thumbnail: row.thumbnail,
     isFeatured: row.isFeatured,

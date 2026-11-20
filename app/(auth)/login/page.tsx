@@ -42,6 +42,12 @@ function LoginForm() {
       }
 
       // The user login always lands in the user area; admins use /admin/login.
+      await fetch("/api/portal/enter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ portal: "user" }),
+      });
+
       const from = searchParams.get("from");
       const target = from && from.startsWith("/") && !from.startsWith("/admin") ? from : "/dashboard";
 
@@ -57,9 +63,11 @@ function LoginForm() {
     setGoogleLoading(true);
 
     try {
+      const from = searchParams.get("from");
+      const next = from && from.startsWith("/") && !from.startsWith("/admin") ? from : "/dashboard";
       const result = await signIn.social({
         provider: "google",
-        callbackURL: searchParams.get("from") || "/dashboard",
+        callbackURL: `/api/portal/enter?portal=user&next=${encodeURIComponent(next)}`,
         errorCallbackURL: "/login",
       });
       if (result?.error) {

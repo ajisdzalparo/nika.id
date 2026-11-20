@@ -234,6 +234,22 @@ export function Corner({ theme, className }: { theme: AiTheme; className?: strin
 
 /** Four corners for a framed area. */
 export function Corners({ theme, size = "w-24 h-24", opacity = "opacity-80" }: { theme: AiTheme; size?: string; opacity?: string }) {
+  const custom = theme.assets?.ornamentImage;
+  if (custom) {
+    const base = `pointer-events-none absolute object-contain ${size} ${opacity}`;
+    return (
+      <>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={custom} alt="" aria-hidden="true" className={`${base} left-0 top-0`} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={custom} alt="" aria-hidden="true" className={`${base} right-0 top-0 -scale-x-100`} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={custom} alt="" aria-hidden="true" className={`${base} left-0 bottom-0 -scale-y-100`} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={custom} alt="" aria-hidden="true" className={`${base} right-0 bottom-0 -scale-100`} />
+      </>
+    );
+  }
   if (theme.ornament === "none") return null;
   const base = `pointer-events-none absolute ${size} ${opacity}`;
   return (
@@ -248,11 +264,30 @@ export function Corners({ theme, size = "w-24 h-24", opacity = "opacity-80" }: {
 
 /** Leafy sprigs growing in from both page edges, used between sections. */
 export function EdgeSprigs({ theme }: { theme: AiTheme }) {
+  const custom = theme.assets?.ornamentImage;
+  if (custom) {
+    return (
+      <div className="pointer-events-none relative h-16 overflow-hidden" aria-hidden="true">
+        <div className="animate-uy-sway">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={custom} alt="" className="absolute -left-2 top-0 h-20 w-20 object-contain opacity-70 rotate-[-20deg]" />
+        </div>
+        <div className="animate-uy-sway">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={custom} alt="" className="absolute -right-2 top-0 h-20 w-20 object-contain opacity-70 -scale-x-100 rotate-20" />
+        </div>
+      </div>
+    );
+  }
   if (theme.ornament === "none" || theme.ornament === "minimal-rule") return null;
   return (
-    <div className="pointer-events-none relative h-16" aria-hidden="true">
-      <Corner theme={theme} className="absolute -left-2 top-0 w-20 h-20 opacity-70 rotate-[-20deg]" />
-      <Corner theme={theme} className="absolute -right-2 top-0 w-20 h-20 opacity-70 -scale-x-100 rotate-20" />
+    <div className="pointer-events-none relative h-16 overflow-hidden" aria-hidden="true">
+      <div className="animate-uy-sway">
+        <Corner theme={theme} className="absolute -left-2 top-0 w-20 h-20 opacity-70 rotate-[-20deg]" />
+      </div>
+      <div className="animate-uy-sway">
+        <Corner theme={theme} className="absolute -right-2 top-0 w-20 h-20 opacity-70 -scale-x-100 rotate-20" />
+      </div>
     </div>
   );
 }

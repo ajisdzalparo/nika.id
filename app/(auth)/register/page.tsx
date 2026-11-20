@@ -87,7 +87,7 @@ export default function RegisterPage() {
     try {
       const result = await signIn.social({
         provider: "google",
-        callbackURL: "/dashboard",
+        callbackURL: "/api/portal/enter?portal=user&next=/dashboard",
         errorCallbackURL: "/login",
       });
       if (result?.error) {

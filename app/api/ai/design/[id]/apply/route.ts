@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import { getActiveInvitation } from "@/lib/active-invitation";
 
-// POST /api/ai/design/[id]/apply — use this AI design as the invitation's template
+// POST /api/ai/design/[id]/apply — use this AI design as the active invitation's template
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuth(request);
@@ -11,8 +12,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const design = await prisma.aiDesign.findFirst({ where: { id, userId: session.user.id }, select: { id: true } });
     if (!design) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
-    await prisma.user.update({
-      where: { id: session.user.id },
+    const active = await getActiveInvitation(session.user.id);
+    await prisma.invitation.update({
+      where: { id: active.id },
       data: { activeAiDesignId: design.id, templateSlug: "ai-design" },
     });
 

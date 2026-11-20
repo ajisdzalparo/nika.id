@@ -21,9 +21,10 @@ import {
   TEXTURES,
   type AiTheme,
 } from "@/lib/ai-design/schema";
-import { CATALOG_CATEGORIES } from "@/lib/catalog-shared";
+import { CATALOG_CATEGORIES, type TemplateDefaultMusic } from "@/lib/catalog-shared";
 import { ImageUploadField } from "./image-upload-field";
 import { ReferenceUploader } from "@/components/common/reference-uploader";
+import { MusicSourcePicker } from "@/components/common/music-source-picker";
 
 export interface CatalogDraft {
   id?: string;
@@ -34,6 +35,7 @@ export interface CatalogDraft {
   tier: "Gratis" | "Premium";
   kind: "ENGINE" | "CODE";
   theme: AiTheme | null;
+  defaultMusic?: TemplateDefaultMusic | null;
   componentSlug: string | null;
   thumbnail: string;
   referenceUrl: string;
@@ -51,6 +53,7 @@ export const EMPTY_DRAFT: CatalogDraft = {
   tier: "Gratis",
   kind: "ENGINE",
   theme: DEFAULT_AI_THEME,
+  defaultMusic: null,
   componentSlug: null,
   thumbnail: "",
   referenceUrl: "",
@@ -136,7 +139,12 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
       const res = await fetch(d.id ? `/api/admin/catalog/${d.id}` : "/api/admin/catalog", {
         method: d.id ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...d, id: undefined, theme: d.kind === "ENGINE" ? theme : null }),
+        body: JSON.stringify({
+          ...d,
+          id: undefined,
+          theme: d.kind === "ENGINE" ? theme : null,
+          defaultMusic: d.defaultMusic?.url ? d.defaultMusic : null,
+        }),
       });
       const j = await res.json();
       if (!res.ok) return toast.error(j.message || "Gagal menyimpan");
@@ -212,6 +220,35 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               </label>
             ))}
           </div>
+        </Panel>
+
+        <Panel
+          title="Musik default template (opsional)"
+          aside={
+            <button
+              type="button"
+              onClick={() => set("defaultMusic", d.defaultMusic ? null : { type: "upload", url: "" })}
+              className={`h-9 rounded-full border px-4 text-xs font-medium transition-colors ${
+                d.defaultMusic ? "border-zinc-900 bg-zinc-900 text-zinc-50" : "border-zinc-300 text-zinc-600 hover:bg-zinc-100"
+              }`}
+            >
+              {d.defaultMusic ? "Aktif · Klik untuk matikan" : "Pasang musik default"}
+            </button>
+          }
+        >
+          {d.defaultMusic ? (
+            <div className="space-y-3">
+              <p className="text-xs text-zinc-500">Lagu ini otomatis terpasang saat user memilih template ini (jika user belum mengatur musik sendiri).</p>
+              <MusicSourcePicker
+                type={d.defaultMusic.type}
+                url={d.defaultMusic.url}
+                onChangeType={(t) => set("defaultMusic", { ...(d.defaultMusic ?? { url: "" }), type: t })}
+                onChangeUrl={(u) => set("defaultMusic", { ...(d.defaultMusic ?? { type: "upload" }), url: u })}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">Belum ada musik bawaan pada template ini. Klik &ldquo;Pasang musik default&rdquo; jika ingin menyertakan lagu.</p>
+          )}
         </Panel>
 
         <Panel
@@ -347,6 +384,31 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               <Field label="Kalimat penutup">
                 <textarea className={`${input} h-20 resize-none py-3`} value={theme.copy.closing} onChange={(e) => setTheme({ copy: { ...theme.copy, closing: e.target.value } })} />
               </Field>
+
+              <div className="space-y-3 rounded-xl border border-zinc-200 bg-zinc-50/70 p-4">
+                <div>
+                  <p className="text-sm font-medium text-zinc-800">Aset gambar tema (opsional)</p>
+                  <p className="text-xs text-zinc-500">Unggah gambar latar atau ornamen sudut kustom untuk memperkaya tema ini.</p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-zinc-700">Gambar latar belakang</span>
+                    <ImageUploadField
+                      value={theme.assets?.backgroundImage || ""}
+                      onChange={(url) => setTheme({ assets: { ...theme.assets, backgroundImage: url || undefined } })}
+                      aspect="aspect-[3/4]"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-medium text-zinc-700">Ornamen sudut (PNG transparan)</span>
+                    <ImageUploadField
+                      value={theme.assets?.ornamentImage || ""}
+                      onChange={(url) => setTheme({ assets: { ...theme.assets, ornamentImage: url || undefined } })}
+                      aspect="aspect-square"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </Panel>

@@ -9,8 +9,9 @@ datasource db {
 
 enum Plan {
   FREE
-  SILVER
-  GOLD
+  HEMAT
+  PREMIUM
+  EKSKLUSIF
 }
 
 model User {
@@ -28,10 +29,9 @@ model User {
   banned         Boolean   @default(false)
   views          Int       @default(0)
   templateSlug   String?
-  plan           Plan      @default(FREE)
-  planExpiresAt  DateTime? // Null means forever (for Gold) or not set? No, Free has 7 days.
-  // Actually, for Free, when does it start? on Creation?
-  // I'll assume planExpiresAt is strictly for when the *active period* ends.
+  plan            Plan      @default(FREE)
+  planExpiresAt   DateTime?
+  extraGuestQuota Int       @default(0)
 
   activeAiDesignId String?
 
@@ -39,10 +39,11 @@ model User {
   aiDesigns    AiDesign[]
   guests       Guest[]
   messages     GuestMessage[]
-  invitation   Invitation?
-  rsvps        RSVP[]
-  sessions     Session[]
-  transactions Transaction[]
+  invitations   Invitation[]
+  rsvps         RSVP[]
+  sessions      Session[]
+  supportThread SupportThread?
+  transactions  Transaction[]
 }
 
 model Session {
@@ -91,66 +92,95 @@ model Verification {
 }
 
 model Invitation {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  isPublic  Boolean  @default(true)
-  data      Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String         @id @default(cuid())
+  userId           String
+  slug             String?        @unique
+  title            String         @default("Undangan Pernikahan")
+  weddingDate      DateTime?
+  templateSlug     String?
+  activeAiDesignId String?
+  plan             Plan           @default(FREE)
+  planExpiresAt    DateTime?
+  extraGuestQuota  Int            @default(0)
+  views            Int            @default(0)
+  isPublic         Boolean        @default(true)
+  data             Json           @default("{}")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guests           Guest[]
+  rsvps            RSVP[]
+  messages         GuestMessage[]
+  transactions     Transaction[]
+
+  @@index([userId])
 }
 
 model Guest {
-  id        String   @id @default(cuid())
-  userId    String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String      @id @default(cuid())
+  userId       String
+  invitationId String?
+  name         String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([invitationId])
 }
 
 model RSVP {
-  id         String   @id @default(cuid())
-  userId     String
-  guestName  String
-  attendance String
-  guests     Int      @default(1)
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String      @id @default(cuid())
+  userId       String
+  invitationId String?
+  guestName    String
+  attendance   String
+  guests       Int         @default(1)
+  createdAt    DateTime    @default(now())
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([invitationId])
 }
 
 model GuestMessage {
-  id        String   @id @default(cuid())
-  userId    String
-  guestName String
-  message   String
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String      @id @default(cuid())
+  userId       String
+  invitationId String?
+  guestName    String
+  message      String
+  status       String      @default("PENDING")
+  createdAt    DateTime    @default(now())
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([invitationId])
   @@index([status])
 }
 
 model Transaction {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   userId        String
+  invitationId  String?
   amount        Int
-  status        String   @default("PENDING") // PENDING, SUCCESS, FAILED
+  status        String      @default("PENDING") // PENDING, SUCCESS, FAILED
+  kind          String      @default("PLAN") // PLAN | GUEST_ADDON
+  addonUnits    Int         @default(0)
   snapToken     String?
-  plan          String? // FREE, SILVER, GOLD
+  plan          String? // HEMAT, PREMIUM, EKSKLUSIF
   paymentProof  String? // URL to the uploaded image (for manual)
   paymentMethod String?
   notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation    Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([invitationId])
   @@index([status])
 }
 
@@ -176,6 +206,7 @@ model CatalogTemplate {
   tier          String   @default("Gratis") // Gratis | Premium
   kind          String   @default("ENGINE") // ENGINE: theme JSON rendered by the AI theme engine; CODE: component in components/templates
   theme         Json?
+  defaultMusic  Json? // { type: "youtube" | "upload", url: string, title?: string }
   componentSlug String?
   thumbnail     String?
   referenceUrl  String? // inspiration note for admins, never shown publicly
@@ -188,4 +219,77 @@ model CatalogTemplate {
   updatedAt     DateTime @updatedAt
 
   @@index([isActive, sortOrder])
+}
+
+/// Default background music presets curated and toggled by superadmin.
+model DefaultMusic {
+  id        String   @id @default(cuid())
+  title     String
+  artist    String   @default("")
+  type      String   @default("upload") // youtube | upload
+  url       String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  audience  String   // "USER" | "ADMIN" | "ALL_USERS"
+  userId    String?  // targeted user ID when audience = "USER"
+  type      String   // "TEMPLATE" | "TRANSACTION" | "RSVP" | "SYSTEM"
+  title     String
+  message   String
+  href      String?
+  createdAt DateTime @default(now())
+
+  reads NotificationRead[]
+
+  @@index([audience, userId, createdAt])
+  @@index([createdAt])
+}
+
+model NotificationRead {
+  notificationId String
+  userId         String
+  readAt         DateTime @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@id([notificationId, userId])
+  @@index([userId])
+}
+
+model SupportThread {
+  id            String           @id @default(cuid())
+  userId        String           @unique
+  mode          String           @default("AI") // "AI" | "ADMIN"
+  status        String           @default("OPEN") // "OPEN" | "RESOLVED"
+  lastMessageAt DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      SupportMessage[]
+
+  @@index([mode, lastMessageAt])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  threadId  String
+  sender    String        // "USER" | "AI" | "ADMIN" | "SYSTEM"
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+  thread    SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
 }

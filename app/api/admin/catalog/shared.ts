@@ -1,8 +1,22 @@
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { AiThemeSchema } from "@/lib/ai-design/schema";
+import { AiThemeSchema, ThemeAssetsSchema } from "@/lib/ai-design/schema";
 import { normalizeTheme } from "@/lib/ai-design/color";
 import { templateRegistry } from "@/components/templates/registry";
+
+const CatalogThemeInput = AiThemeSchema.extend({
+  assets: ThemeAssetsSchema.optional(),
+});
+
+const DefaultMusicInput = z
+  .object({
+    type: z.enum(["youtube", "upload"]),
+    url: z.string().url("URL musik tidak valid"),
+    title: z.string().max(120).optional(),
+  })
+  .nullable()
+  .optional();
 
 export const CatalogInput = z.object({
   slug: z.string().regex(/^[a-z0-9-]{2,60}$/, "Slug hanya huruf kecil, angka, dan tanda hubung"),
@@ -11,7 +25,8 @@ export const CatalogInput = z.object({
   category: z.string().min(2).max(40),
   tier: z.enum(["Gratis", "Premium"]),
   kind: z.enum(["ENGINE", "CODE"]),
-  theme: AiThemeSchema.nullable().optional(),
+  theme: CatalogThemeInput.nullable().optional(),
+  defaultMusic: DefaultMusicInput,
   componentSlug: z.string().nullable().optional(),
   thumbnail: z.string().url().nullable().optional().or(z.literal("")),
   referenceUrl: z.string().url().nullable().optional().or(z.literal("")),
@@ -28,6 +43,7 @@ export function toData(input: z.infer<typeof CatalogInput>) {
   return {
     ...input,
     theme: input.kind === "ENGINE" && input.theme ? normalizeTheme(input.theme) : undefined,
+    defaultMusic: input.defaultMusic && input.defaultMusic.url ? input.defaultMusic : Prisma.DbNull,
     componentSlug: input.kind === "CODE" ? input.componentSlug : null,
     thumbnail: input.thumbnail || null,
     referenceUrl: input.referenceUrl || null,

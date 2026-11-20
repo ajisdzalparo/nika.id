@@ -30,7 +30,7 @@ export function HowItWorks() {
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-foreground">Cara Membuat Undangan</h2>
-          <p className="text-muted-foreground text-lg">Hanya butuh 3 langkah mudah untuk mewujudkan undangan pernikahan impian Anda bersama nika.id.</p>
+          <p className="text-muted-foreground text-lg">Hanya butuh 3 langkah mudah untuk mewujudkan undangan pernikahan impian Anda bersama undangin yuk.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-8">

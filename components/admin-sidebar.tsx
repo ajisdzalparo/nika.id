@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowLeft, IconCurrencyDollar, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
+import { IconArrowLeft, IconCurrencyDollar, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
 import {
@@ -32,6 +32,7 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
       { title: "Pengguna", url: "/admin/users", icon: IconUsers },
       { title: "Moderasi Ucapan", url: "/admin/moderasi", icon: IconMessage },
       { title: "Transaksi", url: "/admin/transaksi", icon: IconCurrencyDollar },
+      { title: "Customer Chat", url: "/admin/chat", icon: IconHeadset },
     ],
   },
   {
@@ -40,10 +41,15 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
   },
 ];
 
-export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AdminSidebar({
+  adminUser,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  adminUser?: { name: string; email: string; avatar: string };
+}) {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const user = {
+  const user = adminUser ?? {
     name: session?.user?.name || "Admin",
     email: session?.user?.email || "",
     avatar: session?.user?.image || "",
@@ -54,14 +60,22 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" tooltip="nika.id admin" className="hover:bg-transparent">
-              <Link href="/admin">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#1E1B17] font-(family-name:--font-landing-display) text-lg italic text-[#F3EBDD]">n</span>
-                <span className="flex items-baseline gap-2">
-                  <span className="font-(family-name:--font-landing-display) text-[24px] font-semibold leading-none tracking-tight">
-                    nika<span className="text-[#8A6A2F]">.id</span>
-                  </span>
-                  <span className="text-[11px] uppercase tracking-[0.18em] text-[#8C8272]">Admin</span>
+            <SidebarMenuButton asChild size="lg" tooltip="UNDANGIN YUK Admin" className="hover:bg-transparent">
+              <Link href="/admin" className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo-mark.png"
+                  alt="UNDANGIN YUK Admin"
+                  className="hidden size-7 shrink-0 object-contain group-data-[collapsible=icon]:block"
+                />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo.png"
+                  alt="UNDANGIN YUK"
+                  className="h-7 w-auto object-contain group-data-[collapsible=icon]:hidden"
+                />
+                <span className="rounded-full border border-[#DFD7C8] bg-[#F7F3EC] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#8A6A2F] group-data-[collapsible=icon]:hidden">
+                  Admin
                 </span>
               </Link>
             </SidebarMenuButton>

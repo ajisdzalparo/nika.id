@@ -18,7 +18,17 @@ export const L = {
   night: "#15130F",
 };
 
-export function Reveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+type RevealDirection = "up" | "down" | "left" | "right" | "scale";
+
+const HIDDEN_STATE: Record<RevealDirection, string> = {
+  up: "translate-y-4 opacity-0",
+  down: "-translate-y-4 opacity-0",
+  left: "-translate-x-5 opacity-0",
+  right: "translate-x-5 opacity-0",
+  scale: "scale-[0.96] opacity-0",
+};
+
+export function Reveal({ children, className = "", delay = 0, direction = "up" }: { children: ReactNode; className?: string; delay?: number; direction?: RevealDirection }) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
   useEffect(() => {
@@ -32,7 +42,7 @@ export function Reveal({ children, className = "", delay = 0 }: { children: Reac
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-600 ease-out motion-reduce:transition-none ${shown ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100"} ${className}`}
+      className={`transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${shown ? "translate-x-0 translate-y-0 scale-100 opacity-100" : `${HIDDEN_STATE[direction]} motion-reduce:translate-x-0 motion-reduce:translate-y-0 motion-reduce:scale-100 motion-reduce:opacity-100`} ${className}`}
     >
       {children}
     </div>
