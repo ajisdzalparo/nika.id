@@ -32,12 +32,50 @@ import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
 import { SafeImg } from "@/components/common/safe-img";
 import type { CatalogItem } from "@/lib/catalog-shared";
 import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PAID_PLANS, PLAN_LIMITS, getMaxGuests, getUpgradePrice, type PlanType } from "@/lib/limits";
-import {
-  MIDTRANS_CHANNELS,
-  MIDTRANS_CHANNEL_LABELS,
-  type MidtransChannel,
-  type MidtransPaymentDetails,
-} from "@/lib/midtrans-core";
+
+declare global {
+  interface Window {
+    snap?: {
+      pay: (
+        snapToken: string,
+        options?: {
+          onSuccess?: () => void;
+          onPending?: () => void;
+          onError?: () => void;
+          onClose?: () => void;
+        },
+      ) => void;
+    };
+  }
+}
+
+function loadSnapScript(clientKey: string, isProduction: boolean): Promise<void> {
+  if (typeof window === "undefined") return Promise.reject(new Error("NO_WINDOW"));
+  const expectedSrc = isProduction
+    ? "https://app.midtrans.com/snap/snap.js"
+    : "https://app.sandbox.midtrans.com/snap/snap.js";
+
+  const existing = document.querySelector<HTMLScriptElement>("script[data-midtrans-snap='true']");
+  if (existing && existing.src === expectedSrc && existing.dataset.clientKey === clientKey && window.snap) {
+    return Promise.resolve();
+  }
+  if (existing) {
+    existing.remove();
+    delete window.snap;
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = expectedSrc;
+    script.dataset.midtransSnap = "true";
+    script.dataset.clientKey = clientKey;
+    script.setAttribute("data-client-key", clientKey);
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Gagal memuat Midtrans Snap"));
+    document.body.appendChild(script);
+  });
+}
 
 export interface CheckoutOrder {
   id: string;
@@ -49,8 +87,9 @@ export interface CheckoutOrder {
   createdAt: string;
 }
 
-export interface MidtransCoreOrder extends MidtransPaymentDetails {
+export interface MidtransSnapOrder {
   id: string;
+  token: string;
   kind: string;
   addonUnits: number;
   plan: PlanType | null;
@@ -84,7 +123,7 @@ interface UpgradeCheckoutProps {
   currentPlan: PlanType;
   extraGuestQuota: number;
   initialOrder: CheckoutOrder | null;
-  initialCoreOrder: MidtransCoreOrder | null;
+  initialSnapOrder: MidtransSnapOrder | null;
   initialTransactions: TransactionHistoryItem[];
   initialBanks: BankAccount[];
   initialWhatsapp: string | null;
@@ -163,7 +202,7 @@ export function UpgradeCheckout({
   currentPlan,
   extraGuestQuota,
   initialOrder,
-  initialCoreOrder,
+  initialSnapOrder,
   initialTransactions,
   initialBanks,
   initialWhatsapp,
@@ -176,9 +215,8 @@ export function UpgradeCheckout({
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const [order, setOrder] = useState<CheckoutOrder | null>(initialOrder);
-  const [coreOrder, setCoreOrder] = useState<MidtransCoreOrder | null>(initialCoreOrder);
+  const [snapOrder, setSnapOrder] = useState<MidtransSnapOrder | null>(initialSnapOrder);
   const [checkingStatus, setCheckingStatus] = useState(false);
-  const [midtransChannel, setMidtransChannel] = useState<MidtransChannel>("QRIS");
   const [transactions, setTransactions] = useState<TransactionHistoryItem[]>(initialTransactions);
   const [draftProof, setDraftProof] = useState<string>(initialOrder?.paymentProof ?? "");
   const [senderName, setSenderName] = useState<string>("");
@@ -222,6 +260,58 @@ export function UpgradeCheckout({
     sliderRef.current?.scrollBy({ left: dir * 260, behavior: "smooth" });
   };
 
+  const checkSnapStatus = useCallback(
+    async (orderId: string, silent = false) => {
+      if (!silent) setCheckingStatus(true);
+      try {
+        const res = await fetch(`/api/payment/status?orderId=${encodeURIComponent(orderId)}`, { cache: "no-store" });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) return;
+        if (d.status === "SUCCESS") {
+          toast.success("Pembayaran berhasil diterima! Paket undangan langsung aktif.");
+          setTransactions((prev) => prev.map((t) => (t.id === orderId ? { ...t, status: "SUCCESS" } : t)));
+          setSnapOrder(null);
+          router.refresh();
+        } else if (d.status === "FAILED") {
+          toast.error("Tagihan dibatalkan atau kedaluwarsa.");
+          setTransactions((prev) => prev.map((t) => (t.id === orderId ? { ...t, status: "FAILED" } : t)));
+          setSnapOrder(null);
+          router.refresh();
+        } else if (!silent) {
+          toast("Pembayaran belum terdeteksi. Selesaikan pembayaran lalu cek kembali.");
+        }
+      } finally {
+        if (!silent) setCheckingStatus(false);
+      }
+    },
+    [router],
+  );
+
+  const openSnapPopup = useCallback(
+    (target: MidtransSnapOrder) => {
+      if (!window.snap) {
+        toast.error("Popup Midtrans belum siap. Silakan coba klik ulang.");
+        return;
+      }
+      window.snap.pay(target.token, {
+        onSuccess: () => {
+          void checkSnapStatus(target.id, false);
+        },
+        onPending: () => {
+          toast("Tagihan dibuat. Selesaikan pembayaran pada metode yang Anda pilih.");
+          void checkSnapStatus(target.id, true);
+        },
+        onError: () => {
+          toast.error("Pembayaran gagal diproses oleh Midtrans.");
+        },
+        onClose: () => {
+          void checkSnapStatus(target.id, true);
+        },
+      });
+    },
+    [checkSnapStatus],
+  );
+
   const handleCreatePayment = async () => {
     if (!canCheckout || busy) return;
     setBusy(true);
@@ -235,39 +325,41 @@ export function UpgradeCheckout({
         }
         const payload =
           checkoutKind === "ADDON"
-            ? { kind: "GUEST_ADDON", addonUnits, invitationId, channel: midtransChannel }
-            : { kind: "PLAN", plan: selectedPlan, invitationId, channel: midtransChannel };
+            ? { kind: "GUEST_ADDON", addonUnits, invitationId }
+            : { kind: "PLAN", plan: selectedPlan, invitationId };
 
-        const res = await fetch("/api/payment/charge", {
+        await loadSnapScript(midtrans.clientKey, midtrans.isProduction);
+        const res = await fetch("/api/payment/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (!res.ok || !data.order) {
-          toast.error(data.message || data.error || "Gagal membuat tagihan pembayaran");
+        if (!res.ok || !data.order || !data.token) {
+          toast.error(data.message || data.details || data.error || "Gagal membuat pembayaran Midtrans");
           return;
         }
-        setCoreOrder(data.order);
+        const createdSnap: MidtransSnapOrder = data.order;
+        setSnapOrder(createdSnap);
         setTransactions((prev) => [
           {
-            id: data.order.id,
-            kind: data.order.kind,
-            addonUnits: data.order.addonUnits,
-            plan: data.order.plan,
-            amount: data.order.amount,
+            id: createdSnap.id,
+            kind: createdSnap.kind,
+            addonUnits: createdSnap.addonUnits,
+            plan: createdSnap.plan,
+            amount: createdSnap.amount,
             status: "PENDING",
             paymentMethod: "MIDTRANS",
             paymentProof: null,
-            notes: `${data.order.channel}`,
+            notes: "Midtrans Snap",
             invitationTitle,
-            createdAt: data.order.createdAt,
+            createdAt: createdSnap.createdAt,
           },
           ...prev.map((t) =>
             t.paymentMethod === "MIDTRANS" && t.status === "PENDING" ? { ...t, status: "FAILED" } : t,
           ),
         ]);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        openSnapPopup(createdSnap);
         return;
       }
 
@@ -374,50 +466,35 @@ export function UpgradeCheckout({
     }
   };
 
-  const checkCoreStatus = useCallback(
-    async (silent = false) => {
-      if (!coreOrder) return;
-      if (!silent) setCheckingStatus(true);
-      try {
-        const res = await fetch(`/api/payment/status?orderId=${encodeURIComponent(coreOrder.id)}`, { cache: "no-store" });
-        const d = await res.json().catch(() => ({}));
-        if (!res.ok) return;
-        if (d.status === "SUCCESS") {
-          toast.success("Pembayaran berhasil diterima! Paket undangan langsung aktif.");
-          setTransactions((prev) => prev.map((t) => (t.id === coreOrder.id ? { ...t, status: "SUCCESS" } : t)));
-          setCoreOrder(null);
-          router.refresh();
-        } else if (d.status === "FAILED") {
-          toast.error("Tagihan dibatalkan atau kedaluwarsa.");
-          setTransactions((prev) => prev.map((t) => (t.id === coreOrder.id ? { ...t, status: "FAILED" } : t)));
-          setCoreOrder(null);
-          router.refresh();
-        } else if (!silent) {
-          toast("Pembayaran belum terdeteksi. Selesaikan pembayaran lalu cek kembali.");
-        }
-      } finally {
-        if (!silent) setCheckingStatus(false);
-      }
-    },
-    [coreOrder, router],
-  );
-
   useEffect(() => {
-    if (!coreOrder) return;
+    if (!snapOrder) return;
     const timer = setInterval(() => {
-      checkCoreStatus(true);
+      void checkSnapStatus(snapOrder.id, true);
     }, 5000);
     return () => clearInterval(timer);
-  }, [coreOrder, checkCoreStatus]);
+  }, [snapOrder, checkSnapStatus]);
 
-  const handleCancelCoreOrder = async () => {
-    if (!coreOrder) return;
+  const handleReopenSnap = async () => {
+    if (!snapOrder || busy) return;
+    setBusy(true);
+    try {
+      await loadSnapScript(midtrans.clientKey, midtrans.isProduction);
+      openSnapPopup(snapOrder);
+    } catch {
+      toast.error("Gagal membuka popup Midtrans Snap.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancelSnapOrder = async () => {
+    if (!snapOrder) return;
     if (!confirm("Batalkan tagihan ini dan pilih metode pembayaran lain?")) return;
     setBusy(true);
     try {
-      await fetch(`/api/payment/charge?orderId=${encodeURIComponent(coreOrder.id)}`, { method: "DELETE" });
-      setTransactions((prev) => prev.map((t) => (t.id === coreOrder.id ? { ...t, status: "FAILED", notes: "Dibatalkan oleh user" } : t)));
-      setCoreOrder(null);
+      await fetch(`/api/payment/token?orderId=${encodeURIComponent(snapOrder.id)}`, { method: "DELETE" });
+      setTransactions((prev) => prev.map((t) => (t.id === snapOrder.id ? { ...t, status: "FAILED", notes: "Dibatalkan oleh user" } : t)));
+      setSnapOrder(null);
       router.refresh();
     } finally {
       setBusy(false);
@@ -430,11 +507,11 @@ export function UpgradeCheckout({
       : order.plan && PLAN_LIMITS[order.plan]
         ? `Paket ${PLAN_LIMITS[order.plan].name}`
         : "Pesanan"
-    : coreOrder
-      ? coreOrder.kind === "GUEST_ADDON"
-        ? `Add-on +${(coreOrder.addonUnits || 1) * GUEST_ADDON_SIZE} Tamu`
-        : coreOrder.plan && PLAN_LIMITS[coreOrder.plan]
-          ? `Paket ${PLAN_LIMITS[coreOrder.plan].name}`
+    : snapOrder
+      ? snapOrder.kind === "GUEST_ADDON"
+        ? `Add-on +${(snapOrder.addonUnits || 1) * GUEST_ADDON_SIZE} Tamu`
+        : snapOrder.plan && PLAN_LIMITS[snapOrder.plan]
+          ? `Paket ${PLAN_LIMITS[snapOrder.plan].name}`
           : "Pesanan"
       : "";
 
@@ -447,7 +524,7 @@ export function UpgradeCheckout({
             Aktivasi Undangan{invitationTitle ? ` · ${invitationTitle}` : ""}
           </p>
           <h1 className="font-serif text-4xl font-medium leading-tight tracking-tight text-[#15130F] sm:text-5xl">
-            {order || coreOrder ? "Selesaikan pembayaran kamu" : "Aktifkan undangan kamu"}
+            {order || snapOrder ? "Selesaikan pembayaran kamu" : "Aktifkan undangan kamu"}
           </h1>
           <p className="max-w-2xl text-sm text-[#5E574D] sm:text-base">
             Sekali bayar per undangan. Setelah aktif kamu tetap bisa mengedit data, foto, maupun desain tanpa batas.
@@ -470,23 +547,23 @@ export function UpgradeCheckout({
           </div>
         </header>
 
-        {/* Active Automatic Midtrans Core API Payment View (100% Custom UNDANGIN YUK UI) */}
-        {coreOrder ? (
+        {/* Active Automatic Midtrans Snap Payment View */}
+        {snapOrder ? (
           <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             <div className="space-y-6 rounded-2xl border border-[#E6DFD3] bg-white p-6 shadow-xs sm:p-7">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EFEAE0] pb-4">
                 <div>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-3 py-1 text-[11px] font-semibold text-[#5C4620]">
-                    <IconClock size={13} className="text-[#8A6A2F]" /> Menunggu Pembayaran · {MIDTRANS_CHANNEL_LABELS[coreOrder.channel].short}
+                    <IconClock size={13} className="text-[#8A6A2F]" /> Menunggu Pembayaran · Midtrans Snap
                   </span>
                   <p className="mt-2 text-sm text-[#5E574D]">
                     {orderTitle} · {invitationTitle}
                   </p>
-                  <p className="mt-0.5 text-xs text-[#8C8272]">Order ID: {coreOrder.id} · Atmarbyte Payment</p>
+                  <p className="mt-0.5 text-xs text-[#8C8272]">Order ID: {snapOrder.id}</p>
                 </div>
                 <button
                   type="button"
-                  onClick={handleCancelCoreOrder}
+                  onClick={handleCancelSnapOrder}
                   disabled={busy}
                   className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E1D8C9] px-3.5 text-xs font-medium text-[#5E574D] transition hover:bg-[#FAF8F4] hover:text-[#15130F]"
                 >
@@ -494,87 +571,41 @@ export function UpgradeCheckout({
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-baseline justify-between gap-4">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-[#8A6A2F]">Total Pembayaran</p>
-                  <p className="mt-1 font-serif text-4xl font-medium lining-nums text-[#15130F] sm:text-5xl">
-                    {rupiah(coreOrder.amount)}
-                  </p>
-                </div>
-                {coreOrder.expiresAt && (
-                  <p className="rounded-full bg-[#FAF8F4] px-3 py-1 text-xs text-[#5E574D]">
-                    Batas bayar:{" "}
-                    <strong className="text-[#15130F]">
-                      {new Date(coreOrder.expiresAt).toLocaleString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </strong>
-                  </p>
-                )}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-[#8A6A2F]">Total Pembayaran</p>
+                <p className="mt-1 font-serif text-4xl font-medium lining-nums text-[#15130F] sm:text-5xl">
+                  {rupiah(snapOrder.amount)}
+                </p>
               </div>
 
-              {/* Payment Instructions Box */}
-              {coreOrder.channel === "QRIS" && coreOrder.qrUrl ? (
-                <div className="flex flex-col items-center gap-4 rounded-2xl border border-[#E6DFD3] bg-[#FAF8F4] p-6 text-center">
-                  <div className="rounded-2xl border border-[#DFD2BC] bg-white p-3 shadow-xs">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={coreOrder.qrUrl} alt="Kode QRIS Pembayaran" className="h-56 w-56 object-contain" />
-                  </div>
-                  <div className="max-w-sm space-y-1">
-                    <p className="text-sm font-semibold text-[#15130F]">Scan QRIS untuk membayar otomatis</p>
-                    <p className="text-xs leading-relaxed text-[#5E574D]">
-                      Buka aplikasi GoPay, OVO, DANA, ShopeePay, BCA Mobile, Livin&apos;, atau mobile banking lainnya lalu pindai kode QR di atas.
-                    </p>
-                  </div>
-                </div>
-              ) : coreOrder.channel === "MANDIRI" && coreOrder.billKey ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-[#E6DFD3] bg-[#FAF8F4] p-4">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8A6A2F]">Kode Perusahaan</p>
-                      <p className="mt-1 font-serif text-2xl font-medium tabular-nums text-[#15130F]">{coreOrder.billerCode}</p>
-                    </div>
-                    {coreOrder.billerCode && <CopyButton text={coreOrder.billerCode} label="Salin kode perusahaan" />}
-                  </div>
-                  <div className="flex items-center justify-between gap-3 rounded-xl border border-[#E6DFD3] bg-[#FAF8F4] p-4">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8A6A2F]">Kode Bayar Mandiri</p>
-                      <p className="mt-1 font-serif text-2xl font-medium tabular-nums text-[#15130F]">{coreOrder.billKey}</p>
-                    </div>
-                    <CopyButton text={coreOrder.billKey} label="Salin kode bayar" />
-                  </div>
-                </div>
-              ) : coreOrder.vaNumber ? (
-                <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E6DFD3] bg-[#FAF8F4] p-5">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8A6A2F]">
-                      Nomor Virtual Account {coreOrder.bank || coreOrder.channel}
-                    </p>
-                    <p className="mt-1.5 font-serif text-2xl font-semibold tracking-wide tabular-nums text-[#15130F] sm:text-3xl">
-                      {coreOrder.vaNumber}
-                    </p>
-                    <p className="mt-1 text-xs text-[#5E574D]">Transfer sesuai nominal {rupiah(coreOrder.amount)} lewat m-Banking atau ATM.</p>
-                  </div>
-                  <CopyButton text={coreOrder.vaNumber} label="Salin nomor Virtual Account" />
-                </div>
-              ) : null}
+              <div className="rounded-2xl border border-[#E6DFD3] bg-[#FAF8F4] p-5 text-sm leading-relaxed text-[#5E574D]">
+                Popup pembayaran resmi Midtrans Snap menyediakan semua metode yang aktif pada akun merchant (Virtual Account, QRIS, e-wallet, atau kartu). Klik tombol di bawah jika popup belum terbuka atau tertutup.
+              </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#EFEAE0] pt-4">
+                <div className="flex flex-wrap gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleReopenSnap}
+                    disabled={busy}
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-[#15130F] px-5 text-sm font-semibold text-[#FAF8F4] transition hover:bg-[#2A261F] disabled:opacity-50"
+                  >
+                    {busy ? <IconLoader2 size={16} className="animate-spin" /> : <IconQrcode size={16} />}
+                    Buka Pembayaran Midtrans
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void checkSnapStatus(snapOrder.id, false)}
+                    disabled={checkingStatus}
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-[#DFD7C8] bg-white px-5 text-sm font-medium text-[#15130F] transition hover:bg-[#FAF8F4] disabled:opacity-50"
+                  >
+                    <IconRefresh size={16} className={checkingStatus ? "animate-spin" : ""} />
+                    {checkingStatus ? "Mengecek..." : "Cek Status"}
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => checkCoreStatus(false)}
-                  disabled={checkingStatus}
-                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[#15130F] px-5 text-sm font-semibold text-[#FAF8F4] transition hover:bg-[#2A261F] disabled:opacity-50"
-                >
-                  <IconRefresh size={16} className={checkingStatus ? "animate-spin" : ""} />
-                  {checkingStatus ? "Mengecek status..." : "Cek Status Pembayaran"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelCoreOrder}
+                  onClick={handleCancelSnapOrder}
                   disabled={busy}
                   className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm text-[#6E675C] hover:bg-[#FAF8F4] hover:text-[#15130F]"
                 >
@@ -589,32 +620,8 @@ export function UpgradeCheckout({
                 <h2 className="mt-1 font-serif text-2xl font-medium text-[#15130F]">Aktivasi Seketika</h2>
               </div>
               <p className="text-xs leading-relaxed text-[#5E574D]">
-                Halaman ini memantau pembayaran otomatis setiap beberapa detik. Begitu transfer berhasil, paket undangan akan langsung aktif tanpa perlu kirim bukti.
+                Halaman ini memantau status transaksi Midtrans secara otomatis setiap beberapa detik. Setelah pembayaran selesai, paket undangan langsung aktif tanpa perlu unggah bukti.
               </p>
-              <div className="rounded-xl border border-[#EFEAE0] bg-[#FAF8F4] p-3.5 text-xs text-[#5E574D]">
-                <p className="font-semibold text-[#15130F]">Cara bayar singkat:</p>
-                <ol className="mt-1.5 list-decimal space-y-1 pl-4">
-                  {coreOrder.channel === "QRIS" ? (
-                    <>
-                      <li>Buka aplikasi e-wallet atau m-Banking yang mendukung QRIS.</li>
-                      <li>Pilih menu Scan / QRIS dan arahkan ke kode QR.</li>
-                      <li>Konfirmasi nominal {rupiah(coreOrder.amount)} dan selesaikan bayar.</li>
-                    </>
-                  ) : coreOrder.channel === "MANDIRI" ? (
-                    <>
-                      <li>Buka Livin&apos; by Mandiri → menu Bayar → Multipayment.</li>
-                      <li>Masukkan Kode Perusahaan dan Kode Bayar di samping.</li>
-                      <li>Periksa nominal {rupiah(coreOrder.amount)} lalu konfirmasi.</li>
-                    </>
-                  ) : (
-                    <>
-                      <li>Buka aplikasi m-Banking atau ATM bank {coreOrder.bank || coreOrder.channel}.</li>
-                      <li>Pilih menu Transfer → Virtual Account.</li>
-                      <li>Tempel nomor VA di samping dan konfirmasi nominal {rupiah(coreOrder.amount)}.</li>
-                    </>
-                  )}
-                </ol>
-              </div>
             </aside>
           </section>
         ) : order ? (
@@ -1170,23 +1177,16 @@ export function UpgradeCheckout({
                 <div className="space-y-2.5 border-t border-[#EFEAE0] pt-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B6358]">Cara Bayar</p>
 
-                  {/* Option 1: Bayar Otomatis (Midtrans Core API) */}
-                  <div
-                    role="button"
-                    tabIndex={midtrans.enabled ? 0 : -1}
-                    aria-disabled={!midtrans.enabled}
-                    onClick={() => midtrans.enabled && setPaymentMethod("MIDTRANS")}
-                    onKeyDown={(e) => {
-                      if ((e.key === "Enter" || e.key === " ") && midtrans.enabled) {
-                        e.preventDefault();
-                        setPaymentMethod("MIDTRANS");
-                      }
-                    }}
+                  {/* Option 1: Bayar Otomatis (Midtrans Snap) */}
+                  <button
+                    type="button"
+                    disabled={!midtrans.enabled}
+                    onClick={() => setPaymentMethod("MIDTRANS")}
                     className={`w-full rounded-xl border p-3.5 text-left transition ${
                       paymentMethod === "MIDTRANS"
                         ? "border-[#8A6A2F] bg-[#FCF9F2] ring-1 ring-[#8A6A2F]/40"
                         : "border-[#E6DFD3] bg-white hover:border-[#CFC6B8]"
-                    } ${!midtrans.enabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                    } ${!midtrans.enabled ? "cursor-not-allowed opacity-60" : ""}`}
                   >
                     <div className="flex items-start gap-2.5">
                       <span
@@ -1196,7 +1196,7 @@ export function UpgradeCheckout({
                       >
                         {paymentMethod === "MIDTRANS" && <span className="h-2 w-2 rounded-full bg-[#8A6A2F]" />}
                       </span>
-                      <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#15130F]">
                             <IconQrcode size={15} className="text-[#8A6A2F]" /> Bayar otomatis
@@ -1213,36 +1213,12 @@ export function UpgradeCheckout({
                         </div>
                         <p className="text-xs leading-relaxed text-[#6B6358]">
                           {midtrans.enabled
-                            ? "Pilih QRIS atau Virtual Account langsung di sini tanpa popup tambahan."
+                            ? "Virtual Account, QRIS, e-wallet, dan kartu melalui popup resmi Midtrans Snap."
                             : "Payment gateway otomatis belum diaktifkan di server. Gunakan Transfer manual di bawah."}
                         </p>
-                        {midtrans.enabled && (
-                          <div className="flex flex-wrap gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
-                            {MIDTRANS_CHANNELS.map((ch) => {
-                              const activeCh = paymentMethod === "MIDTRANS" && midtransChannel === ch;
-                              return (
-                                <button
-                                  key={ch}
-                                  type="button"
-                                  onClick={() => {
-                                    setPaymentMethod("MIDTRANS");
-                                    setMidtransChannel(ch);
-                                  }}
-                                  className={`rounded-lg border px-2 py-1 text-[11px] font-medium transition ${
-                                    activeCh
-                                      ? "border-[#15130F] bg-[#15130F] text-[#FAF8F4]"
-                                      : "border-[#E6DFD3] bg-white text-[#4E473E] hover:border-[#8A6A2F]"
-                                  }`}
-                                >
-                                  {MIDTRANS_CHANNEL_LABELS[ch].short}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
                       </div>
                     </div>
-                  </div>
+                  </button>
 
                   {/* Option 2: Transfer / QRIS manual (hidden when the admin disabled both) */}
                   {manualEnabled && (
@@ -1318,7 +1294,7 @@ export function UpgradeCheckout({
                   </button>
                   <p className="text-center text-[11px] leading-relaxed text-[#6B6358]">
                     {paymentMethod === "MIDTRANS"
-                      ? `Kode QRIS atau nomor VA ${MIDTRANS_CHANNEL_LABELS[midtransChannel].short} langsung tampil di halaman ini.`
+                      ? "Popup pembayaran resmi Midtrans Snap akan terbuka dengan metode bayar yang aktif."
                       : "Kamu akan mendapatkan nominal kode unik dan rekening tujuan untuk menyelesaikan pembayaran."}
                   </p>
                 </div>

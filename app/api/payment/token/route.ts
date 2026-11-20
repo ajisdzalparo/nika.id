@@ -34,14 +34,14 @@ export async function POST(req: Request) {
 
   if (kind === "GUEST_ADDON") {
     if (currentPlan === "FREE") {
-      return NextResponse.json({ error: "Pilih paket aktif terlebih dahulu" }, { status: 400 });
+      return NextResponse.json({ error: "PLAN_REQUIRED", message: "Pilih paket aktif terlebih dahulu" }, { status: 400 });
     }
     if (currentPlan === "EKSKLUSIF") {
-      return NextResponse.json({ error: "Paket Eksklusif sudah tanpa batas tamu" }, { status: 400 });
+      return NextResponse.json({ error: "UNLIMITED_PLAN", message: "Paket Eksklusif sudah tanpa batas tamu" }, { status: 400 });
     }
     const units = Number(body?.addonUnits ?? 1);
     if (!Number.isInteger(units) || units < 1 || units > 20) {
-      return NextResponse.json({ error: "Invalid addon units" }, { status: 400 });
+      return NextResponse.json({ error: "INVALID_UNITS", message: "Jumlah paket add-on harus 1–20" }, { status: 400 });
     }
     addonUnits = units;
     price = units * GUEST_ADDON_PRICE;
@@ -50,34 +50,20 @@ export async function POST(req: Request) {
   } else {
     const target = body?.plan as PlanType;
     if (!target || !PAID_PLANS.includes(target)) {
-      return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+      return NextResponse.json({ error: "INVALID_PLAN", message: "Paket tidak valid" }, { status: 400 });
     }
     const diff = getUpgradePrice(currentPlan, target);
     if (diff === null) {
-      return NextResponse.json({ error: "Upgrade not available for this plan" }, { status: 400 });
+      return NextResponse.json({ error: "UPGRADE_NOT_ALLOWED", message: "Upgrade tidak tersedia untuk paket ini" }, { status: 400 });
     }
     plan = target;
     price = diff;
     itemId = target;
-    itemName = currentPlan === "FREE" ? `Paket ${PLAN_LIMITS[target].name} (${active.title})` : `Upgrade ke ${PLAN_LIMITS[target].name} (${active.title})`;
+    itemName = currentPlan === "FREE" ? `Paket ${PLAN_LIMITS[target].name} (${active.title})` : `Upgrade ${PLAN_LIMITS[target].name} (${active.title})`;
   }
 
   try {
     const orderId = `TRX-${Date.now()}-${session.user.id.slice(0, 5)}`;
-
-    const transaction = await prisma.transaction.create({
-      data: {
-        id: orderId,
-        userId: session.user.id,
-        invitationId: active.id,
-        kind,
-        addonUnits,
-        amount: price,
-        status: "PENDING",
-        plan,
-        paymentMethod: "MIDTRANS",
-      },
-    });
 
     const parameter = {
       transaction_details: {
@@ -100,15 +86,74 @@ export async function POST(req: Request) {
 
     const token = await snap.createTransaction(parameter);
 
-    await prisma.transaction.update({
-      where: { id: transaction.id },
-      data: { snapToken: token.token },
+    // Supersede older pending Midtrans orders on the same invitation
+    await prisma.transaction.updateMany({
+      where: { userId: session.user.id, invitationId: active.id, paymentMethod: "MIDTRANS", status: "PENDING" },
+      data: { status: "FAILED", notes: "Diganti transaksi baru" },
     });
 
-    return NextResponse.json({ token: token.token });
+    const transaction = await prisma.transaction.create({
+      data: {
+        id: orderId,
+        userId: session.user.id,
+        invitationId: active.id,
+        kind,
+        addonUnits,
+        amount: price,
+        status: "PENDING",
+        plan,
+        paymentMethod: "MIDTRANS",
+        snapToken: token.token,
+        notes: `Midtrans Snap · ${itemName}`,
+      },
+    });
+
+    return NextResponse.json({
+      token: token.token,
+      order: {
+        id: transaction.id,
+        token: token.token,
+        kind: transaction.kind,
+        addonUnits: transaction.addonUnits,
+        plan: transaction.plan,
+        amount: transaction.amount,
+        createdAt: transaction.createdAt.toISOString(),
+      },
+    });
   } catch (error) {
     console.error("Midtrans Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: "Failed to create transaction", details: errorMessage }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Gagal membuat transaksi Midtrans";
+    return NextResponse.json({ error: "SNAP_FAILED", message: errorMessage }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await getSession(req, "user");
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const orderId = searchParams.get("orderId");
+
+    if (orderId) {
+      const tx = await prisma.transaction.findFirst({
+        where: { id: orderId, userId: session.user.id, paymentMethod: "MIDTRANS", status: "PENDING" },
+      });
+      if (tx) {
+        const { enabled, core } = await getMidtransClients();
+        if (enabled) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (core as any).transaction.cancel(tx.id).catch(() => {});
+        }
+        await prisma.transaction.update({
+          where: { id: tx.id },
+          data: { status: "FAILED", notes: "Dibatalkan oleh user" },
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR" }, { status: 500 });
   }
 }
