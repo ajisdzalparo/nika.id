@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { IconArrowRight } from "@tabler/icons-react";
 import { AI_THEME_PRESETS } from "@/lib/ai-design/presets";
+import { DEFAULT_LANDING_CONTENT, type LandingContent } from "@/lib/landing-content-shared";
 import { Display, Eyebrow, L, Phone } from "./primitives";
 
 const HERO_PHONES: { key: keyof typeof AI_THEME_PRESETS; label: string }[] = [
@@ -12,7 +13,7 @@ const HERO_PHONES: { key: keyof typeof AI_THEME_PRESETS; label: string }[] = [
   { key: "taman-pastel", label: "Taman Pastel" },
 ];
 
-export function Hero() {
+export function Hero({ content = DEFAULT_LANDING_CONTENT.hero }: { content?: LandingContent["hero"] }) {
   const [mobileIdx, setMobileIdx] = useState(1);
 
   useEffect(() => {
@@ -25,36 +26,38 @@ export function Hero() {
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 md:px-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-6">
         <div className="space-y-8">
           <div className="animate-in fade-in slide-in-from-bottom-3 duration-700">
-            <Eyebrow>Undangan pernikahan digital</Eyebrow>
+            <Eyebrow>{content.eyebrow}</Eyebrow>
           </div>
           <div className="animate-in fade-in slide-in-from-bottom-3 duration-700 [animation-delay:80ms] [animation-fill-mode:backwards]">
             <Display as="h1" className="text-[3.1rem] sm:text-6xl lg:text-[4.3rem] xl:text-[4.7rem]">
-              Undangan yang terasa dibuat <em className="italic" style={{ color: L.accent }}>khusus</em> untuk kalian berdua.
+              {content.headlinePrefix}
+              {content.headlineHighlight ? (
+                <em className="italic" style={{ color: L.accent }}>
+                  {content.headlineHighlight}
+                </em>
+              ) : null}
+              {content.headlineSuffix}
             </Display>
           </div>
           <p className="max-w-lg text-[17px] leading-relaxed animate-in fade-in slide-in-from-bottom-3 duration-700 [animation-delay:150ms] [animation-fill-mode:backwards]" style={{ color: L.muted }}>
-            Ceritakan suasana yang kalian impikan. AI kami merancang palet, tipografi, dan ornamennya, lengkap dengan RSVP, amplop digital, dan pengiriman ke tamu lewat WhatsApp.
+            {content.subheadline}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row animate-in fade-in slide-in-from-bottom-3 duration-700 [animation-delay:220ms] [animation-fill-mode:backwards]">
             <Link href="/register" className="flex h-13 items-center justify-center gap-2 rounded-full px-7 text-[15px] font-medium transition-all duration-300 hover:-translate-y-0.5 hover:opacity-95" style={{ background: L.ink, color: L.bg }}>
-              Buat undangan <IconArrowRight size={18} />
+              {content.primaryCta} <IconArrowRight size={18} />
             </Link>
             <a href="#desain-ai" className="flex h-13 items-center justify-center rounded-full border px-7 text-[15px] font-medium transition-all duration-300 hover:-translate-y-0.5 hover:bg-white" style={{ borderColor: L.line, color: L.ink }}>
-              Coba desain AI
+              {content.secondaryCta}
             </a>
           </div>
           <dl className="grid max-w-md grid-cols-3 gap-4 border-t pt-6 animate-in fade-in slide-in-from-bottom-3 duration-700 [animation-delay:300ms] [animation-fill-mode:backwards]" style={{ borderColor: L.line }}>
-            {[
-              ["Menit", "dari daftar sampai siap dibagikan"],
-              ["Nama tamu", "tampil di sampul undangan"],
-              ["Kapan saja", "isi bisa diubah setelah dibagikan"],
-            ].map(([t, d]) => (
-              <div key={t} className="space-y-1">
+            {content.highlights.map((item) => (
+              <div key={item.title} className="space-y-1">
                 <dt className="font-(family-name:--font-landing-display) text-xl" style={{ color: L.ink }}>
-                  {t}
+                  {item.title}
                 </dt>
                 <dd className="text-xs leading-snug" style={{ color: L.muted }}>
-                  {d}
+                  {item.description}
                 </dd>
               </div>
             ))}

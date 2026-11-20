@@ -5,6 +5,7 @@ import { AiDemo, Collection, Faq, Features, FinalCta, LandingFooter, Pricing, St
 import { LandingChatWidget } from "@/components/landing/landing-chat-widget";
 import { L } from "@/components/landing/primitives";
 import { getCatalog } from "@/lib/catalog";
+import { getLandingContent } from "@/lib/landing-content";
 import { getManualPaymentInfo } from "@/lib/payment";
 import { studioDisplay } from "@/lib/studio";
 
@@ -17,21 +18,25 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [catalog, { whatsapp }] = await Promise.all([getCatalog(), getManualPaymentInfo()]);
+  const [catalog, { whatsapp }, cms] = await Promise.all([
+    getCatalog(),
+    getManualPaymentInfo(),
+    getLandingContent(),
+  ]);
   return (
     <div className={`${studioDisplay.variable} min-h-screen antialiased`} style={{ background: L.bg, color: L.ink }}>
       <LandingNavbar />
       <main>
-        <Hero />
+        <Hero content={cms.hero} />
         <AiDemo />
         <Collection items={catalog} />
-        <Steps />
-        <Features />
+        <Steps content={cms.steps} />
+        <Features content={cms.features} />
         <Pricing />
-        <Faq />
-        <FinalCta />
+        <Faq content={cms.faq} />
+        <FinalCta content={cms.finalCta} />
       </main>
-      <LandingFooter />
+      <LandingFooter content={cms.footer} />
       <StickyCta />
       <LandingChatWidget whatsapp={whatsapp} />
     </div>

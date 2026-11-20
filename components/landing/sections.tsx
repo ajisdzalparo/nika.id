@@ -21,6 +21,7 @@ import { AI_THEME_PRESETS } from "@/lib/ai-design/presets";
 import type { CatalogItem } from "@/lib/catalog-shared";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
 import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PAID_PLANS, PLAN_LIMITS, type PlanType } from "@/lib/limits";
+import { DEFAULT_LANDING_CONTENT, type LandingContent } from "@/lib/landing-content-shared";
 import { Display, Eyebrow, L, Phone, Reveal, Rule } from "./primitives";
 import { Wordmark } from "./navbar";
 
@@ -321,31 +322,26 @@ export function Collection({ items }: { items: CatalogItem[] }) {
 
 // ─── Langkah ─────────────────────────────────────────────────────────────
 
-export function Steps() {
-  const steps = [
-    ["Pilih atau rancang desain", "Ambil dari koleksi, atau tulis konsep kalian di Studio Desain AI."],
-    ["Isi data dan foto", "Nama mempelai, orang tua, acara, lokasi, galeri, musik, dan rekening amplop."],
-    ["Bagikan ke tamu", "Kirim link dengan nama tiap tamu lewat WhatsApp, lalu pantau RSVP dari dashboard."],
-  ];
+export function Steps({ content = DEFAULT_LANDING_CONTENT.steps }: { content?: LandingContent["steps"] }) {
   return (
     <section className="border-y py-24 md:py-28" style={{ borderColor: L.line, background: L.surface }}>
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <Reveal className="mb-14 space-y-4">
-          <Eyebrow>Cara kerja</Eyebrow>
-          <Display className="max-w-2xl text-[2.5rem] sm:text-5xl">Tiga langkah, tanpa perlu keahlian desain.</Display>
+          <Eyebrow>{content.eyebrow}</Eyebrow>
+          <Display className="max-w-2xl text-[2.5rem] sm:text-5xl">{content.heading}</Display>
         </Reveal>
         <ol className="grid gap-10 md:grid-cols-3 md:gap-12">
-          {steps.map(([title, body], i) => (
-            <Reveal key={title} delay={i * 90}>
+          {content.items.map((step, i) => (
+            <Reveal key={`${step.title}-${i}`} delay={i * 90}>
               <li className="space-y-4 border-t pt-6" style={{ borderColor: L.ink }}>
                 <span className="font-(family-name:--font-landing-display) text-6xl italic lining-nums leading-none" style={{ color: L.accent }}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <h3 className="text-lg font-medium" style={{ color: L.ink }}>
-                  {title}
+                  {step.title}
                 </h3>
                 <p className="leading-relaxed" style={{ color: L.muted }}>
-                  {body}
+                  {step.body}
                 </p>
               </li>
             </Reveal>
@@ -358,24 +354,18 @@ export function Steps() {
 
 // ─── Fitur ───────────────────────────────────────────────────────────────
 
-export function Features() {
-  const items = [
-    { icon: IconMessageCircle, title: "RSVP & buku tamu", body: "Tamu konfirmasi hadir dan menulis ucapan; semuanya rapi di dashboard." },
-    { icon: IconGift, title: "Amplop digital", body: "Nomor rekening dan e-wallet dengan tombol salin sekali ketuk." },
-    { icon: IconMusic, title: "Musik latar", body: "Unggah lagu kalian atau pakai tautan YouTube." },
-    { icon: IconPhoto, title: "Galeri & video", body: "Foto prewedding dan video dalam tata letak yang mengikuti desain." },
-    { icon: IconCalendarEvent, title: "Hitung mundur & kalender", body: "Tamu bisa menyimpan tanggal acara ke kalender HP." },
-    { icon: IconMapPin, title: "Peta lokasi", body: "Akad, resepsi, unduh mantu, masing-masing dengan petunjuk arah." },
-  ];
+const FEATURE_ICONS = [IconMessageCircle, IconGift, IconMusic, IconPhoto, IconCalendarEvent, IconMapPin];
+
+export function Features({ content = DEFAULT_LANDING_CONTENT.features }: { content?: LandingContent["features"] }) {
   return (
     <section id="fitur" className="scroll-mt-16 py-24 md:py-32">
       <div className="mx-auto grid max-w-6xl gap-16 px-4 md:px-6 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
         <Reveal className="space-y-8">
           <div className="space-y-4">
-            <Eyebrow>Untuk tamu</Eyebrow>
-            <Display className="text-[2.5rem] sm:text-5xl">Setiap tamu disapa dengan namanya.</Display>
+            <Eyebrow>{content.eyebrow}</Eyebrow>
+            <Display className="text-[2.5rem] sm:text-5xl">{content.heading}</Display>
             <p className="max-w-md text-[17px] leading-relaxed" style={{ color: L.muted }}>
-              Buat daftar tamu sekali, lalu kirim link pribadi lewat WhatsApp. Nama tamu muncul di sampul undangan, sehingga undangan terasa personal tanpa harus mengetik ulang.
+              {content.description}
             </p>
           </div>
           {/* WhatsApp message mock */}
@@ -393,21 +383,24 @@ export function Features() {
         </Reveal>
 
         <div className="grid gap-x-10 sm:grid-cols-2">
-          {items.map(({ icon: Icon, title, body }, i) => (
-            <Reveal key={title} delay={(i % 2) * 70}>
-              <div className="flex gap-4 border-t py-6" style={{ borderColor: L.line }}>
-                <Icon size={22} stroke={1.5} className="mt-0.5 shrink-0" style={{ color: L.accent }} />
-                <div className="space-y-1.5">
-                  <h3 className="font-medium" style={{ color: L.ink }}>
-                    {title}
-                  </h3>
-                  <p className="text-[15px] leading-relaxed" style={{ color: L.muted }}>
-                    {body}
-                  </p>
+          {content.items.map((item, i) => {
+            const Icon = FEATURE_ICONS[i % FEATURE_ICONS.length];
+            return (
+              <Reveal key={`${item.title}-${i}`} delay={(i % 2) * 70}>
+                <div className="flex gap-4 border-t py-6" style={{ borderColor: L.line }}>
+                  <Icon size={22} stroke={1.5} className="mt-0.5 shrink-0" style={{ color: L.accent }} />
+                  <div className="space-y-1.5">
+                    <h3 className="font-medium" style={{ color: L.ink }}>
+                      {item.title}
+                    </h3>
+                    <p className="text-[15px] leading-relaxed" style={{ color: L.muted }}>
+                      {item.body}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Reveal>
-          ))}
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -498,31 +491,23 @@ export function Pricing() {
 
 // ─── FAQ ─────────────────────────────────────────────────────────────────
 
-const FAQS = [
-  ["Bagaimana cara kerja Desain AI?", "Tulis konsep pernikahan kalian, misalnya adat, warna, atau suasana. AI menyusun tema lengkap (warna, huruf, ornamen, dan tata letak) yang langsung tampil di pratinjau. Jumlah desain AI mengikuti paket."],
-  ["Apakah undangan bisa diubah setelah dibagikan?", "Bisa. Semua perubahan dari dashboard langsung tampil di link yang sama, jadi tamu tidak perlu menerima link baru."],
-  ["Bagaimana tamu menerima undangan?", "Setiap tamu mendapat link dengan namanya sendiri, yang bisa dikirim lewat WhatsApp atau disalin ke aplikasi lain."],
-  ["Berapa lama undangan aktif?", "Masa aktif mengikuti paket yang dipilih, dari beberapa bulan hingga selamanya."],
-  ["Apakah bisa memakai lagu sendiri?", "Bisa, unggah file musik atau gunakan tautan YouTube."],
-];
-
-export function Faq() {
+export function Faq({ content = DEFAULT_LANDING_CONTENT.faq }: { content?: LandingContent["faq"] }) {
   return (
     <section id="faq" className="scroll-mt-16 py-24 md:py-32">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 md:px-6 lg:grid-cols-[0.8fr_1.2fr]">
         <Reveal className="space-y-4">
-          <Eyebrow>Pertanyaan</Eyebrow>
-          <Display className="text-[2.5rem] sm:text-5xl">Yang sering ditanyakan.</Display>
+          <Eyebrow>{content.eyebrow}</Eyebrow>
+          <Display className="text-[2.5rem] sm:text-5xl">{content.heading}</Display>
         </Reveal>
         <div>
-          {FAQS.map(([q, a]) => (
-            <details key={q} className="group border-t py-2 last:border-b" style={{ borderColor: L.line }}>
+          {content.items.map((qa, i) => (
+            <details key={`${qa.question}-${i}`} className="group border-t py-2 last:border-b" style={{ borderColor: L.line }}>
               <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-6 text-[17px] font-medium [&::-webkit-details-marker]:hidden" style={{ color: L.ink }}>
-                {q}
+                {qa.question}
                 <IconPlus size={20} className="shrink-0 transition-transform duration-300 group-open:rotate-45" style={{ color: L.accent }} />
               </summary>
               <p className="pb-5 pr-10 leading-relaxed" style={{ color: L.muted }}>
-                {a}
+                {qa.answer}
               </p>
             </details>
           ))}
@@ -534,18 +519,24 @@ export function Faq() {
 
 // ─── CTA & footer ────────────────────────────────────────────────────────
 
-export function FinalCta() {
+export function FinalCta({ content = DEFAULT_LANDING_CONTENT.finalCta }: { content?: LandingContent["finalCta"] }) {
   return (
     <section className="px-4 pb-24 md:px-6">
       <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[28px] px-6 py-20 text-center md:py-28" style={{ background: L.night, color: "#F3EBDD" }}>
         <Reveal className="mx-auto max-w-2xl space-y-8">
           <Rule light className="mx-auto" />
           <Display className="text-[2.6rem] sm:text-6xl">
-            Mulai rancang undangan <em className="italic" style={{ color: L.accentBright }}>kalian</em> hari ini.
+            {content.headingPrefix}
+            {content.headingHighlight ? (
+              <em className="italic" style={{ color: L.accentBright }}>
+                {content.headingHighlight}
+              </em>
+            ) : null}
+            {content.headingSuffix}
           </Display>
-          <p className="text-[17px] text-[#B8AD9A]">Daftar, coba Studio Desain AI, dan lihat undangan kalian di HP sebelum memutuskan paket.</p>
+          <p className="text-[17px] text-[#B8AD9A]">{content.description}</p>
           <Link href="/register" className="mx-auto flex h-13 w-fit items-center gap-2 rounded-full px-8 text-[15px] font-medium transition-opacity hover:opacity-90" style={{ background: "#F3EBDD", color: L.night }}>
-            Buat undangan <IconArrowRight size={18} />
+            {content.buttonLabel} <IconArrowRight size={18} />
           </Link>
         </Reveal>
       </div>
@@ -553,14 +544,14 @@ export function FinalCta() {
   );
 }
 
-export function LandingFooter() {
+export function LandingFooter({ content = DEFAULT_LANDING_CONTENT.footer }: { content?: LandingContent["footer"] }) {
   return (
     <footer className="border-t pb-28 pt-14 md:pb-14" style={{ borderColor: L.line }}>
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 md:flex-row md:items-start md:justify-between md:px-6">
         <div className="max-w-xs space-y-3">
           <Wordmark />
           <p className="text-sm leading-relaxed" style={{ color: L.muted }}>
-            Undangan pernikahan digital yang dirancang sesuai cerita kalian.
+            {content.tagline}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-10 text-sm sm:grid-cols-3">
@@ -583,7 +574,7 @@ export function LandingFooter() {
         </div>
       </div>
       <p className="mx-auto mt-12 max-w-6xl px-4 text-xs md:px-6" style={{ color: L.muted }}>
-        © {new Date().getFullYear()} UNDANGIN YUK
+        {content.copyright}
       </p>
     </footer>
   );

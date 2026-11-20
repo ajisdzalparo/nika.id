@@ -16,9 +16,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Pass build args from Coolify
+# Pass build args from Coolify / GitHub Actions
 ARG NEXT_PUBLIC_APP_URL
 ARG BETTER_AUTH_URL
+ARG DATABASE_URL
 
 ARG NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED
 ARG GOOGLE_CLIENT_ID
@@ -57,19 +58,18 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 RUN bun run build
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
+
+RUN apk add --no-cache nodejs
 
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

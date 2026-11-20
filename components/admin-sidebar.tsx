@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowLeft, IconCurrencyDollar, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
+import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
 import {
@@ -36,7 +36,10 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
   },
   {
     label: "Sistem",
-    items: [{ title: "Pengaturan", url: "/admin/pengaturan-admin", icon: IconSettings }],
+    items: [
+      { title: "CMS Landing Page", url: "/admin/cms", icon: IconFileText },
+      { title: "Pengaturan", url: "/admin/pengaturan-admin", icon: IconSettings },
+    ],
   },
 ];
 
