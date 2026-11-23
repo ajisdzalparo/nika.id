@@ -7,5 +7,8 @@ export async function register() {
     if (typeof net.setDefaultAutoSelectFamily === "function") {
       net.setDefaultAutoSelectFamily(false);
     }
+
+    const { ensureAdminSeeded } = await import("@/lib/seed-admin");
+    await ensureAdminSeeded();
   }
 }

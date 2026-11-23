@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:admin": "node scripts/seed-admin.js",
+    "seed:admin": "bun run scripts/set-admin.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

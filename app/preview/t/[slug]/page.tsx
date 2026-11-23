@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { getCatalogItem } from "@/lib/catalog";
+import { resolveTemplateMusic } from "@/lib/template-music";
 import { MOCK_WEDDING_DATA } from "@/lib/constants/mock-wedding-data";
 import AiDesignTemplate from "@/components/templates/ai-design";
 
@@ -13,12 +14,9 @@ export default async function CatalogPreviewPage({ params }: { params: Promise<{
   if (item.kind === "CODE" && item.componentSlug) redirect(`/preview/${item.componentSlug}`);
   if (!item.theme) notFound();
 
-  const previewData = item.defaultMusic?.url
-    ? {
-        ...MOCK_WEDDING_DATA,
-        music: { enabled: true, type: item.defaultMusic.type, url: item.defaultMusic.url },
-      }
-    : MOCK_WEDDING_DATA;
+  // Template music from the CMS wins; otherwise the super admin's default music library
+  const music = await resolveTemplateMusic(item.defaultMusic);
+  const previewData = music ? { ...MOCK_WEDDING_DATA, music } : MOCK_WEDDING_DATA;
 
   return (
     <div className="relative">
