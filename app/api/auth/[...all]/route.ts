@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { ensureAdminSeeded } from "@/lib/seed-admin";
 import { toNextJsHandler } from "better-auth/next-js";
 
 const handlers = toNextJsHandler(auth);
@@ -16,6 +17,7 @@ export const GET = async (req: Request) => {
 };
 export const POST = async (req: Request) => {
   try {
+    await ensureAdminSeeded();
     return await handlers.POST(req);
   } catch (error) {
     console.error("UNKNOWN AUTH ERROR:", error);
