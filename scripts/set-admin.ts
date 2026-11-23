@@ -1,50 +1,34 @@
 import "dotenv/config";
-import { hashPassword } from "better-auth/crypto";
 import { prisma } from "../lib/prisma";
+import { upsertAdminAccount } from "../lib/seed-admin";
 
 const [, , emailArg, passwordArg, nameArg] = process.argv;
 
 async function main() {
-  if (!emailArg || !passwordArg) {
-    console.error("Usage: bun run scripts/set-admin.ts <email> <password> [name]");
+  const fromCli = Boolean(emailArg || passwordArg);
+  const email = emailArg ?? process.env.SEED_ADMIN_EMAIL;
+  const password = passwordArg ?? process.env.SEED_ADMIN_PASSWORD;
+  const name = nameArg ?? process.env.SEED_ADMIN_NAME;
+
+  if (!email || !password) {
+    console.error("Usage: bun run seed:admin <email> <password> [name]");
+    console.error("Atau isi SEED_ADMIN_EMAIL dan SEED_ADMIN_PASSWORD di .env lalu jalankan `bun run seed:admin`.");
     process.exit(1);
   }
-  if (passwordArg.length < 8) {
-    console.error("Password minimal 8 karakter.");
-    process.exit(1);
-  }
 
-  const email = emailArg.trim().toLowerCase();
-  const hashedPassword = await hashPassword(passwordArg);
-
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: { role: "admin", emailVerified: true, ...(nameArg ? { name: nameArg } : {}) },
-    create: {
-      email,
-      name: nameArg || "Super Admin",
-      role: "admin",
-      emailVerified: true,
-    },
+  const result = await upsertAdminAccount({
+    email,
+    password,
+    name,
+    overwritePassword: fromCli,
   });
 
-  await prisma.account.upsert({
-    where: { providerId_accountId: { providerId: "credential", accountId: user.id } },
-    update: { password: hashedPassword },
-    create: {
-      userId: user.id,
-      accountId: user.id,
-      providerId: "credential",
-      password: hashedPassword,
-    },
-  });
-
-  console.log(`Admin siap digunakan: ${user.email} (role: ${user.role})`);
+  console.log(`Admin siap digunakan (${result.status}): ${result.email} (role: ${result.role})`);
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error(e instanceof Error ? e.message : e);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
