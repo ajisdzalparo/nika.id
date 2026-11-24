@@ -118,9 +118,23 @@ export function isOwnSafeChatImageUrl(url: unknown): url is string {
   }
 }
 
+/** Client IP behind the reverse proxy, for rate-limit keys on public endpoints. */
+export function clientIp(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+}
+
+const RATE_BUCKET_MAX_KEYS = 5_000;
+const RATE_BUCKET_IDLE_MS = 60 * 60_000;
+
 /** Simple sliding-window rate limiter per user key to prevent chat/upload spam. */
 export function checkChatRateLimit(key: string, maxRequests = 30, windowMs = 60_000): boolean {
   const now = Date.now();
+  // Public endpoints key by IP + slug/guest, so drop idle keys before the map grows without bound
+  if (RATE_BUCKET.size > RATE_BUCKET_MAX_KEYS) {
+    for (const [k, stamps] of RATE_BUCKET) {
+      if (!stamps.length || now - stamps[stamps.length - 1] > RATE_BUCKET_IDLE_MS) RATE_BUCKET.delete(k);
+    }
+  }
   const prev = RATE_BUCKET.get(key) ?? [];
   const recent = prev.filter((ts) => now - ts < windowMs);
   if (recent.length >= maxRequests) {
