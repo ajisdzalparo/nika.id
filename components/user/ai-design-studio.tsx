@@ -12,6 +12,7 @@ import { ReferenceUploader } from "@/components/common/reference-uploader";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
 import type { AiTheme } from "@/lib/ai-design/schema";
 import { AI_THEME_PRESETS } from "@/lib/ai-design/presets";
+import { AI_CREDIT_COST_REFERENCE, AI_CREDIT_COST_STANDARD } from "@/lib/limits";
 import type { WeddingData } from "@/types/wedding";
 
 interface Design {
@@ -23,6 +24,8 @@ interface Design {
 interface Quota {
   used: number;
   total: number;
+  planRemaining: number;
+  topupCredits: number;
   remaining: number;
 }
 
@@ -96,7 +99,8 @@ export function AiDesignStudio({
   const selected = designs.find((d) => d.id === selectedId) ?? null;
   // Before the first generation, show hand-made example themes (no quota used)
   const previewTheme = selected?.theme ?? AI_THEME_PRESETS[presetKey]?.theme ?? null;
-  const outOfQuota = quota !== null && quota.remaining <= 0;
+  const creditCost = references.length > 0 ? AI_CREDIT_COST_REFERENCE : AI_CREDIT_COST_STANDARD;
+  const outOfQuota = quota !== null && quota.remaining < creditCost;
 
   const generate = async () => {
     if (prompt.trim().length < 8 && !references.length) return toast.error("Ceritakan gaya yang Anda inginkan, atau lampirkan screenshot referensi.");
@@ -154,20 +158,23 @@ export function AiDesignStudio({
           </header>
 
           <section className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900 md:p-6">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <label htmlFor="ai-prompt" className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                 Konsep desain
               </label>
               {quota && (
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <div className="flex gap-1">
-                    {Array.from({ length: Math.min(quota.total, 10) }).map((_, i) => (
-                      <span key={i} className={`h-1.5 w-3 rounded-full ${i < quota.remaining ? "bg-primary" : "bg-zinc-200 dark:bg-zinc-700"}`} />
-                    ))}
-                  </div>
-                  <span>
-                    {quota.remaining} dari {quota.total} tersisa
+                <div className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-500">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-2.5 py-1 font-medium tabular-nums text-[#5C4620]">
+                    {quota.remaining} kredit tersedia
+                    {quota.topupCredits > 0 && quota.planRemaining > 0 && (
+                      <span className="text-[11px] font-normal text-[#7A6132]">
+                        ({quota.planRemaining} paket + {quota.topupCredits} top-up)
+                      </span>
+                    )}
                   </span>
+                  <Link href="/upgrade?pilih=kredit#kredit-ai" className="font-medium text-[#8A6A2F] hover:underline">
+                    + Top-up kredit
+                  </Link>
                 </div>
               )}
             </div>
@@ -222,8 +229,15 @@ export function AiDesignStudio({
                 </button>
               ))}
             </div>
+            {outOfQuota && quota && quota.remaining > 0 && references.length > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
+                Generate dengan screenshot referensi membutuhkan <strong>{creditCost} kredit</strong>, sedangkan sisa kredit Anda <strong>{quota.remaining}</strong>. Hapus screenshot referensi untuk menggunakan {AI_CREDIT_COST_STANDARD} kredit, atau lakukan top-up kredit.
+              </div>
+            )}
             <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
-              <span className="text-xs text-zinc-400">{prompt.length}/600</span>
+              <span className="text-xs text-zinc-400">
+                {prompt.length}/600 · Biaya: {creditCost} kredit{references.length > 0 ? " (pakai referensi)" : ""}
+              </span>
               {!aiEnabled ? (
                 <Button asChild className="h-11 rounded-lg px-6">
                   <Link href="/pilih-template">
@@ -232,8 +246,8 @@ export function AiDesignStudio({
                 </Button>
               ) : outOfQuota ? (
                 <Button asChild className="h-11 rounded-lg px-6">
-                  <Link href="/upgrade">
-                    Tambah kuota desain <IconArrowRight size={16} className="ml-1" />
+                  <Link href="/upgrade?pilih=kredit#kredit-ai">
+                    Top-up Kredit AI <IconArrowRight size={16} className="ml-1" />
                   </Link>
                 </Button>
               ) : (
@@ -270,14 +284,24 @@ export function AiDesignStudio({
                 </div>
               </dl>
               {activeId === selected.id ? (
-                <div className="flex h-11 items-center gap-2 rounded-lg border border-[#DFD2BC] bg-[#F5EFE3] px-4 text-sm font-medium text-[#5C4620]">
-                  <IconCheck size={17} className="text-[#8A6A2F]" /> Sedang dipakai di undangan Anda
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#DFD2BC] bg-[#F5EFE3] px-4 py-2.5 text-sm font-medium text-[#5C4620]">
+                  <span className="flex items-center gap-2">
+                    <IconCheck size={17} className="text-[#8A6A2F]" /> Sedang dipakai di undangan Anda
+                  </span>
+                  <Link href={`/kanvas/editor?designId=${selected.id}`} className="text-xs font-semibold text-[#8A6A2F] underline underline-offset-4">
+                    Edit kreatif di Kanvas →
+                  </Link>
                 </div>
               ) : (
-                <Button onClick={apply} disabled={applying} className="h-11 w-full rounded-lg">
-                  {applying && <IconLoader2 size={18} className="mr-2 animate-spin" />}
-                  Pakai desain ini
-                </Button>
+                <div className="flex flex-wrap gap-2.5">
+                  <Button onClick={apply} disabled={applying} className="h-11 flex-1 rounded-lg">
+                    {applying && <IconLoader2 size={18} className="mr-2 animate-spin" />}
+                    Pakai desain ini
+                  </Button>
+                  <Button asChild variant="outline" className="h-11 rounded-lg px-4">
+                    <Link href={`/kanvas/editor?designId=${selected.id}`}>Edit di Kanvas</Link>
+                  </Button>
+                </div>
               )}
             </section>
           )}

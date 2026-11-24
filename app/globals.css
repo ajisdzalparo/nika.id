@@ -395,11 +395,162 @@
   transform-origin: left center;
 }
 
+@keyframes uy-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes uy-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes uy-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes uy-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes uy-pulse-soft {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes uy-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-uy-fade-up {
+  animation: uy-fade-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-uy-zoom-in {
+  animation: uy-zoom-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-uy-slide-left {
+  animation: uy-slide-left 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-uy-slide-right {
+  animation: uy-slide-right 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-uy-pulse-soft {
+  animation: uy-pulse-soft 3.6s ease-in-out infinite;
+}
+
+.animate-uy-spin-slow {
+  animation: uy-spin-slow 18s linear infinite;
+}
+
+/* Per-section custom styling hooks in Canvas Studio */
+[data-clear-decor="true"] > div > section svg[aria-hidden="true"] {
+  display: none;
+}
+
+[data-section-pad="compact"] > div > section {
+  padding-top: 2.25rem;
+  padding-bottom: 2.25rem;
+}
+
+[data-section-pad="spacious"] > div > section {
+  padding-top: 7.5rem;
+  padding-bottom: 7.5rem;
+}
+
+[data-section-align="left"] > div > section {
+  text-align: left;
+}
+
+[data-section-align="right"] > div > section {
+  text-align: right;
+}
+
+[data-section-align="center"] > div > section {
+  text-align: center;
+}
+
+/* Partner logo strip on the landing page: two identical sets, the track moves by exactly one set */
+@keyframes uy-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.uy-marquee {
+  animation: uy-marquee var(--uy-marquee-duration, 40s) linear infinite;
+}
+
+.uy-marquee-viewport:hover .uy-marquee,
+.uy-marquee-viewport:focus-within .uy-marquee {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uy-marquee {
+    animation: none !important;
+  }
+  .uy-marquee-viewport {
+    overflow-x: auto;
+  }
+  .uy-marquee-viewport [aria-hidden="true"] {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-uy-float,
   .animate-uy-float-delayed,
   .animate-uy-sway,
-  .animate-uy-progress {
+  .animate-uy-progress,
+  .animate-uy-fade-up,
+  .animate-uy-zoom-in,
+  .animate-uy-slide-left,
+  .animate-uy-slide-right,
+  .animate-uy-pulse-soft,
+  .animate-uy-spin-slow {
     animation: none !important;
   }
 }

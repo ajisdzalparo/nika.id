@@ -54,29 +54,28 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
   const invitation = await resolvePublicInvitation(slug);
   if (!invitation) {
-    return { title: "Invitation Not Found - UNDANGIN YUK" };
+    return { title: "Undangan tidak ditemukan · UNDANGIN YUK", robots: { index: false } };
   }
 
+  // This is what WhatsApp shows when the link is shared, so never fall back to placeholder names
   const invitationData = (invitation.data as unknown as import("@/types/wedding").WeddingData) || {};
-  const groomName = invitationData.groom?.nickname || "Pria";
-  const brideName = invitationData.bride?.nickname || "Wanita";
-  const title = `Undangan Pernikahan ${groomName} & ${brideName}`;
-  const description = `The Wedding Celebration of ${invitationData.groom?.fullName || groomName} & ${invitationData.bride?.fullName || brideName}. Klik untuk melihat detail acara.`;
+  const firstWord = (s?: string) => s?.trim().split(/\s+/)[0];
+  const groomName = invitationData.groom?.nickname || firstWord(invitationData.groom?.fullName);
+  const brideName = invitationData.bride?.nickname || firstWord(invitationData.bride?.fullName);
+  const couple = groomName && brideName ? `${groomName} & ${brideName}` : invitation.title || "Undangan Pernikahan";
+  const title = `Undangan Pernikahan ${couple}`;
+  const description = to
+    ? `Kepada Yth. ${to}, dengan hormat kami mengundang Anda di hari bahagia ${couple}. Buka untuk melihat detail acara.`
+    : `Dengan hormat kami mengundang Anda di hari bahagia ${couple}. Buka untuk melihat detail acara.`;
+  const gallery = Array.isArray(invitationData.gallery) ? (invitationData.gallery as string[]) : [];
+  const image = gallery[0] || invitationData.groom?.photo || invitationData.bride?.photo || "/logo.png";
 
   return {
-    title: to ? `${to}, Anda diundang! | ${title}` : title,
+    title: to ? `${to}, Anda diundang · ${title}` : title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: [invitationData.groom?.photo || invitationData.bride?.photo || "/og-image.jpg"],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [invitationData.groom?.photo || invitationData.bride?.photo || "/og-image.jpg"],
-    },
+    robots: { index: false },
+    openGraph: { title, description, images: [image], type: "website", locale: "id_ID" },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 
@@ -106,8 +105,8 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
   }
 
   const aiTheme = invitation.templateSlug === "ai-design" ? await getActiveAiTheme(invitation.activeAiDesignId) : null;
-  const wishes = (
-    await prisma.guestMessage.findMany({
+  const [wishRows, owner] = await Promise.all([
+    prisma.guestMessage.findMany({
       where: {
         OR: [
           ...(!invitation.id.startsWith("legacy_") ? [{ invitationId: invitation.id }] : []),
@@ -118,8 +117,17 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
       orderBy: { createdAt: "desc" },
       take: 50,
       select: { guestName: true, message: true, createdAt: true },
-    })
-  ).map((w) => ({ ...w, createdAt: w.createdAt.toISOString() }));
+    }),
+    prisma.user.findUnique({
+      where: { id: invitation.userId },
+      select: { accountType: true, agencyName: true, agencyInstagram: true, agencyWhatsapp: true },
+    }),
+  ]);
+  const wishes = wishRows.map((w) => ({ ...w, createdAt: w.createdAt.toISOString() }));
+  const agencyBranding =
+    owner?.accountType === "AGENCY" && owner.agencyName
+      ? { name: owner.agencyName, instagram: owner.agencyInstagram, whatsapp: owner.agencyWhatsapp }
+      : null;
 
   return (
     <InvitationGuard
@@ -138,6 +146,7 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
         to={to}
         aiTheme={aiTheme}
         wishes={wishes}
+        agencyBranding={agencyBranding}
       />
     </InvitationGuard>
   );
@@ -150,6 +159,7 @@ function PageContent({
   to,
   aiTheme,
   wishes,
+  agencyBranding,
 }: {
   templateSlug: string;
   weddingDateRaw?: Date | string | null;
@@ -157,6 +167,7 @@ function PageContent({
   to?: string;
   aiTheme: AiTheme | null;
   wishes: import("@/lib/rsvp").Wish[];
+  agencyBranding: import("@/types/wedding").WeddingData["agencyBranding"];
 }) {
   const template = getTemplateBySlug(templateSlug);
   if (!template) {
@@ -174,6 +185,7 @@ function PageContent({
   const weddingData = mapInvitationToWeddingData(rawData, to, weddingDate);
   if (aiTheme) weddingData.aiTheme = aiTheme;
   weddingData.wishes = wishes;
+  weddingData.agencyBranding = agencyBranding;
 
   const eventName = `Pernikahan ${weddingData.groom.fullName} & ${weddingData.bride.fullName}`;
   const mainEvent = weddingData.events?.[0] || weddingData.event;

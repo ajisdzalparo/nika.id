@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowUpRight, IconBook, IconEdit, IconHome, IconListDetails, IconPalette, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
+import { IconArrowUpRight, IconBook, IconBrush, IconBuildingStore, IconEdit, IconHome, IconListDetails, IconPalette, IconSettings, IconTemplate, IconUsers, type Icon, IconWallet, IconMessageCircleHeart } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
 import { InvitationSwitcher } from "@/components/user/active-invitation-context";
@@ -30,6 +30,7 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
       { title: "Daftar Undangan", url: "/undangan", icon: IconListDetails },
       { title: "Editor Undangan", url: "/editor", icon: IconEdit },
       { title: "Desain AI", url: "/desain-ai", icon: IconPalette },
+      { title: "Kanvas Desain", url: "/kanvas", icon: IconBrush },
       { title: "Koleksi Template", url: "/pilih-template", icon: IconTemplate },
     ],
   },
@@ -41,8 +42,13 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
     ],
   },
   {
-    label: "Akun",
-    items: [{ title: "Pengaturan", url: "/pengaturan", icon: IconSettings }],
+    label: "Akun & Bisnis",
+    items: [
+      { title: "Mitra / Agency", url: "/mitra", icon: IconBuildingStore },
+      { title: "Dompet & Referral", url: "/dompet", icon: IconWallet },
+      { title: "Pengaturan", url: "/pengaturan", icon: IconSettings },
+      { title: "Kirim Masukan", url: "/masukan", icon: IconMessageCircleHeart },
+    ],
   },
 ];
 
@@ -103,7 +109,7 @@ export function UserSidebar({
                   .filter((item) => aiDesignEnabled || item.url !== "/desain-ai")
                   .map((item) => (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild tooltip={item.title} isActive={pathname === item.url} className="h-10 data-[active=true]:bg-[#1E1B17] data-[active=true]:text-[#F7F3EC] data-[active=true]:font-normal">
+                    <SidebarMenuButton asChild tooltip={item.title} isActive={pathname === item.url || pathname.startsWith(`${item.url}/`)}className="h-10 data-[active=true]:bg-[#1E1B17] data-[active=true]:text-[#F7F3EC] data-[active=true]:font-normal">
                       <Link href={item.url}>
                         <item.icon stroke={1.6} />
                         <span>{item.title}</span>

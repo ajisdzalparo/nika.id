@@ -21,7 +21,7 @@ const validDate = (d: string | Date | null | undefined) => {
 /** Formats a date in Indonesian; returns "" for missing or invalid dates (an event without a date yet). */
 const fmtDate = (d: string | Date | null | undefined, opts: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "long", year: "numeric" }) => {
   const date = validDate(d);
-  return date ? new Intl.DateTimeFormat("id-ID", opts).format(date) : "";
+  return date ? new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", ...opts }).format(date) : "";
 };
 
 export function getEvents(data: WeddingData): WeddingEvent[] {
@@ -199,10 +199,11 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false, s
 
   const guest = data.guestName && (
     <div className="space-y-1.5">
+      {/* Short label: the long "Bapak/Ibu/Saudara/i" in tracked capitals overflows a 375px screen */}
       <Label theme={theme} tone="muted" className="opacity-90">
-        Kepada Yth. Bapak/Ibu/Saudara/i
+        Kepada Yth.
       </Label>
-      <p className="text-lg font-medium">{data.guestName}</p>
+      <p className="text-balance px-6 text-lg font-medium">{data.guestName}</p>
     </div>
   );
 
@@ -847,8 +848,11 @@ export function Gift({ theme, data }: { theme: AiTheme; data: WeddingData }) {
 
 // ─── RSVP & wishes ───────────────────────────────────────────────────────
 
-function timeAgo(iso: string) {
-  const mins = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+function timeAgo(iso: string, nowMs: number | null) {
+  if (nowMs === null) {
+    return fmtDate(iso, { day: "numeric", month: "short", year: "numeric" });
+  }
+  const mins = Math.max(1, Math.round((nowMs - new Date(iso).getTime()) / 60000));
   if (mins < 60) return `${mins} menit lalu`;
   const hours = Math.round(mins / 60);
   if (hours < 24) return `${hours} jam lalu`;
@@ -863,6 +867,12 @@ export function Rsvp({ theme, data, preview }: { theme: AiTheme; data: WeddingDa
   const [message, setMessage] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [wishes, setWishes] = useState<Wish[]>(data.wishes ?? []);
+  const [nowMs, setNowMs] = useState<number | null>(null);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setNowMs(Date.now()));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -958,7 +968,7 @@ export function Rsvp({ theme, data, preview }: { theme: AiTheme; data: WeddingDa
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="font-medium">{w.guestName}</p>
                   <p className="shrink-0 text-xs" style={{ color: "var(--muted)" }}>
-                    {timeAgo(w.createdAt)}
+                    {timeAgo(w.createdAt, nowMs)}
                   </p>
                 </div>
                 <p className="text-[15px] leading-relaxed" style={{ color: "var(--muted)" }}>
@@ -1011,7 +1021,27 @@ export function Closing({ theme, data }: { theme: AiTheme; data: WeddingData }) 
         ) : null}
       </Reveal>
       <p className="relative mt-20 text-xs tracking-wide" style={{ color: "var(--muted)" }}>
-        Dibuat dengan <Link href="/" className="underline underline-offset-4">UNDANGIN YUK</Link>
+        {data.agencyBranding?.name ? (
+          <>
+            Dibuat oleh{" "}
+            {data.agencyBranding.instagram ? (
+              <a
+                href={`https://instagram.com/${data.agencyBranding.instagram.replace(/^@/, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-4"
+              >
+                {data.agencyBranding.name}
+              </a>
+            ) : (
+              <span className="font-medium">{data.agencyBranding.name}</span>
+            )}
+          </>
+        ) : (
+          <>
+            Dibuat dengan <Link href="/" className="underline underline-offset-4">UNDANGIN YUK</Link>
+          </>
+        )}
       </p>
     </section>
   );

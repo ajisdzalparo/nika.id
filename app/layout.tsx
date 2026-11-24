@@ -18,7 +18,11 @@ const mono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+// Absolute base for Open Graph / WhatsApp preview images; without it Next falls back to localhost
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://undanginyuk.ajisdzalparo.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "UNDANGIN YUK - Platform Undangan Digital",
   description: "Buat undangan pernikahan digital impianmu dengan mudah dan cepat.",
 };

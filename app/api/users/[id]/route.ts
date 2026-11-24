@@ -34,25 +34,45 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-// PATCH /api/users/[id] - update user role
+// PATCH /api/users/[id] - update user role or agency verification / quota
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAdmin(request);
     const { id } = await params;
-    const body = await request.json();
-    const { role } = body;
+    const body = await request.json().catch(() => ({}));
+    const { role, agencyVerified, accountType, addAgencyQuota } = body;
 
-    if (!role || !VALID_ROLES.includes(role)) {
-      return NextResponse.json({ error: "INVALID_ROLE", allowed: VALID_ROLES }, { status: 400 });
+    const data: Record<string, unknown> = {};
+
+    if (role !== undefined) {
+      if (!VALID_ROLES.includes(role)) {
+        return NextResponse.json({ error: "INVALID_ROLE", allowed: VALID_ROLES }, { status: 400 });
+      }
+      if (id === session.user.id && role !== "admin") {
+        return NextResponse.json({ error: "CANNOT_DEMOTE_SELF" }, { status: 400 });
+      }
+      data.role = role;
     }
 
-    if (id === session.user.id && role !== "admin") {
-      return NextResponse.json({ error: "CANNOT_DEMOTE_SELF" }, { status: 400 });
+    if (typeof agencyVerified === "boolean") {
+      data.agencyVerified = agencyVerified;
+    }
+    if (accountType === "PERSONAL" || accountType === "AGENCY") {
+      data.accountType = accountType;
+    }
+    if (typeof addAgencyQuota === "number" && Number.isInteger(addAgencyQuota) && addAgencyQuota > 0 && addAgencyQuota <= 500) {
+      data.accountType = "AGENCY";
+      data.agencyQuota = { increment: addAgencyQuota };
+      data.agencyQuotaExpiresAt = new Date(Date.now() + 365 * 86_400_000);
+    }
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "NO_UPDATES" }, { status: 400 });
     }
 
     const user = await prisma.user.update({
       where: { id },
-      data: { role },
+      data,
     });
 
     return NextResponse.json(user);

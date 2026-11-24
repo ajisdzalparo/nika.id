@@ -45,6 +45,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "USER_NOT_FOUND" }, { status: 404 });
     }
 
+    // Guests can only reach a published invitation; an unpaid preview or a hidden one must not collect
+    // RSVPs/wishes from whoever guesses the slug.
+    if (invitation && (invitation.plan === "FREE" || invitation.isPublic === false)) {
+      return NextResponse.json({ error: "NOT_PUBLISHED", message: "Undangan ini belum diterbitkan." }, { status: 403 });
+    }
+
     const guestName = String(body.guestName ?? "")
       .trim()
       .slice(0, MAX_GUEST_NAME_LENGTH);

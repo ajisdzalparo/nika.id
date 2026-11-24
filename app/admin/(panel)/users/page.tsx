@@ -3,17 +3,27 @@ import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { UsersClient, type User } from "@/components/admin/users-client";
 
-export default async function UsersPage(props: { searchParams: Promise<{ q?: string; page?: string; limit?: string }> }) {
+export default async function UsersPage(props: { searchParams: Promise<{ q?: string; page?: string; limit?: string; tipe?: string }> }) {
   const [searchParams, session] = await Promise.all([props.searchParams, getSession(undefined, "admin")]);
   const q = searchParams.q || "";
+  const tipe = searchParams.tipe === "agency" ? "agency" : "all";
   const page = parseInt(searchParams.page || "1");
   const limit = parseInt(searchParams.limit || "10");
   const skip = (page - 1) * limit;
 
   // Filter query
   const where: import("@prisma/client").Prisma.UserWhereInput = {};
+  if (tipe === "agency") {
+    where.accountType = "AGENCY";
+  }
   if (q) {
-    where.OR = [{ name: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }, { invitationSlug: { contains: q, mode: "insensitive" } }, { partnerName: { contains: q, mode: "insensitive" } }];
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { email: { contains: q, mode: "insensitive" } },
+      { invitationSlug: { contains: q, mode: "insensitive" } },
+      { partnerName: { contains: q, mode: "insensitive" } },
+      { agencyName: { contains: q, mode: "insensitive" } },
+    ];
   }
 
   const [users, totalCount] = await Promise.all([
@@ -41,7 +51,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ q?: str
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+              <h1 className="font-serif text-4xl font-medium text-[#1E1B17]">Pengguna</h1>
               <p className="text-muted-foreground">Kelola semua pasangan yang terdaftar</p>
             </div>
           </div>

@@ -14,11 +14,15 @@ export function useCountdown(targetDate: Date) {
     };
   }, [targetDate]);
 
-  const [time, setTime] = useState(calculate);
+  const [time, setTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
+    const frame = requestAnimationFrame(() => setTime(calculate()));
     const timer = setInterval(() => setTime(calculate()), 1000);
-    return () => clearInterval(timer);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearInterval(timer);
+    };
   }, [calculate]);
 
   return time;

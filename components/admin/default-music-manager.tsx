@@ -5,6 +5,16 @@ import { IconLoader2, IconMusic, IconPlus, IconTrash } from "@tabler/icons-react
 import { toast } from "sonner";
 import { MusicSourcePicker } from "@/components/common/music-source-picker";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +36,8 @@ export function DefaultMusicManager({ initialItems }: { initialItems: AdminDefau
   const [url, setUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AdminDefaultMusic | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,11 +79,16 @@ export function DefaultMusicManager({ initialItems }: { initialItems: AdminDefau
   };
 
   const remove = async (item: AdminDefaultMusic) => {
-    if (!confirm(`Hapus musik default “${item.title}”?`)) return;
-    const res = await fetch(`/api/admin/default-music/${item.id}`, { method: "DELETE" });
-    if (!res.ok) return toast.error("Gagal menghapus musik");
-    setItems((prev) => prev.filter((x) => x.id !== item.id));
-    toast.success("Musik default dihapus");
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/default-music/${item.id}`, { method: "DELETE" });
+      if (!res.ok) return toast.error("Gagal menghapus musik");
+      setItems((prev) => prev.filter((x) => x.id !== item.id));
+      toast.success("Musik default dihapus");
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -158,7 +175,7 @@ export function DefaultMusicManager({ initialItems }: { initialItems: AdminDefau
                   </div>
                   <button
                     type="button"
-                    onClick={() => remove(item)}
+                    onClick={() => setDeleteTarget(item)}
                     aria-label={`Hapus ${item.title}`}
                     className="flex h-9 w-9 items-center justify-center rounded-lg text-[#6B6358] transition-colors hover:bg-[#EFE8DC] hover:text-red-600"
                   >
@@ -170,6 +187,34 @@ export function DefaultMusicManager({ initialItems }: { initialItems: AdminDefau
           )}
         </div>
       </CardContent>
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}>
+        <AlertDialogContent className="border-[#E6DFD3] bg-[#FFFDF9] text-[#15130F] sm:rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#15130F]">
+              Hapus musik default?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-[#5E574D]">
+              Lagu &ldquo;{deleteTarget?.title}&rdquo; akan dihapus dari daftar musik bawaan undangan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel disabled={deleting} className="rounded-full border-[#DFD7C8] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]">
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget) void remove(deleteTarget);
+              }}
+              className="rounded-full bg-red-600 text-white hover:bg-red-700"
+            >
+              {deleting ? "Menghapus..." : "Ya, hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { IconCalendarEvent, IconGift, IconHeart, IconMessageCircle, IconPhoto } from "@tabler/icons-react";
 import type { WeddingData } from "@/types/wedding";
-import { DEFAULT_AI_THEME, type AiTheme } from "@/lib/ai-design/schema";
+import { DEFAULT_AI_THEME, REORDERABLE_SECTIONS, type AiTheme, type ReorderableSectionId } from "@/lib/ai-design/schema";
 import { MusicToggle } from "@/components/common/music-toggle";
 import { fontHref, themeFonts, themeStyle } from "./theme";
-import { EdgeSprigs } from "./ornaments";
+import { CanvasSectionFrame, EdgeSprigs, type CanvasEditorBridge } from "./ornaments";
+import { SandboxedHtmlFrame } from "./sandboxed-html-frame";
 import { Closing, Countdown, Couple, Cover, DesktopStage, Events, Gallery, Gift, Opening, Rsvp, Story, Video } from "./sections";
 
 interface Props {
@@ -17,6 +18,10 @@ interface Props {
   embedded?: boolean;
   /** Render the cover CTA as a non-interactive span (used inside CoverThumb cards wrapped by button/Link). */
   staticCover?: boolean;
+  /** Opens all sections immediately (used in Canvas Studio). */
+  forceOpened?: boolean;
+  /** Interactive canvas bridge for dragging & selecting layers in Canvas Studio. */
+  canvasEditor?: CanvasEditorBridge;
 }
 
 function BottomNav({ theme, data, scrollRoot }: { theme: AiTheme; data: WeddingData; scrollRoot: () => HTMLElement | null }) {
@@ -45,16 +50,120 @@ function BottomNav({ theme, data, scrollRoot }: { theme: AiTheme; data: WeddingD
   );
 }
 
-export default function AiDesignTemplate({ data, theme: themeProp, embedded = false, staticCover = false }: Props) {
+export default function AiDesignTemplate({
+  data,
+  theme: themeProp,
+  embedded = false,
+  staticCover = false,
+  forceOpened = false,
+  canvasEditor,
+}: Props) {
   const theme = themeProp ?? data.aiTheme ?? DEFAULT_AI_THEME;
-  const [opened, setOpened] = useState(false);
+  const [openedState, setOpenedState] = useState(false);
+  const opened = forceOpened || openedState;
   const rootRef = useRef<HTMLDivElement>(null);
   const screen = embedded ? "min-h-[700px]" : "min-h-svh";
 
+  if (theme.customHtml?.trim()) {
+    return (
+      // The iframe scrolls by itself, so it must never be taller than a fixed-height parent (preview frames,
+      // dialogs): h-full + max-h-full shrink it to that box, and on a normal page they resolve to the preset height.
+      <div className="relative h-full w-full overflow-hidden bg-white">
+        {!embedded && data.music?.enabled && data.music.url && <MusicToggle url={data.music.url} type={data.music.type} autoPlay />}
+        <SandboxedHtmlFrame
+          html={theme.customHtml}
+          data={data}
+          title={theme.name}
+          className={`${embedded ? "h-[720px]" : "h-[100svh]"} block max-h-full w-full border-0 bg-white`}
+        />
+      </div>
+    );
+  }
+
   const open = () => {
-    setOpened(true);
+    setOpenedState(true);
     requestAnimationFrame(() => rootRef.current?.querySelector("#pembuka")?.scrollIntoView({ behavior: "smooth" }));
   };
+
+  // Standard fixed 11-section wedding structure: cover -> canonical 9 sections -> closing (no additions/removals).
+  const orderedSections: readonly ReorderableSectionId[] = REORDERABLE_SECTIONS;
+
+  const renderSection = (s: ReorderableSectionId): ReactNode => {
+    switch (s) {
+      case "opening":
+        return (
+          <CanvasSectionFrame key="opening" section="opening" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <div id="pembuka" />
+            <Opening theme={theme} data={data} />
+            <EdgeSprigs theme={theme} />
+          </CanvasSectionFrame>
+        );
+      case "couple":
+        return (
+          <CanvasSectionFrame key="couple" section="couple" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <Couple theme={theme} data={data} />
+          </CanvasSectionFrame>
+        );
+      case "countdown":
+        return (
+          <CanvasSectionFrame key="countdown" section="countdown" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <Countdown theme={theme} data={data} />
+          </CanvasSectionFrame>
+        );
+      case "events":
+        return (
+          <CanvasSectionFrame key="events" section="events" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <Events theme={theme} data={data} />
+          </CanvasSectionFrame>
+        );
+      case "story":
+        return (
+          <CanvasSectionFrame key="story" section="story" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <Story theme={theme} data={data} />
+          </CanvasSectionFrame>
+        );
+      case "gallery":
+        return (
+          <CanvasSectionFrame key="gallery" section="gallery" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <Gallery theme={theme} data={data} />
+          </CanvasSectionFrame>
+        );
+      case "video":
+        return (
+          <CanvasSectionFrame key="video" section="video" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <Video theme={theme} data={data} />
+          </CanvasSectionFrame>
+        );
+      case "gift":
+        return (
+          <CanvasSectionFrame key="gift" section="gift" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <Gift theme={theme} data={data} />
+          </CanvasSectionFrame>
+        );
+      case "rsvp":
+        return (
+          <CanvasSectionFrame key="rsvp" section="rsvp" theme={theme} data={data} canvasEditor={canvasEditor}>
+            <Rsvp theme={theme} data={data} preview={embedded} />
+          </CanvasSectionFrame>
+        );
+    }
+  };
+
+  const renderCover = () => (
+    <CanvasSectionFrame section="cover" theme={theme} data={data} canvasEditor={canvasEditor}>
+      <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} staticCover={staticCover} />
+    </CanvasSectionFrame>
+  );
+
+  const renderMainBody = () => (
+    <main className="animate-in fade-in duration-700">
+      {orderedSections.map(renderSection)}
+      <CanvasSectionFrame section="closing" theme={theme} data={data} canvasEditor={canvasEditor}>
+        <Closing theme={theme} data={data} />
+      </CanvasSectionFrame>
+      <BottomNav theme={theme} data={data} scrollRoot={() => rootRef.current} />
+    </main>
+  );
 
   return (
     <div ref={rootRef} className="relative overflow-x-clip antialiased" style={themeStyle(theme)}>
@@ -72,49 +181,19 @@ export default function AiDesignTemplate({ data, theme: themeProp, embedded = fa
       {!embedded && opened && data.music?.enabled && data.music.url && <MusicToggle url={data.music.url} type={data.music.type} autoPlay />}
 
       {!opened ? (
-        <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} staticCover={staticCover} />
+        renderCover()
       ) : !embedded ? (
         <div className="lg:grid lg:grid-cols-[42%_58%] xl:grid-cols-[44%_56%]">
           <DesktopStage theme={theme} data={data} />
           <div className="relative min-w-0">
-            <div className="lg:hidden">
-              <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} />
-            </div>
-            <main className="animate-in fade-in duration-700">
-              <div id="pembuka" />
-              <Opening theme={theme} data={data} />
-              <EdgeSprigs theme={theme} />
-              <Couple theme={theme} data={data} />
-              <Countdown theme={theme} data={data} />
-              <Events theme={theme} data={data} />
-              <Story theme={theme} data={data} />
-              <Gallery theme={theme} data={data} />
-              <Video theme={theme} data={data} />
-              <Gift theme={theme} data={data} />
-              <Rsvp theme={theme} data={data} preview={embedded} />
-              <Closing theme={theme} data={data} />
-              <BottomNav theme={theme} data={data} scrollRoot={() => rootRef.current} />
-            </main>
+            <div className="lg:hidden">{renderCover()}</div>
+            {renderMainBody()}
           </div>
         </div>
       ) : (
         <>
-          <Cover theme={theme} data={data} opened={opened} onOpen={open} screen={screen} embedded={embedded} />
-          <main className="animate-in fade-in duration-700">
-            <div id="pembuka" />
-            <Opening theme={theme} data={data} />
-            <EdgeSprigs theme={theme} />
-            <Couple theme={theme} data={data} />
-            <Countdown theme={theme} data={data} />
-            <Events theme={theme} data={data} />
-            <Story theme={theme} data={data} />
-            <Gallery theme={theme} data={data} />
-            <Video theme={theme} data={data} />
-            <Gift theme={theme} data={data} />
-            <Rsvp theme={theme} data={data} preview={embedded} />
-            <Closing theme={theme} data={data} />
-            <BottomNav theme={theme} data={data} scrollRoot={() => rootRef.current} />
-          </main>
+          {renderCover()}
+          {renderMainBody()}
         </>
       )}
     </div>

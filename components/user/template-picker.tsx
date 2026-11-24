@@ -14,11 +14,15 @@ export function TemplatePicker({
   allowedTiers,
   highlight,
   aiEnabled = true,
+  purchasedTemplateIds = [],
+  currentUserId,
 }: {
   items: CatalogItem[];
   allowedTiers: string[];
   highlight?: string;
   aiEnabled?: boolean;
+  purchasedTemplateIds?: string[];
+  currentUserId?: string;
 }) {
   const router = useRouter();
   const [cat, setCat] = useState("Semua");
@@ -26,6 +30,9 @@ export function TemplatePicker({
   const categories = useMemo(() => ["Semua", ...Array.from(new Set(items.map((i) => i.category)))], [items]);
   const shown = cat === "Semua" ? items : items.filter((i) => i.category === cat);
   const highlightRef = useRef<HTMLElement | null>(null);
+  const purchasedSet = useMemo(() => new Set(purchasedTemplateIds), [purchasedTemplateIds]);
+  const rupiah = (n: number) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 
   useEffect(() => {
     highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -36,6 +43,10 @@ export function TemplatePicker({
     try {
       const res = await fetch(`/api/user/catalog/${item.slug}/use`, { method: "POST" });
       const j = await res.json().catch(() => ({}));
+      if (res.status === 402 && j.checkoutUrl) {
+        router.push(j.checkoutUrl);
+        return;
+      }
       if (!res.ok) return toast.error(j.message || "Gagal memakai template");
       toast.success(`“${item.name}” dipakai untuk undangan kalian`);
       router.push("/dashboard");
@@ -47,20 +58,34 @@ export function TemplatePicker({
 
   return (
     <div className="space-y-8">
-      {aiEnabled && (
-        <Link href="/desain-ai" className="group flex items-center justify-between gap-4 rounded-2xl bg-zinc-950 p-5 text-zinc-50 sm:p-6">
+      <div className={`grid gap-4 ${aiEnabled ? "lg:grid-cols-2" : ""}`}>
+        {aiEnabled && (
+          <Link href="/desain-ai" className="group flex items-center justify-between gap-4 rounded-2xl bg-zinc-950 p-5 text-zinc-50 sm:p-6">
+            <div className="flex items-center gap-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15">
+                <IconPalette size={20} className="text-[#C9A45C]" />
+              </span>
+              <div>
+                <p className="font-serif text-2xl">Ingin desain yang unik?</p>
+                <p className="text-sm text-zinc-400">Rancang dengan AI sesuai konsep kalian.</p>
+              </div>
+            </div>
+            <IconArrowRight className="shrink-0 transition-transform group-hover:translate-x-1" />
+          </Link>
+        )}
+        <Link href="/kanvas/editor?blank=1" className="group flex items-center justify-between gap-4 rounded-2xl border border-[#DFD2BC] bg-[#FFFDF9] p-5 text-[#15130F] sm:p-6">
           <div className="flex items-center gap-4">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15">
-              <IconPalette size={20} className="text-[#C9A45C]" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F4EAD6] text-[#8A6A2F]">
+              <IconPalette size={20} />
             </span>
             <div>
-              <p className="font-serif text-2xl">Ingin desain yang unik?</p>
-              <p className="text-sm text-zinc-400">Rancang dengan AI sesuai konsep kalian.</p>
+              <p className="font-serif text-2xl">Kanvas Kosong &amp; Jual</p>
+              <p className="text-sm text-[#6B6358]">Desain sebebas Canva dari nol, beri animasi, lalu jual di Marketplace.</p>
             </div>
           </div>
-          <IconArrowRight className="shrink-0 transition-transform group-hover:translate-x-1" />
+          <IconArrowRight className="shrink-0 text-[#8A6A2F] transition-transform group-hover:translate-x-1" />
         </Link>
-      )}
+      </div>
 
       <div className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
         {categories.map((c) => (
@@ -72,7 +97,13 @@ export function TemplatePicker({
 
       <div className="grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-3 xl:grid-cols-4">
         {shown.map((item) => {
-          const locked = !allowedTiers.includes(item.tier);
+          const isPaidMarketplace = item.price > 0;
+          const ownsMarketplace =
+            !isPaidMarketplace ||
+            (currentUserId != null && item.creatorId === currentUserId) ||
+            purchasedSet.has(item.id);
+          const locked = !isPaidMarketplace && !allowedTiers.includes(item.tier);
+          const needsPurchase = isPaidMarketplace && !ownsMarketplace;
           const isHighlight = item.slug === highlight;
           return (
             <article key={item.id} ref={isHighlight ? (el) => void (highlightRef.current = el) : undefined} className="space-y-3">
@@ -84,20 +115,28 @@ export function TemplatePicker({
                     <SafeImg src={item.thumbnail} alt={item.name} className="absolute inset-0 h-full w-full" />
                   </div>
                 )}
-                {locked && (
+                {isPaidMarketplace ? (
+                  <span className="absolute right-2 top-2 rounded-full bg-[#8A6A2F] px-2.5 py-1 text-[11px] font-semibold text-[#FFFDF9] shadow-sm">
+                    {ownsMarketplace ? "Dimiliki" : rupiah(item.price)}
+                  </span>
+                ) : locked ? (
                   <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-zinc-950/85 px-2.5 py-1 text-[11px] text-zinc-50">
                     <IconLock size={12} /> {item.tier}
                   </span>
-                )}
+                ) : null}
               </div>
               <div className="space-y-0.5 px-1">
                 <p className="truncate font-serif text-xl">{item.name}</p>
-                <p className="text-sm text-zinc-500">
-                  {item.category} · {item.tier}
+                <p className="truncate text-sm text-zinc-500">
+                  {item.category} · {isPaidMarketplace ? (item.creatorName ? `oleh ${item.creatorName}` : "Marketplace") : item.tier}
                 </p>
               </div>
               <div className="flex gap-2 px-1">
-                {locked ? (
+                {needsPurchase ? (
+                  <Link href={`/upgrade?pilih=template&templateId=${item.id}`} className="flex h-10 flex-1 items-center justify-center rounded-full bg-[#8A6A2F] px-3 text-sm font-medium text-[#FFFDF9] transition hover:bg-[#755825]">
+                    Beli & Pakai
+                  </Link>
+                ) : locked ? (
                   <Link href="/upgrade" className="flex h-10 flex-1 items-center justify-center rounded-full border border-zinc-300 text-sm font-medium">
                     Upgrade
                   </Link>

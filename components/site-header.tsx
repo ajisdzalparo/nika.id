@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { IconCreditCard, IconExternalLink, IconLogout, IconUserCircle } from "@tabler/icons-react";
+import { IconCreditCard, IconCrown, IconExternalLink, IconLogout, IconMessageCircleHeart, IconPlus, IconSparkles, IconUserCircle } from "@tabler/icons-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -24,17 +24,45 @@ const TITLES: Record<string, string> = {
   "/buku-tamu": "RSVP & Ucapan",
   "/pengaturan": "Pengaturan",
   "/upgrade": "Paket",
+  "/dompet": "Dompet",
+  "/kanvas": "Kanvas Desain",
+  "/kanvas/editor": "Kanvas Desain",
+  "/mitra": "Mitra / Agency",
+  "/masukan": "Masukan",
+  "/admin/keuangan": "Keuangan",
   "/admin": "Beranda Admin",
   "/admin/templates": "Template",
   "/admin/users": "Pengguna",
   "/admin/moderasi": "Moderasi Ucapan",
   "/admin/transaksi": "Transaksi",
   "/admin/chat": "Customer Chat",
+  "/admin/masukan": "Masukan Pengguna",
+  "/admin/promo": "Kode Promo",
   "/admin/cms": "CMS Landing Page",
   "/admin/pengaturan-admin": "Pengaturan",
 };
 
 // false during SSR and hydration, true afterwards: keeps session-dependent UI out of the server HTML
+// Preselects the feature on /masukan based on where the user opened it from
+const FEEDBACK_FEATURE_BY_PATH: [string, string][] = [
+  ["/editor", "EDITOR"],
+  ["/desain-ai", "DESAIN"],
+  ["/kanvas", "DESAIN"],
+  ["/pilih-template", "DESAIN"],
+  ["/manajemen-tamu", "TAMU"],
+  ["/buku-tamu", "RSVP"],
+  ["/upgrade", "PEMBAYARAN"],
+  ["/mitra", "MITRA"],
+  ["/dompet", "DOMPET"],
+];
+
+function feedbackHref(pathname: string) {
+  const feature = FEEDBACK_FEATURE_BY_PATH.find(([p]) => pathname === p || pathname.startsWith(`${p}/`))?.[1];
+  const params = new URLSearchParams({ dari: pathname });
+  if (feature) params.set("fitur", feature);
+  return `/masukan?${params.toString()}`;
+}
+
 const subscribe = () => () => {};
 const useHydrated = () => useSyncExternalStore(subscribe, () => true, () => false);
 
@@ -58,7 +86,7 @@ export function SiteHeader({ user: userProp }: SiteHeaderProps) {
   const slug = activeInvCtx?.active.slug ?? (session?.user as { invitationSlug?: string } | undefined)?.invitationSlug;
   const activeShareReady = activeInvCtx ? activeInvCtx.active.isPublic && activeInvCtx.active.plan !== "FREE" : true;
   const previewHref = slug ? `/${slug}${!activeShareReady ? "?preview=1" : ""}` : null;
-  const title = TITLES[pathname] ?? (pathname.startsWith("/admin/templates") ? "Template" : isAdminRoute ? "Admin" : "Dashboard");
+  const title = TITLES[pathname] ?? (pathname.startsWith("/admin/templates") ? "Template" : isAdminRoute ? "Admin" : "Beranda");
   const initials = (user?.name || "N").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   const logout = async () => {
@@ -70,17 +98,40 @@ export function SiteHeader({ user: userProp }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 flex h-(--header-height) shrink-0 items-center gap-2 border-b border-[#E1D8C9] bg-[#F7F3EC]/90 backdrop-blur-sm transition-[width,height] ease-linear">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-8">
-        <SidebarTrigger className="-ml-1" />
+        <SidebarTrigger className="-ml-2 size-10 md:-ml-1 md:size-7" />
         <Separator orientation="vertical" className="mx-2 bg-[#E1D8C9] data-[orientation=vertical]:h-4" />
-        <h1 className="text-[15px] font-medium text-[#1E1B17]">{title}</h1>
+        <h1 className="min-w-0 truncate whitespace-nowrap text-[15px] font-medium text-[#1E1B17]">{title}</h1>
         {hydrated && !isAdminRoute && (activeInvCtx?.invitations.length ?? 0) > 1 && (
           <div className="ml-2 hidden md:block">
             <InvitationSwitcher compact />
           </div>
         )}
         <div className="ml-auto flex items-center gap-2">
+          {hydrated && !isAdminRoute && activeInvCtx && activeInvCtx.aiCredits !== null && (
+            <Link
+              href="/upgrade?pilih=kredit#kredit-ai"
+              title="Kredit Desain AI · klik untuk top-up"
+              className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#E1D8C9] bg-white/70 pl-3 pr-1 text-[13px] text-[#1E1B17] transition hover:border-[#CDBF9F]"
+            >
+              <IconSparkles size={15} className="text-[#8A6A2F]" />
+              <span className="tabular-nums font-medium">{activeInvCtx.aiCredits}</span>
+              <span className="hidden text-[#6B6358] xl:inline">kredit</span>
+              <span className="ml-1 flex h-7 items-center gap-0.5 rounded-full bg-[#F4EAD6] px-2 text-xs font-medium text-[#8A6A2F]">
+                <IconPlus size={12} stroke={2.5} />
+                <span className="hidden sm:inline">Top up</span>
+              </span>
+            </Link>
+          )}
+          {hydrated && !isAdminRoute && activeInvCtx && activeInvCtx.active.plan !== "EKSKLUSIF" && (
+            <Button asChild size="sm" className="hidden h-9 shrink-0 gap-1.5 whitespace-nowrap rounded-full bg-[#1E1B17] px-3.5 text-[13px] text-[#F7F3EC] hover:bg-[#3A342C] sm:flex">
+              <Link href="/upgrade">
+                <IconCrown size={15} />
+                {activeInvCtx.active.plan === "FREE" ? "Pilih paket" : "Upgrade paket"}
+              </Link>
+            </Button>
+          )}
           {hydrated && previewHref && !isAdminRoute && (
-            <Button asChild variant="ghost" size="sm" className="hidden h-9 gap-1.5 rounded-full text-[#6B6358] hover:bg-[#E6DECF] hover:text-[#1E1B17] sm:flex">
+            <Button asChild variant="ghost" size="sm" className="hidden h-9 gap-1.5 rounded-full text-[#6B6358] hover:bg-[#E6DECF] hover:text-[#1E1B17] xl:flex">
               <Link href={previewHref} target="_blank">
                 {activeShareReady ? "Lihat undangan" : "Pratinjau undangan"} <IconExternalLink size={15} />
               </Link>
@@ -118,6 +169,14 @@ export function SiteHeader({ user: userProp }: SiteHeaderProps) {
                       {isAdminRoute ? "Verifikasi transaksi" : "Paket & pembayaran"}
                     </Link>
                   </DropdownMenuItem>
+                  {!isAdminRoute && (
+                    <DropdownMenuItem asChild>
+                      <Link href={feedbackHref(pathname)}>
+                        <IconMessageCircleHeart className="mr-2 size-4" />
+                        Kirim masukan
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>

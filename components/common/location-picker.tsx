@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap, Marker } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { IconCurrentLocation, IconLoader2, IconMapPin, IconSearch } from "@tabler/icons-react";
+import { IconBrandGoogle, IconCurrentLocation, IconExternalLink, IconLoader2, IconMapPin, IconSearch } from "@tabler/icons-react";
 
 export interface PickedLocation {
   lat: number;
@@ -28,31 +28,55 @@ export function mapsLink(lat: number, lng: number) {
  * Search a place (OpenStreetMap / Nominatim), then click the map or drag the pin to fine-tune.
  * No API key needed. Leaflet is loaded on the client only.
  */
-export function LocationPicker({ value, onChange }: { value: { lat?: number; lng?: number }; onChange: (loc: PickedLocation) => void }) {
+export function LocationPicker({
+  value,
+  onChange,
+  initialQuery = "",
+}: {
+  value: { lat?: number; lng?: number };
+  onChange: (loc: PickedLocation) => void;
+  initialQuery?: string;
+}) {
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const onChangeRef = useRef(onChange);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [viewMode, setViewMode] = useState<"gmaps" | "pin">("gmaps");
   const [error, setError] = useState("");
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  const hasValue = typeof value.lat === "number" && typeof value.lng === "number";
-
-  // Create the map once
+  const hasValue =
+    typeof value.lat === "number" &&
+    Number.isFinite(value.lat) &&
+    typeof value.lng === "number" &&
+    Number.isFinite(value.lng);
+  const latestPinRef = useRef<{ lat?: number; lng?: number }>({ lat: value.lat, lng: value.lng });
   useEffect(() => {
+    latestPinRef.current = { lat: value.lat, lng: value.lng };
+  }, [value.lat, value.lng]);
+
+  // Initialize Leaflet only when the pin map container is actually mounted and visible (non-zero size)
+  useEffect(() => {
+    if (viewMode !== "pin") return;
     let cancelled = false;
     (async () => {
       const L = (await import("leaflet")).default;
       if (cancelled || !mapEl.current || mapRef.current) return;
-      const start: [number, number] = hasValue ? [value.lat!, value.lng!] : INDONESIA;
-      const map = L.map(mapEl.current, { center: start, zoom: hasValue ? 16 : 5, scrollWheelZoom: false, attributionControl: true });
+      const cur = latestPinRef.current;
+      const startHasPin =
+        typeof cur.lat === "number" &&
+        Number.isFinite(cur.lat) &&
+        typeof cur.lng === "number" &&
+        Number.isFinite(cur.lng);
+      const start: [number, number] = startHasPin ? [cur.lat!, cur.lng!] : INDONESIA;
+      const map = L.map(mapEl.current, { center: start, zoom: startHasPin ? 16 : 5, scrollWheelZoom: false, attributionControl: true });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -64,8 +88,9 @@ export function LocationPicker({ value, onChange }: { value: { lat?: number; lng
         iconSize: [28, 28],
         iconAnchor: [14, 28],
       });
-      const marker = L.marker(start, { draggable: true, icon, opacity: hasValue ? 1 : 0 }).addTo(map);
+      const marker = L.marker(start, { draggable: true, icon, opacity: startHasPin ? 1 : 0 }).addTo(map);
       const place = (lat: number, lng: number) => {
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
         marker.setLatLng([lat, lng]).setOpacity(1);
         onChangeRef.current({ lat, lng });
       };
@@ -84,12 +109,15 @@ export function LocationPicker({ value, onChange }: { value: { lat?: number; lng
       mapRef.current = null;
       markerRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- map is created once; later value changes are applied by flyTo below
-  }, []);
+  }, [viewMode]);
 
   const flyTo = (lat: number, lng: number) => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    const map = mapRef.current;
+    const size = map?.getSize();
+    if (!map || !size || size.x <= 0 || size.y <= 0) return;
     markerRef.current?.setLatLng([lat, lng]).setOpacity(1);
-    mapRef.current?.flyTo([lat, lng], 17, { duration: 0.8 });
+    map.setView([lat, lng], 17, { animate: true });
   };
 
   const search = async () => {
@@ -113,9 +141,18 @@ export function LocationPicker({ value, onChange }: { value: { lat?: number; lng
     const lat = Number(r.lat);
     const lng = Number(r.lon);
     flyTo(lat, lng);
+    setQuery(r.display_name);
     onChange({ lat, lng, address: r.display_name });
     setResults([]);
   };
+
+  const gmapsQuery = hasValue
+    ? `${value.lat!.toFixed(6)},${value.lng!.toFixed(6)}`
+    : query.trim() || "Jakarta, Indonesia";
+  const gmapsEmbedSrc = `https://maps.google.com/maps?q=${encodeURIComponent(gmapsQuery)}&z=${hasValue ? 16 : query.trim() ? 15 : 5}&output=embed`;
+  const gmapsDirectUrl = hasValue
+    ? mapsLink(value.lat!, value.lng!)
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(gmapsQuery)}`;
 
   const locate = () => {
     if (!navigator.geolocation) return setError("Browser tidak mendukung lokasi.");
@@ -169,8 +206,52 @@ export function LocationPicker({ value, onChange }: { value: { lat?: number; lng
         )}
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="inline-flex rounded-full border border-zinc-200 bg-zinc-50 p-0.5 text-xs">
+          <button
+            type="button"
+            onClick={() => setViewMode("gmaps")}
+            className={`inline-flex h-9 items-center gap-1 rounded-full px-3 font-medium transition ${
+              viewMode === "gmaps" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:text-zinc-900"
+            }`}
+          >
+            <IconBrandGoogle size={13} /> Tampilan Google Maps
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("pin");
+              setTimeout(() => mapRef.current?.invalidateSize(), 60);
+            }}
+            className={`inline-flex h-9 items-center gap-1 rounded-full px-3 font-medium transition ${
+              viewMode === "pin" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:text-zinc-900"
+            }`}
+          >
+            <IconMapPin size={13} /> Geser Pin Peta
+          </button>
+        </div>
+        <a
+          href={gmapsDirectUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-9 items-center gap-1 text-xs font-medium text-[#8A6A2F] hover:underline"
+        >
+          Buka di Google Maps <IconExternalLink size={12} />
+        </a>
+      </div>
+
       <div className="relative overflow-hidden rounded-xl border border-zinc-200">
-        <div ref={mapEl} className="h-64 w-full bg-zinc-100" />
+        {viewMode === "gmaps" ? (
+          <iframe
+            title="Pratinjau Google Maps"
+            src={gmapsEmbedSrc}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="h-64 w-full border-0 bg-zinc-100"
+          />
+        ) : (
+          <div ref={mapEl} className="h-64 w-full bg-zinc-100" />
+        )}
         <button
           type="button"
           onClick={locate}
@@ -180,7 +261,12 @@ export function LocationPicker({ value, onChange }: { value: { lat?: number; lng
         </button>
       </div>
 
-      <p className="text-xs text-zinc-500">{error || (hasValue ? `Pin di ${value.lat!.toFixed(5)}, ${value.lng!.toFixed(5)}. Geser pin atau klik peta untuk memperbaiki.` : "Cari tempat lalu pilih hasilnya, atau klik peta untuk menaruh pin.")}</p>
+      <p className="text-xs text-zinc-500">
+        {error ||
+          (hasValue
+            ? `Pin tersimpan di ${value.lat!.toFixed(5)}, ${value.lng!.toFixed(5)}. Link Google Maps otomatis dibuat.`
+            : "Cari nama gedung/tempat lalu pilih dari daftar, atau beralih ke Geser Pin Peta untuk menaruh pin manual.")}
+      </p>
     </div>
   );
 }

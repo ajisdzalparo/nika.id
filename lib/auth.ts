@@ -132,7 +132,13 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   baseURL: process.env.BETTER_AUTH_URL || "https://undanginyuk.ajisdzalparo.com",
-  trustedOrigins: [process.env.BETTER_AUTH_URL, process.env.NEXT_PUBLIC_APP_URL, "https://undanginyuk.ajisdzalparo.com"].filter(Boolean) as string[],
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    "https://undanginyuk.ajisdzalparo.com",
+    // Local development is always allowed, even if .env carries production URLs
+    ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
+  ].filter(Boolean) as string[],
   advanced: {
     crossSubDomainCookies: {
       enabled: true,

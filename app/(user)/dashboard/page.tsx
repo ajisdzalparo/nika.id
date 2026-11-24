@@ -10,7 +10,7 @@ import { getActiveInvitation, listUserInvitations } from "@/lib/active-invitatio
 import { prisma } from "@/lib/prisma";
 import { getMaxGuests, getPlanLimits, type PlanType } from "@/lib/limits";
 import { getTemplateBySlug } from "@/lib/templates";
-import { getActiveAiTheme } from "@/lib/ai-design/server";
+import { getActiveAiTheme, getAiQuota } from "@/lib/ai-design/server";
 import { isAiDesignEnabled } from "@/lib/system-settings";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 
@@ -34,19 +34,21 @@ export default async function UserDashboardPage() {
   if (!session) redirect("/login");
 
   const [user, active, allInvitations, aiDesignEnabled] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true } }),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true, aiCredits: true } }),
     getActiveInvitation(session.user.id),
     listUserInvitations(session.user.id),
     isAiDesignEnabled(),
   ]);
   if (!user) redirect("/login");
 
-  const [guestCount, messages, rsvps] = await Promise.all([
+  const [guestCount, messages, rsvps, messageCount, aiQuota] = await Promise.all([
     prisma.guest.count({ where: { invitationId: active.id } }),
     prisma.guestMessage.findMany({ where: { invitationId: active.id }, orderBy: { createdAt: "desc" }, take: 3 }),
     prisma.rSVP.findMany({ where: { invitationId: active.id }, select: { attendance: true, guests: true } }),
+    prisma.guestMessage.count({ where: { invitationId: active.id } }),
+    getAiQuota(user.id, (active.plan ?? "FREE") as PlanType),
   ]);
-  const messageCount = await prisma.guestMessage.count({ where: { invitationId: active.id } });
+  const designHref = aiDesignEnabled ? "/desain-ai" : "/pilih-template";
 
   const raw = (active.data ?? {}) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   const data = mapInvitationToWeddingData(raw, "Bapak & Ibu Tamu", active.weddingDate ?? undefined);
@@ -69,7 +71,7 @@ export default async function UserDashboardPage() {
   const attending = rsvps.filter((r) => r.attendance.toUpperCase() === "HADIR").reduce((n, r) => n + (r.guests || 1), 0);
 
   const steps = [
-    { label: "Pilih desain undangan", done: Boolean(template), href: aiDesignEnabled ? "/desain-ai" : "/pilih-template" },
+    { label: "Pilih desain undangan", done: Boolean(template), href: designHref },
     { label: "Isi data kedua mempelai", done: hasCouple, href: "/editor" },
     { label: "Tambahkan jadwal acara", done: hasEvents, href: "/editor" },
     { label: "Unggah foto galeri", done: hasGallery, href: "/editor" },
@@ -96,7 +98,7 @@ export default async function UserDashboardPage() {
               Undangan aktif: <strong className="font-medium text-[#1E1B17]">{active.title}</strong>{" "}
               <span className="text-xs">({allInvitations.length} undangan di akun)</span>
             </span>
-            <Link href="/undangan" className="font-medium text-[#8A6A2F] hover:underline">
+            <Link href="/undangan" className="inline-flex min-h-10 items-center font-medium text-[#8A6A2F] hover:underline">
               Kelola / buat undangan baru →
             </Link>
           </div>
@@ -123,10 +125,10 @@ export default async function UserDashboardPage() {
           </header>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <div className="space-y-6">
-              {/* Invitation card */}
-              <section className="grid gap-6 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:p-6">
-                <div className="mx-auto flex w-full justify-center sm:w-auto">
+            <div className="@container space-y-6">
+              {/* Invitation card — side-by-side only when the column itself is wide enough */}
+              <section className="grid gap-6 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-6 @xl:grid-cols-[auto_minmax(0,1fr)]">
+                <div className="mx-auto flex w-full justify-center @xl:w-auto">
                   {aiTheme ? (
                     <Phone theme={aiTheme} data={data} zoom={0.5} />
                   ) : template ? (
@@ -134,9 +136,9 @@ export default async function UserDashboardPage() {
                       <Image src={template.thumbnail} alt={template.name} fill sizes="201px" className="object-cover" />
                     </div>
                   ) : (
-                    <Link href="/desain-ai" className="flex h-40 w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed sm:h-[374px] sm:w-[201px] sm:rounded-[30px] border-[#D6CBB8] px-6 text-center text-sm text-[#6B6358] transition-colors hover:border-[#8A6A2F]">
+                    <Link href={designHref} className="flex h-40 w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed @xl:h-[374px] @xl:w-[201px] @xl:rounded-[30px] border-[#D6CBB8] px-6 text-center text-sm text-[#6B6358] transition-colors hover:border-[#8A6A2F]">
                       <IconPalette size={26} className="text-[#8A6A2F]" />
-                      Belum ada desain. Rancang dengan AI atau pilih template.
+                      {aiDesignEnabled ? "Belum ada desain. Rancang dengan AI atau pilih template." : "Belum ada desain. Pilih template dari koleksi."}
                     </Link>
                   )}
                 </div>
@@ -157,7 +159,7 @@ export default async function UserDashboardPage() {
                       <Link href="/editor" className="inline-flex min-h-11 items-center gap-1 font-medium text-[#1E1B17] underline-offset-4 hover:underline">
                         Ubah isi
                       </Link>
-                      <Link href="/desain-ai" className="inline-flex min-h-11 items-center gap-1 font-medium text-[#1E1B17] underline-offset-4 hover:underline">
+                      <Link href={designHref} className="inline-flex min-h-11 items-center gap-1 font-medium text-[#1E1B17] underline-offset-4 hover:underline">
                         Ganti desain
                       </Link>
                       {active.slug && (
@@ -172,7 +174,7 @@ export default async function UserDashboardPage() {
               </section>
 
               {/* Stats */}
-              <section className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[#E1D8C9] bg-[#E1D8C9] md:grid-cols-4">
+              <section className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[#E1D8C9] bg-[#E1D8C9] @xl:grid-cols-4">
                 {stats.map((s) => {
                   const inner = (
                     <>
@@ -252,7 +254,12 @@ export default async function UserDashboardPage() {
                 <p className="mt-2 font-(family-name:--font-landing-display) text-3xl">{limits.name}</p>
                 <ul className="mt-4 space-y-2 text-sm text-[#CFC5B4]">
                   <li>{maxGuests === Infinity ? "Tamu tanpa batas" : `Hingga ${maxGuests} tamu bernama`}</li>
-                  <li>{limits.aiDesignQuota}× desain AI</li>
+                  {aiQuota && (
+                    <li>
+                      Sisa {aiQuota.remaining} kredit desain AI
+                      {aiQuota.topupCredits > 0 ? ` (${aiQuota.topupCredits} dari top-up)` : ""}
+                    </li>
+                  )}
                   <li>
                     {plan === "FREE"
                       ? "Pratinjau gratis · aktifkan paket untuk terbit"

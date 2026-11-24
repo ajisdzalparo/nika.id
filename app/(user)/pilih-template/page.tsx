@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
 import { getCatalog } from "@/lib/catalog";
 import { getPlanLimits, type PlanType } from "@/lib/limits";
+import { prisma } from "@/lib/prisma";
 import { isAiDesignEnabled } from "@/lib/system-settings";
 
 export default async function PilihTemplatePage({ searchParams }: { searchParams: Promise<{ pakai?: string }> }) {
@@ -12,12 +13,17 @@ export default async function PilihTemplatePage({ searchParams }: { searchParams
   if (!session) redirect("/login");
   const { pakai } = await searchParams;
 
-  const [active, items, aiEnabled] = await Promise.all([
-    getActiveInvitation(session.user.id),
+  const active = await getActiveInvitation(session.user.id);
+  const [items, aiEnabled, purchases] = await Promise.all([
     getCatalog(),
     isAiDesignEnabled(),
+    prisma.templatePurchase.findMany({
+      where: { invitationId: active.id },
+      select: { templateId: true },
+    }),
   ]);
   const allowedTiers = getPlanLimits((active.plan ?? "FREE") as PlanType).allowedTemplateTypes;
+  const purchasedTemplateIds = purchases.map((p) => p.templateId);
 
   return (
     <>
@@ -29,7 +35,14 @@ export default async function PilihTemplatePage({ searchParams }: { searchParams
             <h2 className="font-serif text-5xl font-medium">Pilih desain undangan</h2>
             <p className="max-w-2xl text-zinc-600">Pakai desain yang sudah jadi, lalu ganti kapan saja. Data undangan kalian tetap sama.</p>
           </header>
-          <TemplatePicker items={items} allowedTiers={allowedTiers} highlight={pakai} aiEnabled={aiEnabled} />
+          <TemplatePicker
+            items={items}
+            allowedTiers={allowedTiers}
+            highlight={pakai}
+            aiEnabled={aiEnabled}
+            purchasedTemplateIds={purchasedTemplateIds}
+            currentUserId={session.user.id}
+          />
         </div>
       </div>
     </>

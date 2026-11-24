@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
-import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PAID_PLANS, getUpgradePrice, type PlanType } from "@/lib/limits";
+import type { PlanType } from "@/lib/limits";
 import { createNotification } from "@/lib/notifications";
-import { amountWithUniqueCode, getManualPaymentInfo } from "@/lib/payment";
+import { CheckoutOrderError, amountWithUniqueCode, getManualPaymentInfo, openOrderWhere, resolveCheckoutOrder } from "@/lib/payment";
 
 const MANUAL_ORDER_SELECT = {
   id: true,
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const session = await requireAuth(request);
     const active = await getActiveInvitation(session.user.id);
     const order = await prisma.transaction.findFirst({
-      where: { userId: session.user.id, invitationId: active.id, paymentMethod: "MANUAL_TRANSFER", status: "PENDING" },
+      where: openOrderWhere(session.user.id, active.id, "MANUAL_TRANSFER"),
       orderBy: { createdAt: "desc" },
       select: MANUAL_ORDER_SELECT,
     });
@@ -42,79 +42,43 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /api/payment/manual { kind?: "PLAN" | "GUEST_ADDON", plan?, addonUnits?, invitationId? }
+// POST /api/payment/manual { kind?: "PLAN" | "GUEST_ADDON" | "AI_CREDIT", plan?, addonUnits?, packId?, invitationId? }
 export async function POST(request: Request) {
   try {
     const session = await requireAuth(request);
-    const body = await request.json();
-    const kind = body?.kind === "GUEST_ADDON" ? "GUEST_ADDON" : "PLAN";
+    const body = await request.json().catch(() => ({}));
 
     if (!(await getManualPaymentInfo()).manualEnabled) {
       return NextResponse.json({ error: "MANUAL_DISABLED", message: "Pembayaran manual sedang tidak tersedia" }, { status: 400 });
     }
 
-    const active = await getActiveInvitation(session.user.id, typeof body?.invitationId === "string" ? body.invitationId : undefined);
-    const currentPlan = (active.plan ?? "FREE") as PlanType;
-
-    let price = 0;
-    let plan: PlanType | null = null;
-    let addonUnits = 0;
-
-    if (kind === "GUEST_ADDON") {
-      if (currentPlan === "FREE") {
-        return NextResponse.json({ error: "PLAN_REQUIRED", message: "Pilih paket aktif terlebih dahulu sebelum menambah kuota tamu." }, { status: 400 });
-      }
-      if (currentPlan === "EKSKLUSIF") {
-        return NextResponse.json({ error: "UNLIMITED_PLAN", message: "Paket Eksklusif sudah memiliki kuota tamu tanpa batas." }, { status: 400 });
-      }
-      const units = Number(body?.addonUnits ?? 1);
-      if (!Number.isInteger(units) || units < 1 || units > 20) {
-        return NextResponse.json({ error: "INVALID_UNITS", message: "Jumlah paket add-on harus 1–20." }, { status: 400 });
-      }
-      addonUnits = units;
-      price = units * GUEST_ADDON_PRICE;
-    } else {
-      const target = body?.plan as PlanType;
-      if (!PAID_PLANS.includes(target)) {
-        return NextResponse.json({ error: "INVALID_PLAN", message: "Paket tidak valid" }, { status: 400 });
-      }
-      if (currentPlan === target) {
-        return NextResponse.json({ error: "ALREADY_ACTIVE", message: "Paket ini sudah aktif untuk undangan ini" }, { status: 400 });
-      }
-      const diff = getUpgradePrice(currentPlan, target);
-      if (diff === null) {
-        return NextResponse.json({ error: "DOWNGRADE_NOT_ALLOWED", message: "Tidak dapat turun ke paket yang lebih rendah" }, { status: 400 });
-      }
-      plan = target;
-      price = diff;
-    }
+    const { kind, price, discountAmount, referralCodeUsed, promoCodeUsed, plan, templateId, addonUnits, invitationId, activeId, label, notes } =
+      await resolveCheckoutOrder(session.user.id, body);
 
     await prisma.transaction.updateMany({
-      where: { userId: session.user.id, invitationId: active.id, paymentMethod: "MANUAL_TRANSFER", status: "PENDING" },
+      where: openOrderWhere(session.user.id, activeId, "MANUAL_TRANSFER"),
       data: { status: "FAILED", notes: "Dibatalkan: user membuat pesanan baru" },
     });
 
     const order = await prisma.transaction.create({
       data: {
         userId: session.user.id,
-        invitationId: active.id,
+        invitationId,
         kind,
         plan,
+        templateId,
         addonUnits,
         amount: amountWithUniqueCode(price),
+        discountAmount,
+        referralCodeUsed,
+        promoCodeUsed,
         status: "PENDING",
         paymentMethod: "MANUAL_TRANSFER",
-        notes:
-          kind === "GUEST_ADDON"
-            ? `Add-on +${addonUnits * GUEST_ADDON_SIZE} tamu (${active.title})`
-            : currentPlan !== "FREE"
-              ? `Upgrade ${currentPlan} → ${plan} (${active.title})`
-              : `Paket ${plan} (${active.title})`,
+        notes,
       },
       select: MANUAL_ORDER_SELECT,
     });
     const rupiahAmount = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(order.amount);
-    const label = kind === "GUEST_ADDON" ? `Add-on +${addonUnits * GUEST_ADDON_SIZE} tamu` : `Paket ${plan}`;
     await Promise.all([
       createNotification({
         audience: "ADMIN",
@@ -134,6 +98,9 @@ export async function POST(request: Request) {
     ]);
     return NextResponse.json({ order, ...(await getManualPaymentInfo()) }, { status: 201 });
   } catch (error) {
+    if (error instanceof CheckoutOrderError) {
+      return NextResponse.json({ error: error.code, message: error.message }, { status: error.status });
+    }
     if (error instanceof Error && error.message === "Unauthorized") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     console.error("Manual payment error:", error);
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message: "Terjadi kesalahan" }, { status: 500 });
@@ -187,13 +154,13 @@ export async function PATCH(request: Request) {
   }
 }
 
-// DELETE /api/payment/manual — cancel the open order for active invitation
+// DELETE /api/payment/manual — cancel the open order for active invitation or user-level AI credit
 export async function DELETE(request: Request) {
   try {
     const session = await requireAuth(request);
     const active = await getActiveInvitation(session.user.id);
     await prisma.transaction.updateMany({
-      where: { userId: session.user.id, invitationId: active.id, paymentMethod: "MANUAL_TRANSFER", status: "PENDING" },
+      where: openOrderWhere(session.user.id, active.id, "MANUAL_TRANSFER"),
       data: { status: "FAILED", notes: "Dibatalkan oleh user" },
     });
     return NextResponse.json({ success: true });

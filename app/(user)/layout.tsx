@@ -7,6 +7,7 @@ import { CustomerChatWidget } from "@/components/user/customer-chat-widget";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getSession } from "@/lib/auth-helpers";
 import { getActiveInvitation, listUserInvitations } from "@/lib/active-invitation";
+import { getAiQuota } from "@/lib/ai-design/server";
 import type { PlanType } from "@/lib/limits";
 import { shellTokens, studioClass } from "@/lib/studio";
 import { isAiDesignEnabled, isMaintenanceMode } from "@/lib/system-settings";
@@ -41,6 +42,9 @@ export default async function UserLayout({ children }: { children: React.ReactNo
     );
   }
 
+  // Always shown: credits are also spent on AI ornaments in Kanvas, which the AI-design toggle doesn't switch off.
+  const aiCredits = (await getAiQuota(session.user.id, (active.plan ?? "FREE") as PlanType)).remaining;
+
   const switchableList: SwitchableInvitation[] = allInvitations.map((inv) => ({
     id: inv.id,
     title: inv.title,
@@ -65,7 +69,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
         image: session.user.image,
       }}
     >
-      <ActiveInvitationProvider active={activeItem} invitations={switchableList}>
+      <ActiveInvitationProvider active={activeItem} invitations={switchableList} aiCredits={aiCredits}>
         <SidebarProvider style={shellTokens} className={`${studioClass} bg-[#F1ECE3]`}>
           <UserSidebar
             variant="inset"
@@ -77,7 +81,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
             activePlan={activeItem.plan}
             aiDesignEnabled={aiDesignEnabled}
           />
-          <SidebarInset className="bg-[#F7F3EC]">
+          <SidebarInset className="min-w-0 overflow-x-hidden bg-[#F7F3EC]">
             {children}
             <CustomerChatWidget />
           </SidebarInset>

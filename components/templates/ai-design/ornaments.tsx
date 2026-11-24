@@ -1,7 +1,39 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
-import type { AiTheme } from "@/lib/ai-design/schema";
+import { useRef, useState, type ReactNode } from "react";
+import { IconCopy, IconLayersSubtract, IconLock, IconLockOpen, IconRefresh, IconSparkles, IconStackForward, IconTrash } from "@tabler/icons-react";
+import { getPresetOrnament } from "@/lib/ai-design/ornament-library";
+import type { AiTheme, CanvasLayer, CanvasSectionId, LayerAnimation, SectionEntrance } from "@/lib/ai-design/schema";
+import type { WeddingData } from "@/types/wedding";
+import { fontStack } from "./theme";
+
+export interface PaletteDragPayload {
+  kind: "preset" | "image" | "text";
+  value: string;
+  size: number;
+  font?: CanvasLayer["font"];
+  fontWeight?: CanvasLayer["fontWeight"];
+  italic?: boolean;
+  uppercase?: boolean;
+}
+
+export interface CanvasEditorBridge {
+  activeSection: CanvasSectionId;
+  selectedLayerId: string | null;
+  draggingPalette?: PaletteDragPayload | null;
+  onSelectSection: (section: CanvasSectionId) => void;
+  onSelectLayer: (layerId: string | null) => void;
+  onMoveLayer: (layerId: string, x: number, y: number) => void;
+  onResizeLayer?: (layerId: string, size: number) => void;
+  onRotateLayer?: (layerId: string, rotation: number) => void;
+  onLockLayer?: (layerId: string) => void;
+  onDuplicateLayer?: (layerId: string) => void;
+  onDeleteLayer?: (layerId: string) => void;
+  onShiftLayerForward?: (layerId: string) => void;
+  onToggleLayerDepth?: (layerId: string) => void;
+  onDropPaletteItem?: (section: CanvasSectionId, payload: PaletteDragPayload, x: number, y: number) => void;
+  onQuickInsert?: (section: CanvasSectionId) => void;
+}
 
 type Ornament = AiTheme["ornament"];
 
@@ -26,14 +58,14 @@ export function foilTextStyle(theme: AiTheme) {
 
 /** Wraps SVG content with a paint that is either the flat accent or a foil gradient. */
 function Svg({ theme, viewBox, className, children }: { theme: AiTheme; viewBox: string; className?: string; children: (paint: string) => ReactNode }) {
-  const id = useId().replace(/:/g, "");
   const a = theme.palette.accent;
-  const paint = theme.metallic ? `url(#foil-${id})` : "var(--accent)";
+  const foilId = `foil-${a.replace(/[^a-zA-Z0-9]/g, "") || "accent"}`;
+  const paint = theme.metallic ? `url(#${foilId})` : "var(--accent)";
   return (
     <svg viewBox={viewBox} className={className} aria-hidden="true" fill="none">
       {theme.metallic && (
         <defs>
-          <linearGradient id={`foil-${id}`} x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id={foilId} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor={shade(a, -0.25)} />
             <stop offset=".35" stopColor={shade(a, 0.5)} />
             <stop offset=".55" stopColor={a} />
@@ -288,6 +320,575 @@ export function EdgeSprigs({ theme }: { theme: AiTheme }) {
       <div className="animate-uy-sway">
         <Corner theme={theme} className="absolute -right-2 top-0 w-20 h-20 opacity-70 -scale-x-100 rotate-20" />
       </div>
+    </div>
+  );
+}
+
+const LAYER_ANIM_CLASS: Record<LayerAnimation, string> = {
+  none: "",
+  float: "animate-uy-float",
+  sway: "animate-uy-sway",
+  pulse: "animate-uy-pulse-soft",
+  "spin-slow": "animate-uy-spin-slow",
+  "fade-up": "animate-uy-fade-up",
+  "zoom-in": "animate-uy-zoom-in",
+  "slide-left": "animate-uy-slide-left",
+  "slide-right": "animate-uy-slide-right",
+};
+
+const SECTION_ENTRANCE_CLASS: Record<SectionEntrance, string> = {
+  none: "",
+  "fade-up": "animate-uy-fade-up",
+  "zoom-in": "animate-uy-zoom-in",
+  "slide-left": "animate-uy-slide-left",
+  "slide-right": "animate-uy-slide-right",
+};
+
+function resolveFramePhoto(slot: CanvasLayer["frameSlot"], data?: WeddingData): string | undefined {
+  if (!slot || !data) return undefined;
+  if (slot === "bride") return data.bride.photo || undefined;
+  if (slot === "groom") return data.groom.photo || undefined;
+  if (slot === "gallery0") return data.gallery?.[0] || undefined;
+  if (slot === "gallery1") return data.gallery?.[1] || undefined;
+  return data.gallery?.[0] || data.bride.photo || data.groom.photo || undefined;
+}
+
+function LayerVisual({ layer, theme, data }: { layer: CanvasLayer; theme: AiTheme; data?: WeddingData }) {
+  const color = layer.color || theme.palette.accent;
+  const animClass = layer.animation ? LAYER_ANIM_CLASS[layer.animation] : "";
+  const animStyle =
+    layer.animation && layer.animation !== "none"
+      ? {
+          animationDuration: layer.animationDuration ? `${layer.animationDuration}s` : undefined,
+          animationDelay: layer.animationDelay ? `${layer.animationDelay}s` : undefined,
+        }
+      : undefined;
+
+  if (layer.kind === "preset") {
+    const preset = getPresetOrnament(layer.value);
+    if (!preset) return null;
+    if (preset.photoMask) {
+      const boundPhoto = resolveFramePhoto(layer.frameSlot, data);
+      if (boundPhoto) {
+        const radiusClass =
+          preset.photoMask === "circle"
+            ? "rounded-full"
+            : preset.photoMask === "arch"
+              ? "rounded-t-full rounded-b-lg"
+              : preset.photoMask === "rounded"
+                ? "rounded-2xl"
+                : "rounded-sm";
+        return (
+          <div className={`h-full w-full overflow-hidden border border-black/10 ${radiusClass} ${animClass}`} style={animStyle}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={boundPhoto} alt="" className="h-full w-full object-cover select-none" draggable={false} />
+          </div>
+        );
+      }
+    }
+    return (
+      <div className={`h-full w-full ${animClass}`} style={animStyle}>
+        <svg
+          viewBox={preset.viewBox}
+          preserveAspectRatio={preset.stretchable ? "none" : "xMidYMid meet"}
+          className="h-full w-full"
+          style={{ color }}
+          aria-hidden="true"
+          // Safe static SVG paths curated in lib/ai-design/ornament-library.ts
+          dangerouslySetInnerHTML={{ __html: preset.paths }}
+        />
+      </div>
+    );
+  }
+  if (layer.kind === "text") {
+    const weight = layer.fontWeight === "bold" ? 700 : layer.fontWeight === "normal" ? 400 : 500;
+    return (
+      <div className={animClass} style={animStyle}>
+        <span
+          className="block whitespace-pre-wrap select-none"
+          style={{
+            color,
+            backgroundColor: layer.bgColor || "transparent",
+            borderRadius: layer.borderRadius ? `${layer.borderRadius}px` : undefined,
+            padding: layer.bgColor ? "6px 14px" : undefined,
+            fontFamily: layer.font ? `"${layer.font}", serif` : "var(--font-display)",
+            fontSize: `${Math.max(12, Math.round(layer.size * 0.28))}px`,
+            fontWeight: weight,
+            fontStyle: layer.italic ? "italic" : "normal",
+            textTransform: layer.uppercase ? "uppercase" : "none",
+            textAlign: layer.textAlign ?? "center",
+            letterSpacing: layer.letterSpacing !== undefined ? `${layer.letterSpacing}em` : undefined,
+            lineHeight: layer.lineHeight ?? 1.2,
+          }}
+        >
+          {layer.value}
+        </span>
+      </div>
+    );
+  }
+  const src =
+    layer.value.startsWith("data:image/svg+xml") && layer.color
+      ? layer.value.replace(/currentColor/g, encodeURIComponent(layer.color))
+      : layer.value.startsWith("data:image/svg+xml")
+        ? layer.value.replace(/currentColor/g, encodeURIComponent(theme.palette.accent))
+        : layer.value;
+  return (
+    <div className={`h-full w-full ${animClass}`} style={animStyle}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="" className="h-full w-full object-contain select-none" draggable={false} />
+    </div>
+  );
+}
+
+export function CanvasSectionFrame({
+  section,
+  theme,
+  data,
+  canvasEditor,
+  children,
+}: {
+  section: CanvasSectionId;
+  theme: AiTheme;
+  data?: WeddingData;
+  canvasEditor?: CanvasEditorBridge;
+  children: ReactNode;
+}) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ id: string; startClientX: number; startClientY: number; startX: number; startY: number } | null>(null);
+  const resizeRef = useRef<{ id: string; startClientX: number; startSize: number; sign: 1 | -1 } | null>(null);
+  const rotateRef = useRef<{ id: string; centerX: number; centerY: number } | null>(null);
+  const [snapGuides, setSnapGuides] = useState<{ x: boolean; y: boolean }>({ x: false, y: false });
+  const [dropPoint, setDropPoint] = useState<{ x: number; y: number } | null>(null);
+
+  const layers = (theme.layers ?? [])
+    .filter((l) => l.section === section)
+    .map((l, idx) => ({ layer: l, order: l.zIndex ?? idx + 10 }))
+    .sort((a, b) => a.order - b.order)
+    .map((x) => x.layer);
+
+  const behindLayers = layers.filter((l) => (l.zIndex ?? 10) <= 5);
+  const frontLayers = layers.filter((l) => (l.zIndex ?? 10) > 5);
+
+  const isActive = canvasEditor?.activeSection === section;
+  const secStyle = theme.sectionStyles?.[section];
+  const entranceClass = secStyle?.entrance ? SECTION_ENTRANCE_CLASS[secStyle.entrance] : "";
+
+  const sectionInlineStyle: React.CSSProperties | undefined = (() => {
+    if (!secStyle) return undefined;
+    const s: Record<string, string | number | undefined> = {};
+    if (secStyle.background) {
+      s["--bg"] = secStyle.background;
+      s.backgroundColor = secStyle.background;
+      if (secStyle.backgroundEnd) {
+        s.backgroundImage = `linear-gradient(160deg, ${secStyle.background} 0%, ${secStyle.backgroundEnd} 100%)`;
+      }
+    }
+    if (secStyle.surfaceColor) s["--surface"] = secStyle.surfaceColor;
+    if (secStyle.textColor) {
+      s["--ink"] = secStyle.textColor;
+      s["--muted"] = `color-mix(in srgb, ${secStyle.textColor} 72%, transparent)`;
+      s.color = secStyle.textColor;
+    }
+    if (secStyle.accentColor) {
+      s["--accent"] = secStyle.accentColor;
+      s["--accent-soft"] = `color-mix(in srgb, ${secStyle.accentColor} 14%, transparent)`;
+    }
+    if (secStyle.displayFont) {
+      s["--font-display"] = fontStack(secStyle.displayFont);
+      s["--font-names"] = fontStack(secStyle.displayFont);
+    }
+    if (secStyle.bodyFont) {
+      s["--font-body"] = fontStack(secStyle.bodyFont);
+      s.fontFamily = fontStack(secStyle.bodyFont);
+    }
+    if (secStyle.minHeight) s.minHeight = `${secStyle.minHeight}px`;
+    return Object.keys(s).length ? (s as React.CSSProperties) : undefined;
+  })();
+
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+  const getRelPoint = (clientX: number, clientY: number) => {
+    const box = frameRef.current?.getBoundingClientRect();
+    if (!box || !box.width || !box.height) return { x: 50, y: 30 };
+    let x = Math.round(clamp(((clientX - box.left) / box.width) * 100, 4, 96) * 10) / 10;
+    let y = Math.round(clamp(((clientY - box.top) / box.height) * 100, 4, 96) * 10) / 10;
+    if (Math.abs(x - 50) <= 1.8) x = 50;
+    if (Math.abs(y - 50) <= 1.8) y = 50;
+    return { x, y };
+  };
+
+  const renderLayerItem = (layer: CanvasLayer, idx: number) => {
+    const isSelected = canvasEditor?.selectedLayerId === layer.id;
+    const isBehind = (layer.zIndex ?? 10) <= 5;
+    const transform = `translate(-50%, -50%) rotate(${layer.rotation}deg) scaleX(${layer.flipX ? -1 : 1})`;
+    const boxHeight = layer.kind === "text" ? "auto" : `${Math.round(layer.size * (layer.heightRatio ?? 1))}px`;
+    return (
+      <div
+        key={layer.id}
+        role={canvasEditor ? "button" : undefined}
+        tabIndex={canvasEditor ? 0 : undefined}
+        aria-label={canvasEditor ? `Layer ${layer.kind}` : undefined}
+        onClick={
+          canvasEditor
+            ? (e) => {
+                e.stopPropagation();
+                canvasEditor.onSelectSection(section);
+                canvasEditor.onSelectLayer(layer.id);
+              }
+            : undefined
+        }
+        onPointerDown={
+          canvasEditor
+            ? (e) => {
+                e.stopPropagation();
+                canvasEditor.onSelectSection(section);
+                canvasEditor.onSelectLayer(layer.id);
+                if (layer.locked) return;
+                e.currentTarget.setPointerCapture(e.pointerId);
+                dragRef.current = {
+                  id: layer.id,
+                  startClientX: e.clientX,
+                  startClientY: e.clientY,
+                  startX: layer.x,
+                  startY: layer.y,
+                };
+              }
+            : undefined
+        }
+        onPointerMove={
+          canvasEditor
+            ? (e) => {
+                if (layer.locked) return;
+                const drag = dragRef.current;
+                const box = frameRef.current?.getBoundingClientRect();
+                if (!drag || drag.id !== layer.id || !box || !box.width || !box.height) return;
+                const dxPct = ((e.clientX - drag.startClientX) / box.width) * 100;
+                const dyPct = ((e.clientY - drag.startClientY) / box.height) * 100;
+                let nextX = Math.round(clamp(drag.startX + dxPct, 2, 98) * 10) / 10;
+                let nextY = Math.round(clamp(drag.startY + dyPct, 2, 98) * 10) / 10;
+                const snapX = Math.abs(nextX - 50) <= 1.8;
+                const snapY = Math.abs(nextY - 50) <= 1.8;
+                if (snapX) nextX = 50;
+                if (snapY) nextY = 50;
+                setSnapGuides({ x: snapX, y: snapY });
+                canvasEditor.onMoveLayer(layer.id, nextX, nextY);
+              }
+            : undefined
+        }
+        onPointerUp={
+          canvasEditor
+            ? () => {
+                dragRef.current = null;
+                setSnapGuides({ x: false, y: false });
+              }
+            : undefined
+        }
+        style={{
+          left: `${layer.x}%`,
+          top: `${layer.y}%`,
+          width: layer.kind === "text" ? "auto" : `${layer.size}px`,
+          height: boxHeight,
+          maxWidth: layer.kind === "text" ? "88%" : undefined,
+          opacity: layer.opacity,
+          transform,
+          zIndex: layer.zIndex ?? idx + 1,
+        }}
+        className={`absolute ${
+          canvasEditor
+            ? `pointer-events-auto touch-none ${layer.locked ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${
+                isSelected ? "rounded-sm ring-2 ring-[#8A6A2F]" : "hover:ring-1 hover:ring-[#C9A45C]/70"
+              }`
+            : "pointer-events-none"
+        }`}
+      >
+        <LayerVisual layer={layer} theme={theme} data={data} />
+
+        {canvasEditor && isSelected && (
+          <>
+            {/* Canva-style floating action pill above selected layer */}
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              style={{ transform: `translateX(-50%) rotate(${-layer.rotation}deg) scaleX(${layer.flipX ? -1 : 1})` }}
+              className="absolute -top-11 left-1/2 z-40 flex items-center gap-0.5 rounded-full border border-[#E6DFD3] bg-[#FFFDF9] px-1.5 py-1 text-[#15130F] shadow-md"
+            >
+              {canvasEditor.onLockLayer && (
+                <button
+                  type="button"
+                  title={layer.locked ? "Buka kunci" : "Kunci posisi"}
+                  onClick={() => canvasEditor.onLockLayer?.(layer.id)}
+                  className={`flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6] ${
+                    layer.locked ? "bg-[#F4EAD6] text-[#8A6A2F]" : ""
+                  }`}
+                >
+                  {layer.locked ? <IconLock size={14} /> : <IconLockOpen size={14} />}
+                </button>
+              )}
+              {canvasEditor.onToggleLayerDepth && (
+                <button
+                  type="button"
+                  title={isBehind ? "Pindah ke depan teks" : "Taruh di belakang teks (background)"}
+                  onClick={() => canvasEditor.onToggleLayerDepth?.(layer.id)}
+                  className={`flex h-7 items-center gap-1 rounded-full px-2 text-[10px] font-medium transition hover:bg-[#F4EAD6] ${
+                    isBehind ? "bg-[#F4EAD6] text-[#8A6A2F]" : ""
+                  }`}
+                >
+                  <IconLayersSubtract size={13} />
+                  <span>{isBehind ? "Belakang" : "Depan"}</span>
+                </button>
+              )}
+              {canvasEditor.onShiftLayerForward && (
+                <button
+                  type="button"
+                  title="Majukan layer"
+                  onClick={() => canvasEditor.onShiftLayerForward?.(layer.id)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6]"
+                >
+                  <IconStackForward size={14} />
+                </button>
+              )}
+              {canvasEditor.onDuplicateLayer && (
+                <button
+                  type="button"
+                  title="Duplikat"
+                  onClick={() => canvasEditor.onDuplicateLayer?.(layer.id)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6]"
+                >
+                  <IconCopy size={14} />
+                </button>
+              )}
+              {canvasEditor.onDeleteLayer && !layer.locked && (
+                <button
+                  type="button"
+                  title="Hapus"
+                  onClick={() => canvasEditor.onDeleteLayer?.(layer.id)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-red-600 transition hover:bg-red-50"
+                >
+                  <IconTrash size={14} />
+                </button>
+              )}
+            </div>
+
+            {!layer.locked &&
+              canvasEditor.onResizeLayer &&
+              (
+                [
+                  { key: "tl", pos: "-left-1.5 -top-1.5 cursor-nwse-resize", sign: -1 as const },
+                  { key: "tr", pos: "-right-1.5 -top-1.5 cursor-nesw-resize", sign: 1 as const },
+                  { key: "bl", pos: "-left-1.5 -bottom-1.5 cursor-nesw-resize", sign: -1 as const },
+                  { key: "br", pos: "-right-1.5 -bottom-1.5 cursor-nwse-resize", sign: 1 as const },
+                ] as const
+              ).map((h) => (
+                <button
+                  key={h.key}
+                  type="button"
+                  aria-label="Ubah ukuran layer"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    resizeRef.current = {
+                      id: layer.id,
+                      startClientX: e.clientX,
+                      startSize: layer.size,
+                      sign: h.sign,
+                    };
+                  }}
+                  onPointerMove={(e) => {
+                    const rz = resizeRef.current;
+                    if (!rz || rz.id !== layer.id) return;
+                    const delta = (e.clientX - rz.startClientX) * rz.sign;
+                    const nextSize = Math.round(clamp(rz.startSize + delta * 1.4, 24, 400));
+                    canvasEditor.onResizeLayer?.(layer.id, nextSize);
+                  }}
+                  onPointerUp={(e) => {
+                    e.stopPropagation();
+                    resizeRef.current = null;
+                  }}
+                  className={`absolute ${h.pos} z-30 h-3.5 w-3.5 rounded-full border-2 border-[#8A6A2F] bg-white shadow-sm`}
+                />
+              ))}
+
+            {!layer.locked && canvasEditor.onRotateLayer && (
+              <button
+                type="button"
+                aria-label="Putar layer"
+                title="Seret untuk memutar"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  const parent = e.currentTarget.parentElement;
+                  const rect = parent?.getBoundingClientRect();
+                  if (!rect) return;
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  rotateRef.current = {
+                    id: layer.id,
+                    centerX: rect.left + rect.width / 2,
+                    centerY: rect.top + rect.height / 2,
+                  };
+                }}
+                onPointerMove={(e) => {
+                  const rot = rotateRef.current;
+                  if (!rot || rot.id !== layer.id) return;
+                  const rad = Math.atan2(e.clientY - rot.centerY, e.clientX - rot.centerX);
+                  const deg = Math.round((rad * 180) / Math.PI - 90);
+                  const normalized = ((deg + 180) % 360 + 360) % 360 - 180;
+                  canvasEditor.onRotateLayer?.(layer.id, normalized);
+                }}
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                  rotateRef.current = null;
+                }}
+                className="absolute -bottom-9 left-1/2 z-40 flex h-6 w-6 -translate-x-1/2 cursor-grab items-center justify-center rounded-full border border-[#DFD2BC] bg-white text-[#15130F] shadow-md hover:border-[#8A6A2F] active:cursor-grabbing"
+              >
+                <IconRefresh size={12} />
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div
+      ref={frameRef}
+      data-canvas-section={section}
+      data-clear-decor={secStyle?.clearDecor ? "true" : undefined}
+      data-section-pad={secStyle?.paddingY}
+      data-section-align={secStyle?.textAlign}
+      style={sectionInlineStyle}
+      onDragOver={
+        canvasEditor?.onDropPaletteItem
+          ? (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+              const pt = getRelPoint(e.clientX, e.clientY);
+              setDropPoint(pt);
+            }
+          : undefined
+      }
+      onDragLeave={
+        canvasEditor?.onDropPaletteItem
+          ? (e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                setDropPoint(null);
+              }
+            }
+          : undefined
+      }
+      onDrop={
+        canvasEditor?.onDropPaletteItem
+          ? (e) => {
+              e.preventDefault();
+              const pt = getRelPoint(e.clientX, e.clientY);
+              setDropPoint(null);
+              let payload: PaletteDragPayload | null = null;
+              const raw = e.dataTransfer.getData("application/x-uy-canvas") || e.dataTransfer.getData("text/plain");
+              if (raw && raw.startsWith("{")) {
+                try {
+                  payload = JSON.parse(raw) as PaletteDragPayload;
+                } catch {
+                  payload = null;
+                }
+              }
+              if (!payload && canvasEditor.draggingPalette) {
+                payload = canvasEditor.draggingPalette;
+              }
+              if (payload && payload.value) {
+                canvasEditor.onDropPaletteItem?.(section, payload, pt.x, pt.y);
+              }
+            }
+          : undefined
+      }
+      onClick={
+        canvasEditor
+          ? () => {
+              canvasEditor.onSelectSection(section);
+            }
+          : undefined
+      }
+      className={`relative overflow-hidden ${entranceClass} ${
+        canvasEditor
+          ? dropPoint
+            ? "ring-2 ring-inset ring-dashed ring-[#C9A45C] bg-[#C9A45C]/10"
+            : canvasEditor.draggingPalette
+              ? "ring-1 ring-inset ring-dashed ring-[#C9A45C]/60"
+              : isActive
+                ? "ring-2 ring-inset ring-[#C9A45C] transition-shadow"
+                : "cursor-pointer hover:ring-1 hover:ring-inset hover:ring-[#C9A45C]/50"
+          : ""
+      }`}
+    >
+      {secStyle?.backgroundImage && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={secStyle.backgroundImage}
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundColor: secStyle.background || "var(--bg)",
+              opacity: secStyle.overlayOpacity ?? 0.35,
+            }}
+          />
+        </>
+      )}
+
+      {behindLayers.length > 0 && (
+        <div className="pointer-events-none absolute inset-0 z-[5]">
+          {behindLayers.map(renderLayerItem)}
+        </div>
+      )}
+
+      <div className={canvasEditor ? "relative z-10 pointer-events-none select-none" : "relative z-10"}>{children}</div>
+
+      {canvasEditor && snapGuides.x && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-1/2 z-30 w-px -translate-x-1/2 bg-[#C9A45C]/80" />
+      )}
+      {canvasEditor && snapGuides.y && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 z-30 h-px -translate-y-1/2 bg-[#C9A45C]/80" />
+      )}
+
+      {frontLayers.length > 0 && (
+        <div className="pointer-events-none absolute inset-0 z-20">
+          {frontLayers.map(renderLayerItem)}
+        </div>
+      )}
+
+      {canvasEditor && dropPoint && (
+        <div
+          aria-hidden="true"
+          style={{ left: `${dropPoint.x}%`, top: `${dropPoint.y}%` }}
+          className="pointer-events-none absolute z-30 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full bg-[#8A6A2F] px-2.5 py-1 text-[10px] font-semibold text-white shadow-md"
+        >
+          Lepas di sini
+        </div>
+      )}
+
+      {canvasEditor && isActive && !dropPoint && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute right-2 top-2 z-30 flex items-center gap-1 rounded-full border border-[#DFD2BC] bg-[#FFFDF9]/95 px-2 py-0.5 text-[10px] font-medium text-[#15130F] shadow-sm backdrop-blur-xs"
+        >
+          <span className="font-semibold uppercase tracking-wider text-[#8A6A2F]">{section}</span>
+          {canvasEditor.onQuickInsert && (
+            <button
+              type="button"
+              title="Hias elemen di section ini"
+              onClick={() => canvasEditor.onQuickInsert?.(section)}
+              className="inline-flex items-center gap-0.5 rounded-full bg-[#FBF6EB] px-1.5 py-0.5 text-[10px] font-medium text-[#8A6A2F] hover:bg-[#F3E9D2]"
+            >
+              <IconSparkles size={10} /> Hias
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

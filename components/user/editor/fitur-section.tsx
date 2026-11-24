@@ -90,9 +90,9 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                 >
                   <IconTrash className="h-4 w-4" />
                 </button>
-                <div className="grid grid-cols-1 gap-3 pr-8 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Bank / E-Wallet</Label>
+                <div className="grid grid-cols-1 gap-3 pr-8 @md:grid-cols-2">
+                  <label className="block space-y-1.5">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Bank / E-Wallet</span>
                     <Input
                       value={account.bankName}
                       onChange={(e) => {
@@ -103,9 +103,9 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                       placeholder="BCA / Mandiri / GoPay"
                       className="h-10 rounded-xl border-[#E1D8C9] bg-[#F7F3EC]/40"
                     />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Atas Nama</Label>
+                  </label>
+                  <label className="block space-y-1.5">
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Atas Nama</span>
                     <Input
                       value={account.accountHolder}
                       onChange={(e) => {
@@ -116,10 +116,10 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                       placeholder="Nama pemilik rekening"
                       className="h-10 rounded-xl border-[#E1D8C9] bg-[#F7F3EC]/40"
                     />
-                  </div>
+                  </label>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nomor Rekening</Label>
+                <label className="block space-y-1.5">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nomor Rekening</span>
                   <Input
                     value={account.accountNumber}
                     onChange={(e) => {
@@ -130,7 +130,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                     placeholder="1234567890"
                     className="h-10 rounded-xl border-[#E1D8C9] bg-[#F7F3EC]/40"
                   />
-                </div>
+                </label>
               </div>
             ))}
             <Button
@@ -163,15 +163,15 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Label Section</Label>
+        <label className="block space-y-1.5">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Label Section</span>
           <Input
             value={data.extendedFamily?.title || ""}
             onChange={(e) => setData((prev) => ({ ...prev, extendedFamily: { ...prev.extendedFamily!, title: e.target.value } }))}
             placeholder="Turut Mengundang / Kel. Besar"
             className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
           />
-        </div>
+        </label>
 
         <div className="space-y-2.5">
           <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama-nama Keluarga</Label>
@@ -230,17 +230,17 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Judul Cerita</Label>
+        <label className="block space-y-1.5">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Judul Cerita</span>
           <Input
             value={data.story.title || ""}
             onChange={(e) => handleUpdate("story", "title", e.target.value)}
             placeholder="Awal Bertemu..."
             className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
           />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Isi Cerita</Label>
+        </label>
+        <label className="block space-y-1.5">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Isi Cerita</span>
           <Textarea
             value={data.story.content || ""}
             onChange={(e) => handleUpdate("story", "content", e.target.value)}
@@ -248,7 +248,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
             placeholder="Tuliskan kisah singkat perjalanan cinta kalian..."
             className="rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
           />
-        </div>
+        </label>
       </section>
     </div>
   );

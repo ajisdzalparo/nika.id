@@ -351,6 +351,7 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
                 onChangeType("upload");
                 onChangeUrl(e.target.value);
               }}
+              aria-label="URL file audio"
               placeholder="https://.../lagu.mp3"
               className="mt-2 h-10 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
             />

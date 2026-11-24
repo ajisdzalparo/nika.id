@@ -150,7 +150,7 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
       {
         question: "Berapa lama undangan aktif?",
         answer:
-          "Masa aktif mengikuti paket yang dipilih, dari beberapa bulan hingga selamanya.",
+          "Masa aktif mengikuti paket yang dipilih, dari 3 bulan hingga 1 tahun.",
       },
       {
         question: "Apakah bisa memakai lagu sendiri?",

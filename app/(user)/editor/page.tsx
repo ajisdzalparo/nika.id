@@ -24,7 +24,7 @@ export default async function EditorPage() {
               Mengedit undangan: <strong className="font-medium text-[#1E1B17]">{invitation.title}</strong>{" "}
               {invitation.slug && <span className="text-xs">(/{invitation.slug})</span>}
             </span>
-            <Link href="/undangan" className="text-xs font-medium text-[#8A6A2F] hover:underline">
+            <Link href="/undangan" className="inline-flex min-h-10 items-center text-xs font-medium text-[#8A6A2F] hover:underline">
               Ganti / kelola daftar undangan →
             </Link>
           </div>

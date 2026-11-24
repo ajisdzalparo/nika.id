@@ -1,0 +1,311 @@
+// Snapshot of the schema at the 20261123000000_baseline migration.
+// Used ONCE by scripts/db-migrate.mjs to bring databases created with `prisma db push`
+// up to the baseline before recording it as applied. Do not edit; change schema.prisma instead.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  HEMAT
+  PREMIUM
+  EKSKLUSIF
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  emailVerified  Boolean   @default(false)
+  name           String?
+  image          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  invitationSlug String?   @unique
+  partnerName    String?
+  weddingDate    DateTime?
+  role           String    @default("USER")
+  banned         Boolean   @default(false)
+  views          Int       @default(0)
+  templateSlug   String?
+  plan            Plan      @default(FREE)
+  planExpiresAt   DateTime?
+  extraGuestQuota Int       @default(0)
+
+  activeAiDesignId String?
+
+  accounts     Account[]
+  aiDesigns    AiDesign[]
+  guests       Guest[]
+  messages     GuestMessage[]
+  invitations   Invitation[]
+  rsvps         RSVP[]
+  sessions      Session[]
+  supportThread SupportThread?
+  transactions  Transaction[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  token     String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                   String    @id @default(cuid())
+  userId               String
+  accountId            String
+  providerId           String
+  accessToken          String?   @db.Text
+  refreshToken         String?   @db.Text
+  idToken              String?   @db.Text
+  accessTokenExpiresAt DateTime?
+  scope                String?
+  expiresAt            DateTime?
+  password             String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+}
+
+model Invitation {
+  id               String         @id @default(cuid())
+  userId           String
+  slug             String?        @unique
+  title            String         @default("Undangan Pernikahan")
+  weddingDate      DateTime?
+  templateSlug     String?
+  activeAiDesignId String?
+  plan             Plan           @default(FREE)
+  planExpiresAt    DateTime?
+  extraGuestQuota  Int            @default(0)
+  views            Int            @default(0)
+  isPublic         Boolean        @default(true)
+  data             Json           @default("{}")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guests           Guest[]
+  rsvps            RSVP[]
+  messages         GuestMessage[]
+  transactions     Transaction[]
+  visitLogs        InvitationVisit[]
+
+  @@index([userId])
+}
+
+model InvitationVisit {
+  id           String     @id @default(cuid())
+  invitationId String
+  device       String     @default("mobile") // "mobile" | "desktop"
+  createdAt    DateTime   @default(now())
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([invitationId, createdAt])
+}
+
+model Guest {
+  id           String      @id @default(cuid())
+  userId       String
+  invitationId String?
+  name         String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([invitationId])
+}
+
+model RSVP {
+  id           String      @id @default(cuid())
+  userId       String
+  invitationId String?
+  guestName    String
+  attendance   String
+  guests       Int         @default(1)
+  createdAt    DateTime    @default(now())
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([invitationId])
+}
+
+model GuestMessage {
+  id           String      @id @default(cuid())
+  userId       String
+  invitationId String?
+  guestName    String
+  message      String
+  status       String      @default("PENDING")
+  createdAt    DateTime    @default(now())
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([invitationId])
+  @@index([status])
+}
+
+model Transaction {
+  id            String      @id @default(cuid())
+  userId        String
+  invitationId  String?
+  amount        Int
+  status        String      @default("PENDING") // PENDING, SUCCESS, FAILED
+  kind          String      @default("PLAN") // PLAN | GUEST_ADDON
+  addonUnits    Int         @default(0)
+  snapToken     String?
+  plan          String? // HEMAT, PREMIUM, EKSKLUSIF
+  paymentProof  String? // URL to the uploaded image (for manual)
+  paymentMethod String?
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation    Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([invitationId])
+  @@index([status])
+}
+
+model AiDesign {
+  id        String   @id @default(cuid())
+  userId    String
+  source    String   @default("AI") // AI (counts toward quota) | CATALOG (picked from the template catalog)
+  prompt    String   @db.Text
+  theme     Json
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Template catalog managed from the admin CMS.
+model CatalogTemplate {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String   @default("")
+  category      String
+  tier          String   @default("Gratis") // Gratis | Premium
+  kind          String   @default("ENGINE") // ENGINE: theme JSON rendered by the AI theme engine; CODE: component in components/templates
+  theme         Json?
+  defaultMusic  Json? // { type: "youtube" | "upload", url: string, title?: string }
+  componentSlug String?
+  thumbnail     String?
+  referenceUrl  String? // inspiration note for admins, never shown publicly
+  isActive      Boolean  @default(true)
+  isFeatured    Boolean  @default(false)
+  isNew         Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  usageCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+/// Default background music presets curated and toggled by superadmin.
+model DefaultMusic {
+  id        String   @id @default(cuid())
+  title     String
+  artist    String   @default("")
+  type      String   @default("upload") // youtube | upload
+  url       String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  audience  String   // "USER" | "ADMIN" | "ALL_USERS"
+  userId    String?  // targeted user ID when audience = "USER"
+  type      String   // "TEMPLATE" | "TRANSACTION" | "RSVP" | "SYSTEM"
+  title     String
+  message   String
+  href      String?
+  createdAt DateTime @default(now())
+
+  reads NotificationRead[]
+
+  @@index([audience, userId, createdAt])
+  @@index([createdAt])
+}
+
+model NotificationRead {
+  notificationId String
+  userId         String
+  readAt         DateTime @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@id([notificationId, userId])
+  @@index([userId])
+}
+
+model SupportThread {
+  id            String           @id @default(cuid())
+  userId        String           @unique
+  mode          String           @default("AI") // "AI" | "ADMIN"
+  status        String           @default("OPEN") // "OPEN" | "RESOLVED"
+  lastMessageAt DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      SupportMessage[]
+
+  @@index([mode, lastMessageAt])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  threadId  String
+  sender    String        // "USER" | "AI" | "ADMIN" | "SYSTEM"
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+  thread    SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}

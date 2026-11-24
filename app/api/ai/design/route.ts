@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
-import type { PlanType } from "@/lib/limits";
-import { getAiQuota } from "@/lib/ai-design/server";
+import { AI_CREDIT_COST_REFERENCE, AI_CREDIT_COST_STANDARD, type PlanType } from "@/lib/limits";
+import { AiQuotaExceededError, getAiQuota, saveGeneratedAiDesign } from "@/lib/ai-design/server";
 import { generateAiTheme, AiDesignError } from "@/lib/ai-design/generate";
 import { normalizeTheme } from "@/lib/ai-design/color";
 import { isAiDesignEnabled } from "@/lib/system-settings";
@@ -21,7 +21,10 @@ export async function GET(request: Request) {
   try {
     const { userId, invitation } = await loadContext(request);
     const [designs, quota, enabled] = await Promise.all([
-      prisma.aiDesign.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
+      prisma.aiDesign.findMany({
+        where: { userId, source: { in: ["AI", "CANVAS", "CATALOG"] } },
+        orderBy: { createdAt: "desc" },
+      }),
       getAiQuota(userId, invitation.plan as PlanType),
       isAiDesignEnabled(),
     ]);
@@ -39,7 +42,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST /api/ai/design { prompt } — generate a new theme (uses one quota)
+// POST /api/ai/design { prompt } — generate a new theme (1 credit, or 2 credits with reference screenshots)
 export async function POST(request: Request) {
   try {
     const { userId, invitation } = await loadContext(request);
@@ -57,9 +60,21 @@ export async function POST(request: Request) {
     if (prompt.length < 8 && !references.length) return NextResponse.json({ error: "PROMPT_TOO_SHORT", message: "Ceritakan gaya yang diinginkan minimal beberapa kata." }, { status: 400 });
     if (prompt.length > MAX_PROMPT) return NextResponse.json({ error: "PROMPT_TOO_LONG", message: `Maksimal ${MAX_PROMPT} karakter.` }, { status: 400 });
 
-    const quota = await getAiQuota(userId, invitation.plan as PlanType);
-    if (quota.remaining <= 0) {
-      return NextResponse.json({ error: "QUOTA_EXCEEDED", message: "Kuota desain AI paket Anda sudah habis.", quota }, { status: 402 });
+    const cost = references.length > 0 ? AI_CREDIT_COST_REFERENCE : AI_CREDIT_COST_STANDARD;
+    const plan = invitation.plan as PlanType;
+    const quota = await getAiQuota(userId, plan);
+    if (quota.remaining < cost) {
+      return NextResponse.json(
+        {
+          error: "QUOTA_EXCEEDED",
+          message:
+            quota.remaining === 0
+              ? "Kredit desain AI Anda habis. Top-up kredit atau tingkatkan paket untuk melanjutkan."
+              : `Generate dengan screenshot referensi membutuhkan ${cost} kredit, tersisa ${quota.remaining} kredit.`,
+          quota,
+        },
+        { status: 402 },
+      );
     }
 
     const baseRow = baseThemeId ? await prisma.aiDesign.findFirst({ where: { id: baseThemeId, userId }, select: { theme: true } }) : null;
@@ -73,13 +88,22 @@ export async function POST(request: Request) {
       baseTheme,
     );
 
-    const design = await prisma.aiDesign.create({ data: { userId, prompt: prompt || "(dari screenshot referensi)", theme } });
+    const { design, quota: nextQuota } = await saveGeneratedAiDesign({
+      userId,
+      plan,
+      prompt: prompt || "(dari screenshot referensi)",
+      theme,
+      cost,
+    });
 
     return NextResponse.json({
       design: { id: design.id, prompt: design.prompt, createdAt: design.createdAt, theme },
-      quota: { ...quota, used: quota.used + 1, remaining: quota.remaining - 1 },
+      quota: nextQuota,
     });
   } catch (error) {
+    if (error instanceof AiQuotaExceededError) {
+      return NextResponse.json({ error: "QUOTA_EXCEEDED", message: error.message, quota: error.quota }, { status: 402 });
+    }
     if (error instanceof Error && error.message === "Unauthorized") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     if (error instanceof AiDesignError) {
       const status = error.code === "NOT_CONFIGURED" ? 503 : error.code === "RATE_LIMITED" ? 429 : error.code === "REFUSED" ? 422 : error.code === "BAD_REFERENCE" ? 400 : 502;

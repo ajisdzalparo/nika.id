@@ -94,4 +94,10 @@ export interface WeddingData {
   aiTheme?: AiTheme;
   // Guest wishes shown under the RSVP form (latest first, rejected ones excluded)
   wishes?: Wish[];
+  // Agency branding when the owner is an active B2B Mitra
+  agencyBranding?: {
+    name: string;
+    instagram?: string | null;
+    whatsapp?: string | null;
+  } | null;
 }

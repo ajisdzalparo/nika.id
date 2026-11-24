@@ -28,61 +28,61 @@ export function MempelaiSection({ data, handleUpdate, handleFileUpload, renderEx
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_210px] md:items-start">
+        <div className="grid gap-6 @2xl:grid-cols-[minmax(0,1fr)_210px] @2xl:items-start">
           {/* Fields */}
           <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Panggilan</Label>
+            <div className="grid gap-4 @md:grid-cols-2">
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Panggilan</span>
                 <Input
                   value={sectionData.nickname || ""}
                   onChange={(e) => handleUpdate(type, "nickname", e.target.value)}
                   placeholder={`Contoh: ${isGroom ? "Adit" : "Sarah"}`}
                   className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
                 />
-              </div>
+              </label>
 
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Username Instagram</Label>
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Username Instagram</span>
                 <Input
                   value={sectionData.instagram || ""}
                   onChange={(e) => handleUpdate(type, "instagram", e.target.value)}
                   placeholder="@username"
                   className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
                 />
-              </div>
+              </label>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Lengkap</Label>
+            <label className="block space-y-1.5">
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Lengkap</span>
               <Input
                 value={sectionData.fullName || ""}
                 onChange={(e) => handleUpdate(type, "fullName", e.target.value)}
                 placeholder="Nama lengkap beserta gelar"
                 className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
               />
-            </div>
+            </label>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Ayah</Label>
+            <div className="grid gap-4 @md:grid-cols-2">
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Ayah</span>
                 <Input
                   value={sectionData.fatherName || ""}
                   onChange={(e) => handleUpdate(type, "fatherName", e.target.value)}
                   placeholder="Nama Ayah"
                   className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
                 />
-              </div>
+              </label>
 
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Ibu</Label>
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Ibu</span>
                 <Input
                   value={sectionData.motherName || ""}
                   onChange={(e) => handleUpdate(type, "motherName", e.target.value)}
                   placeholder="Nama Ibu"
                   className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
                 />
-              </div>
+              </label>
             </div>
           </div>
 

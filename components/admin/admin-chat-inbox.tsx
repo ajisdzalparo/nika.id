@@ -422,9 +422,10 @@ export function AdminChatInbox({
             <div className="relative">
               <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8C8272]" />
               <input
-                type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                type="search"
+                aria-label="Cari percakapan"
                 placeholder="Cari nama atau email..."
                 className="h-9 w-full rounded-xl border border-[#E1D8C9] bg-white pl-8 pr-3 text-xs text-[#15130F] placeholder:text-[#8C8272] focus:border-[#8A6A2F] focus:outline-none"
               />
@@ -717,6 +718,7 @@ export function AdminChatInbox({
                   </button>
                   <input
                     type="text"
+                    aria-label="Tulis balasan"
                     value={reply}
                     onChange={(e) => handleReplyChange(e.target.value)}
                     onPaste={handlePaste}

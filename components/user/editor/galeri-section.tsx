@@ -56,7 +56,7 @@ export function GaleriSection({ data, setData, renderExtraFields }: GaleriSectio
               Foto Galeri ({(data.gallery || []).length})
             </Label>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 @md:grid-cols-3 @2xl:grid-cols-4">
             {(data.gallery || []).map((photo, index) => (
               <div key={index} className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[#E1D8C9] bg-[#FFFDF9]">
                 <img src={photo} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" alt={`Galeri ${index + 1}`} />

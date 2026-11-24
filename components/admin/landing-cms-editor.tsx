@@ -184,7 +184,7 @@ export function LandingCmsEditor({ initialContent }: { initialContent: LandingCo
                 <div key={i} className="space-y-2 rounded-xl border p-3">
                   <Input
                     value={h.title}
-                    placeholder="Judul singkat"
+                    aria-label="Judul" placeholder="Judul singkat"
                     onChange={(e) =>
                       setContent((c) => ({
                         ...c,
@@ -200,7 +200,7 @@ export function LandingCmsEditor({ initialContent }: { initialContent: LandingCo
                   />
                   <Input
                     value={h.description}
-                    placeholder="Keterangan"
+                    aria-label="Keterangan" placeholder="Keterangan"
                     onChange={(e) =>
                       setContent((c) => ({
                         ...c,

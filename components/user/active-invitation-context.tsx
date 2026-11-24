@@ -29,6 +29,8 @@ interface ActiveInvitationContextValue {
   invitations: SwitchableInvitation[];
   switchingId: string | null;
   switchInvitation: (id: string) => Promise<void>;
+  /** Remaining AI credits (plan + top-up); null when AI design is disabled. */
+  aiCredits: number | null;
 }
 
 const ActiveInvitationContext = createContext<ActiveInvitationContextValue | null>(null);
@@ -39,10 +41,12 @@ const useHydrated = () => useSyncExternalStore(subscribe, () => true, () => fals
 export function ActiveInvitationProvider({
   active,
   invitations,
+  aiCredits = null,
   children,
 }: {
   active: SwitchableInvitation;
   invitations: SwitchableInvitation[];
+  aiCredits?: number | null;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -72,7 +76,7 @@ export function ActiveInvitationProvider({
   };
 
   return (
-    <ActiveInvitationContext.Provider value={{ active, invitations, switchingId, switchInvitation }}>
+    <ActiveInvitationContext.Provider value={{ active, invitations, switchingId, switchInvitation, aiCredits }}>
       {children}
     </ActiveInvitationContext.Provider>
   );

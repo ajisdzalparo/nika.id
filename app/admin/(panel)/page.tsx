@@ -89,8 +89,9 @@ export default async function AdminDashboardPage() {
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
-              <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
-              <p className="text-muted-foreground">Statistik dan monitoring sistem UNDANGIN YUK</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">Panel admin</p>
+              <h1 className="mt-1 font-serif text-4xl font-medium text-[#1E1B17]">Ringkasan</h1>
+              <p className="mt-1 text-[15px] text-[#6B6358]">Statistik dan pantauan sistem UNDANGIN YUK.</p>
             </div>
 
             {pendingProofCount > 0 && (
@@ -115,38 +116,39 @@ export default async function AdminDashboardPage() {
 
             <SectionCards stats={stats} />
 
-            <div className="grid gap-4 px-4 lg:grid-cols-7 lg:px-6">
-              <Card className="col-span-4">
-                <CardHeader>
-                  <CardTitle>Grafik Trafik Kunjungan Tamu</CardTitle>
-                  <CardDescription>Visualisasi data pengunjung dari undangan yang aktif</CardDescription>
-                </CardHeader>
-                <CardContent className="pl-2">
-                  <ChartAreaInteractive data={traffic.series} totalViews={traffic.totalViews} />
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @5xl/main:grid-cols-7">
+              {/* The chart renders its own card (title + range picker), so no extra wrapper */}
+              <div className="min-w-0 @5xl/main:col-span-4">
+                <ChartAreaInteractive data={traffic.series} totalViews={traffic.totalViews} />
+              </div>
 
-              <Card className="col-span-3">
+              <Card className="min-w-0 @5xl/main:col-span-3">
                 <CardHeader>
-                  <CardTitle>Log Aktivitas Sistem Terbaru</CardTitle>
-                  <CardDescription>5 User terbaru yang mendaftar</CardDescription>
+                  <CardTitle>Pendaftar terbaru</CardTitle>
+                  <CardDescription>5 akun pasangan yang terakhir mendaftar</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-8">
-                    {latestUsers.map((user) => (
-                      <div key={user.id} className="flex items-center">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={user.image || "/avatars/01.png"} alt="Avatar" />
-                          <AvatarFallback>{user.name?.[0] || "U"}</AvatarFallback>
-                        </Avatar>
-                        <div className="ml-4 space-y-1">
-                          <p className="text-sm font-medium leading-none">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                        </div>
-                        <div className="ml-auto font-medium text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString()}</div>
-                      </div>
-                    ))}
-                  </div>
+                  {latestUsers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Belum ada pendaftar.</p>
+                  ) : (
+                    <ul className="divide-y divide-[#EDE6DA]">
+                      {latestUsers.map((user) => (
+                        <li key={user.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                          <Avatar className="h-9 w-9 shrink-0">
+                            <AvatarImage src={user.image || undefined} alt="" />
+                            <AvatarFallback className="bg-[#E6DECF] text-xs">{user.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{user.name}</p>
+                            <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                          </div>
+                          <time className="shrink-0 text-xs tabular-nums text-muted-foreground" dateTime={new Date(user.createdAt).toISOString()}>
+                            {new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(new Date(user.createdAt))}
+                          </time>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </CardContent>
               </Card>
             </div>

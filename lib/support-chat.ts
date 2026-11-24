@@ -373,7 +373,7 @@ function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisito
     };
   }
 
-  if (/(harga|paket|biaya|hemat|premium|eksklusif|upgrade|selisih|addon|add-on|kuota tamu)/.test(q)) {
+  if (/(harga|paket|biaya|hemat|premium|eksklusif|upgrade|selisih|addon|add-on|kuota tamu|kredit|top-up|topup|mitra|agency|b2b|referral|komisi)/.test(q)) {
     const statusNote = isPublicVisitor
       ? "Kamu bisa daftar gratis untuk merancang undanganmu dulu, dan baru bayar saat siap dibagikan di /register."
       : plan === "EKSKLUSIF"
@@ -383,7 +383,7 @@ function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisito
           : `Paket aktifmu saat ini **${PLAN_LIMITS[plan].name}**. Upgrade ke paket lebih tinggi cukup membayar selisih harganya di /upgrade.`;
 
     return {
-      reply: `Daftar paket UNDANGIN YUK (sekali bayar per undangan):\n• **Hemat (Rp49.000)**: 100 tamu, 10 foto, 1× Desain AI, aktif 90 hari.\n• **Premium (Rp79.000)**: 300 tamu, 20 foto, 5× Desain AI, template Premium & Kisah Cinta, aktif 180 hari.\n• **Eksklusif (Rp99.000)**: Tamu & galeri tanpa batas, 10× Desain AI, Video, Tanpa Watermark, aktif selamanya.\n• **Add-on Tamu**: +${GUEST_ADDON_SIZE} tamu seharga Rp${GUEST_ADDON_PRICE.toLocaleString("id-ID")}.\n\n${statusNote}`,
+      reply: `Daftar paket UNDANGIN YUK (sekali bayar per undangan):\n• **Hemat (Rp49.000)**: 100 tamu, 10 foto, 1× Desain AI, aktif 90 hari.\n• **Premium (Rp79.000)**: 300 tamu, 20 foto, 5× Desain AI, template Premium & Kisah Cinta, aktif 180 hari.\n• **Eksklusif (Rp99.000)**: Tamu & galeri tanpa batas, 10× Desain AI, Video, Tanpa Watermark, aktif 1 tahun.\n• **Add-on Tamu**: +${GUEST_ADDON_SIZE} tamu seharga Rp${GUEST_ADDON_PRICE.toLocaleString("id-ID")}.\n• **Top-up Kredit AI**: 10 kredit Rp29.000 · 30 kredit Rp75.000 · 100 kredit Rp229.000 (1 generate = 1 kredit, dengan referensi = 2 kredit).\n• **Mitra B2B (/mitra)**: Paket grosir Mitra 10 (Rp299rb), Mitra 30 (Rp749rb), Mitra 100 (Rp1,99jt) + link isi data klien tanpa login.\n• **Referral (/dompet)**: Teman dapat diskon 10% (maks Rp15rb), kamu dapat komisi 15% (maks Rp100rb per transaksi; tidak berlaku untuk top-up Kredit AI & template marketplace).\n\n${statusNote}`,
       suggestAdmin: false,
     };
   }
@@ -482,7 +482,7 @@ export async function generateSupportAiReply(params: {
             "Fakta layanan:",
             "- Paket Hemat: Rp49.000 (90 hari, 100 tamu, 10 foto, 1x Desain AI, template Gratis).",
             "- Paket Premium: Rp79.000 (180 hari, 300 tamu, 20 foto, 5x Desain AI, template Gratis & Premium, Kisah Cinta).",
-            "- Paket Eksklusif: Rp99.000 (Aktif selamanya, tamu & foto tanpa batas, 10x Desain AI, Video, Tanpa Watermark).",
+            "- Paket Eksklusif: Rp99.000 (Aktif 1 tahun, tamu & foto tanpa batas, 10x Desain AI, Video, Tanpa Watermark).",
             "- Add-on +100 tamu: Rp15.000.",
             "- Upgrade dari paket lebih rendah cukup bayar selisih harga.",
             "- Pembayaran: Bayar Otomatis via Midtrans Snap (Virtual Account, QRIS, e-wallet, kartu) dan Transfer / QRIS Manual.",

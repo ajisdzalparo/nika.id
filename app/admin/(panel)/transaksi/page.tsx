@@ -5,6 +5,9 @@ import { TransactionsClient } from "@/components/admin/transaksi-client";
 interface TransactionWithUser {
   id: string;
   userId: string;
+  kind: string;
+  addonUnits: number;
+  plan: string | null;
   amount: number;
   status: string;
   paymentProof: string | null;
@@ -46,7 +49,7 @@ export default async function TransaksiPage() {
       <div className="flex flex-1 flex-col">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
           <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-bold tracking-tight">Manajemen Transaksi</h1>
+            <h1 className="font-serif text-4xl font-medium text-[#1E1B17]">Transaksi</h1>
             <p className="text-muted-foreground">Verifikasi pembayaran dan pantau pendapatan</p>
           </div>
 

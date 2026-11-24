@@ -171,22 +171,50 @@ export function Collection({ items }: { items: CatalogItem[] }) {
     };
   }, [cat, totalSlides]);
 
+  // Autoplay runs only while the carousel is on screen and the visitor hasn't asked for less motion
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    if (paused || totalSlides < 2) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    const el = sectionRef.current;
+    const io = el ? new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { threshold: 0.35 }) : null;
+    if (el && io) io.observe(el);
+    return () => {
+      mq.removeEventListener("change", sync);
+      io?.disconnect();
+      if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    };
+  }, []);
+
+  // Touch pauses, then autoplay picks up again a few seconds after the finger lifts
+  const pauseForTouch = () => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    setPaused(true);
+  };
+  const resumeAfterTouch = () => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => setPaused(false), 6000);
+  };
+
+  useEffect(() => {
+    if (paused || !inView || reducedMotion || totalSlides < 2) return;
     const id = setInterval(() => {
-      scrollToSlide((activeSlide + 1) % totalSlides);
-    }, 5500);
+      const track = trackRef.current;
+      // Once the last cards are fully visible the track can't move further: loop back to the start
+      const atEnd = track ? track.scrollLeft + track.clientWidth >= track.scrollWidth - 8 : false;
+      scrollToSlide(atEnd ? 0 : activeSlide + 1);
+    }, 5000);
     return () => clearInterval(id);
-  }, [paused, activeSlide, totalSlides, scrollToSlide]);
+  }, [paused, inView, reducedMotion, activeSlide, totalSlides, scrollToSlide]);
 
   return (
-    <section
-      id="koleksi"
-      className="scroll-mt-16 py-24 md:py-32"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
-    >
+    <section ref={sectionRef} id="koleksi" className="scroll-mt-16 py-24 md:py-32">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <Reveal className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="max-w-xl space-y-4">
@@ -217,6 +245,12 @@ export function Collection({ items }: { items: CatalogItem[] }) {
       <div className="relative mx-auto mt-10 max-w-6xl">
         <div
           ref={trackRef}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={() => setPaused(false)}
+          onTouchStart={pauseForTouch}
+          onTouchEnd={resumeAfterTouch}
           className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-4 pb-6 pt-2 [scrollbar-width:none] md:px-6"
         >
           {cat === "Semua" && (
@@ -489,6 +523,129 @@ export function Pricing() {
   );
 }
 
+// ─── Mitra / Vendor B2B ──────────────────────────────────────────────────
+
+export interface PartnerVendor {
+  id: string;
+  agencyName: string;
+  agencyLogo: string | null;
+  agencyInstagram: string | null;
+  agencyVerified: boolean;
+}
+
+/** Below this many partners the logos sit still instead of running. */
+const MARQUEE_MIN = 6;
+
+/** One partner in the strip: the logo only (muted until hovered), or the business name as a wordmark when there is no logo. */
+function PartnerLogo({ partner, focusable }: { partner: PartnerVendor; focusable: boolean }) {
+  const mark = partner.agencyLogo ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={partner.agencyLogo}
+      alt={partner.agencyName}
+      loading="lazy"
+      className="h-10 w-auto max-w-[140px] object-contain opacity-60 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0 md:h-12 md:max-w-[160px]"
+    />
+  ) : (
+    <span className="whitespace-nowrap font-(family-name:--font-landing-display) text-2xl font-medium opacity-70 transition duration-300 group-hover:opacity-100 md:text-[1.7rem]" style={{ color: L.ink }}>
+      {partner.agencyName}
+    </span>
+  );
+  const title = partner.agencyVerified ? `${partner.agencyName} · Mitra terverifikasi` : partner.agencyName;
+
+  return partner.agencyInstagram ? (
+    <a
+      href={`https://instagram.com/${partner.agencyInstagram.replace(/^@/, "")}`}
+      target="_blank"
+      rel="noreferrer"
+      title={title}
+      tabIndex={focusable ? undefined : -1}
+      className="group flex h-14 items-center rounded-lg outline-offset-4"
+    >
+      {mark}
+    </a>
+  ) : (
+    <span title={title} className="group flex h-14 items-center">
+      {mark}
+    </span>
+  );
+}
+
+export function PartnerVendors({ partners }: { partners: PartnerVendor[] }) {
+  return (
+    <section id="mitra" className="scroll-mt-16 border-t py-20 md:py-24" style={{ borderColor: L.line }}>
+      <div className="mx-auto max-w-6xl space-y-10 px-4 md:px-6">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div className="space-y-3">
+            <Eyebrow>Mitra &amp; Vendor</Eyebrow>
+            <Display className="text-[2.1rem] sm:text-4xl">Wedding Organizer &amp; vendor rekanan.</Display>
+            <p className="max-w-xl text-[15px]" style={{ color: L.muted }}>
+              Vendor yang terdaftar di program Mitra UNDANGIN YUK otomatis tampil di sini untuk menjangkau lebih banyak calon pengantin.
+            </p>
+          </div>
+          <Link
+            href="/mitra"
+            className="inline-flex h-11 w-fit shrink-0 items-center gap-2 rounded-full border px-5 text-sm font-medium transition-colors hover:bg-black/5"
+            style={{ borderColor: L.line, color: L.ink }}
+          >
+            Gabung jadi Mitra <IconArrowRight size={16} />
+          </Link>
+        </div>
+
+        {partners.length > 0 ? (
+          partners.length >= MARQUEE_MIN ? (
+            // Enough partners: a slow running strip (pauses on hover/focus, static for reduced motion)
+            <div
+              className="uy-marquee-viewport -mx-4 overflow-hidden md:mx-0"
+              style={{
+                maskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+                WebkitMaskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+              }}
+            >
+              <div className="uy-marquee flex w-max" style={{ ["--uy-marquee-duration" as string]: `${Math.max(30, partners.length * 5)}s` }}>
+                {[0, 1].map((copy) => (
+                  <ul key={copy} aria-hidden={copy === 1 ? true : undefined} className="flex shrink-0 items-center gap-14 pr-14">
+                    {partners.map((p) => (
+                      <li key={p.id} className="shrink-0">
+                        <PartnerLogo partner={p} focusable={copy === 0} />
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+              </div>
+            </div>
+          ) : (
+            // Few partners: a calm static row; looping 1–3 logos looks thin
+            <ul className="flex flex-wrap items-center justify-center gap-x-14 gap-y-8 py-2">
+              {partners.map((p) => (
+                <li key={p.id}>
+                  <PartnerLogo partner={p} focusable />
+                </li>
+              ))}
+            </ul>
+          )
+        ) : (
+          <div
+            className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-dashed p-6 sm:flex-row sm:items-center"
+            style={{ borderColor: L.line, background: L.surface }}
+          >
+            <p className="text-sm" style={{ color: L.muted }}>
+              Punya usaha Wedding Organizer, MUA, fotografer, atau percetakan? Daftar di halaman Mitra dan logo usaha Anda otomatis tampil di sini.
+            </p>
+            <Link
+              href="/mitra"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-5 text-xs font-medium"
+              style={{ background: L.ink, color: L.bg }}
+            >
+              Aktifkan Akun Mitra <IconArrowRight size={14} />
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ─── FAQ ─────────────────────────────────────────────────────────────────
 
 export function Faq({ content = DEFAULT_LANDING_CONTENT.faq }: { content?: LandingContent["faq"] }) {
@@ -560,12 +717,12 @@ export function LandingFooter({ content = DEFAULT_LANDING_CONTENT.footer }: { co
             ["Akun", [["Masuk", "/login"], ["Daftar", "/register"]]],
             ["Bantuan", [["FAQ", "/#faq"]]],
           ].map(([title, links]) => (
-            <div key={title as string} className="space-y-3">
-              <p className="font-medium" style={{ color: L.ink }}>
+            <div key={title as string} className="space-y-1">
+              <p className="pb-1 font-medium" style={{ color: L.ink }}>
                 {title as string}
               </p>
               {(links as string[][]).map(([l, h]) => (
-                <Link key={l} href={h} className="block" style={{ color: L.muted }}>
+                <Link key={l} href={h} className="flex min-h-10 items-center transition-colors hover:text-(--ink)" style={{ color: L.muted, ["--ink" as string]: L.ink }}>
                   {l}
                 </Link>
               ))}

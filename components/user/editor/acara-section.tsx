@@ -77,26 +77,26 @@ export function AcaraSection({ data, setData }: AcaraSectionProps) {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Tanggal</Label>
+              <div className="grid grid-cols-1 gap-4 @md:grid-cols-2">
+                <label className="block space-y-1.5">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Tanggal</span>
                   <Input type="date" value={typeof event.date === "string" ? event.date : ""} onChange={(e) => updateEvent(index, "date", e.target.value)} className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Waktu</Label>
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Waktu</span>
                   <Input type="time" value={event.time || ""} onChange={(e) => updateEvent(index, "time", e.target.value)} className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
-                </div>
+                </label>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Tempat / Gedung</Label>
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Tempat / Gedung</span>
                 <Input value={event.venue || ""} onChange={(e) => updateEvent(index, "venue", e.target.value)} placeholder="Gedung Serbaguna / Kediaman Mempelai" className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
-              </div>
+              </label>
 
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Alamat Lengkap</Label>
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Alamat Lengkap</span>
                 <Textarea value={event.address || ""} onChange={(e) => updateEvent(index, "address", e.target.value)} placeholder="Jl. Merdeka No. 1, Bandung" className="min-h-20 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
-              </div>
+              </label>
 
               <div className="space-y-2 pt-1">
                 <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">
@@ -136,15 +136,15 @@ export function AcaraSection({ data, setData }: AcaraSectionProps) {
           </div>
 
           {data.streaming?.enabled && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Platform</Label>
+            <div className="grid grid-cols-1 gap-3 @md:grid-cols-2">
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Platform</span>
                 <Input value={data.streaming.platform || ""} onChange={(e) => setData((prev) => ({ ...prev, streaming: { ...prev.streaming!, platform: e.target.value } }))} placeholder="Zoom / YouTube / IG Live" className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Link Streaming</Label>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Link Streaming</span>
                 <Input value={data.streaming.url || ""} onChange={(e) => setData((prev) => ({ ...prev, streaming: { ...prev.streaming!, url: e.target.value } }))} placeholder="https://..." className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]" />
-              </div>
+              </label>
             </div>
           )}
 

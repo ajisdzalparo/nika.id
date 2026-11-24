@@ -172,9 +172,9 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
   };
 
   return (
-    <div className="relative flex flex-col gap-6 lg:flex-row lg:gap-8">
+    <div className="relative flex flex-col gap-6 xl:flex-row xl:gap-8">
       {/* Mobile Horizontal Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] lg:hidden">
+      <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] xl:hidden">
         {SECTIONS.map((section, idx) => {
           const active = activeSection === section.id;
           return (
@@ -195,7 +195,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
       </div>
 
       {/* Desktop Sidebar Navigation */}
-      <aside className="hidden lg:block lg:w-64 shrink-0 lg:sticky lg:top-24 self-start space-y-4">
+      <aside className="hidden xl:block xl:w-64 shrink-0 xl:sticky xl:top-24 self-start space-y-4">
         <div className="rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-3">
           <h2 className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8C8272]">Navigasi</h2>
           <nav className="flex flex-col gap-1.5">
@@ -238,7 +238,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0">
+      <main className="@container flex-1 min-w-0">
         <div className="rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-7">
           <div className="mb-7 flex flex-col justify-between gap-4 border-b border-[#E1D8C9] pb-5 sm:flex-row sm:items-end">
             <div>
@@ -253,7 +253,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
                 {activeSection === "fitur" && "Atur musik latar (YouTube atau S3), amplop digital, turut mengundang, dan kisah cinta."}
               </p>
             </div>
-            <Button onClick={onSave} disabled={loading} className="h-11 shrink-0 rounded-full bg-[#1E1B17] px-6 text-[#F7F3EC] hover:bg-[#2E2A24] lg:hidden">
+            <Button onClick={onSave} disabled={loading} className="h-11 shrink-0 rounded-full bg-[#1E1B17] px-6 text-[#F7F3EC] hover:bg-[#2E2A24] xl:hidden">
               {loading ? <IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> : <IconDeviceFloppy className="mr-2 h-4 w-4" />}
               {loading ? "Menyimpan..." : "Simpan"}
             </Button>

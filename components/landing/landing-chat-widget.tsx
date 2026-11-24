@@ -1,5 +1,6 @@
 "use client";
 
+import { waLink } from "@/lib/phone";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -103,9 +104,7 @@ export function LandingChatWidget({ whatsapp }: { whatsapp: string | null }) {
     await sendMessage(text);
   };
 
-  const waHref = whatsapp
-    ? `https://wa.me/${whatsapp}?text=${encodeURIComponent("Halo admin UNDANGIN YUK, saya mau tanya tentang undangan digital.")}`
-    : null;
+  const waHref = waLink(whatsapp, "Halo admin UNDANGIN YUK, saya mau tanya tentang undangan digital.");
 
   return (
     <div className="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-3 md:bottom-6 md:right-6">

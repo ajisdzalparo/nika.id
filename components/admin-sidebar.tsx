@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
+import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon, IconReportMoney, IconMessageCircleHeart, IconTicket } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
 import {
@@ -31,7 +31,10 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
       { title: "Pengguna", url: "/admin/users", icon: IconUsers },
       { title: "Moderasi Ucapan", url: "/admin/moderasi", icon: IconMessage },
       { title: "Transaksi", url: "/admin/transaksi", icon: IconCurrencyDollar },
+      { title: "Keuangan", url: "/admin/keuangan", icon: IconReportMoney },
+      { title: "Kode Promo", url: "/admin/promo", icon: IconTicket },
       { title: "Customer Chat", url: "/admin/chat", icon: IconHeadset },
+      { title: "Masukan Pengguna", url: "/admin/masukan", icon: IconMessageCircleHeart },
     ],
   },
   {

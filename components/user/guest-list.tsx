@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { IconCopy, IconTrash, IconBrandWhatsapp, IconUsers, IconSearch, IconUserPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -26,6 +36,8 @@ export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQ
   const [newName, setNewName] = useState("");
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Guest | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const limits = getPlanLimits(userPlan);
   const maxGuests = getMaxGuests(userPlan, extraGuestQuota);
@@ -63,15 +75,17 @@ export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQ
   };
 
   const deleteGuest = async (id: string) => {
-    if (!confirm("Hapus tamu ini?")) return;
-
+    setDeleting(true);
     try {
       const response = await fetch(`/api/user/guests/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Gagal menghapus tamu");
       setGuests(guests.filter((g) => g.id !== id));
       toast.success("Tamu berhasil dihapus");
+      setDeleteTarget(null);
     } catch {
       toast.error("Terjadi kesalahan");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -100,7 +114,7 @@ export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQ
   const filteredGuests = guests.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+    <div className="grid grid-cols-1 gap-8 items-start xl:grid-cols-[320px_minmax(0,1fr)]">
       {/* Sidebar: Add Guest & Group Actions */}
       <div className="space-y-6 lg:sticky lg:top-24">
         {/* Add Guest Form */}
@@ -119,8 +133,9 @@ export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQ
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-zinc-500 uppercase">Nama Tamu</label>
+              <label htmlFor="new-guest-name" className="text-xs font-bold text-zinc-500 uppercase">Nama Tamu</label>
               <Input
+                id="new-guest-name"
                 placeholder="Cth: Budi Santoso"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -163,13 +178,13 @@ export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQ
 
       {/* Main Content: Guest List */}
       {/* Main Content: Guest List */}
-      <div className="lg:col-span-2 space-y-4">
+      <div className="min-w-0 space-y-4">
         {/* Search Bar */}
         <div className="bg-white rounded-xl p-2 border border-zinc-200 dark:border-zinc-800 flex items-center gap-2 shadow-sm">
           <div className="w-10 h-10 flex items-center justify-center text-zinc-400">
             <IconSearch size={20} />
           </div>
-          <input type="text" placeholder="Cari nama tamu..." className="flex-1 bg-transparent border-none outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input type="search" aria-label="Cari nama tamu" placeholder="Cari nama tamu..." className="flex-1 bg-transparent border-none outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
 
         <div className="bg-white rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden min-h-[400px]">
@@ -188,13 +203,13 @@ export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQ
                   </div>
 
                   <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => copyLink(guest.name)} className="h-10 w-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Salin Link">
+                    <Button variant="ghost" size="icon" onClick={() => copyLink(guest.name)} className="h-10 w-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Salin Link" aria-label={`Salin Link untuk ${guest.name}`}>
                       <IconCopy size={18} className="text-zinc-600 dark:text-zinc-300" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => shareWA(guest.name)} className="h-10 w-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Kirim WA">
+                    <Button variant="ghost" size="icon" onClick={() => shareWA(guest.name)} className="h-10 w-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800" title="Kirim WA" aria-label={`Kirim WA untuk ${guest.name}`}>
                       <IconBrandWhatsapp size={18} className="text-zinc-600 dark:text-zinc-300" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteGuest(guest.id)} className="h-10 w-10 rounded-full hover:bg-red-50 hover:text-red-500" title="Hapus">
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(guest)} className="h-10 w-10 rounded-full hover:bg-red-50 hover:text-red-500" title="Hapus" aria-label={`Hapus ${guest.name}`}>
                       <IconTrash size={18} />
                     </Button>
                   </div>
@@ -211,6 +226,34 @@ export function GuestList({ initialGuests, invitationSlug, userPlan, extraGuestQ
           )}
         </div>
       </div>
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}>
+        <AlertDialogContent className="border-[#E6DFD3] bg-[#FFFDF9] text-[#15130F] sm:rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#15130F]">
+              Hapus tamu?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-[#5E574D]">
+              Nama tamu &ldquo;{deleteTarget?.name}&rdquo; akan dihapus dari daftar tamu undangan Anda.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel disabled={deleting} className="rounded-full border-[#DFD7C8] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]">
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget) void deleteGuest(deleteTarget.id);
+              }}
+              className="rounded-full bg-red-600 text-white hover:bg-red-700"
+            >
+              {deleting ? "Menghapus..." : "Ya, hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

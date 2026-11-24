@@ -15,14 +15,34 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     if (!item) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
     const active = await getActiveInvitation(session.user.id);
-    if (!getPlanLimits(active.plan as PlanType).allowedTemplateTypes.includes(item.tier as "Gratis" | "Premium")) {
+    if (item.price > 0) {
+      const isCreator = item.creatorId === session.user.id;
+      const purchased = isCreator
+        ? { id: "creator" }
+        : await prisma.templatePurchase.findUnique({
+            where: { invitationId_templateId: { invitationId: active.id, templateId: item.id } },
+            select: { id: true },
+          });
+      if (!purchased) {
+        return NextResponse.json(
+          {
+            error: "PURCHASE_REQUIRED",
+            message: `Template Marketplace ini seharga Rp ${item.price.toLocaleString("id-ID")} per undangan.`,
+            checkoutUrl: `/upgrade?pilih=template&templateId=${item.id}`,
+          },
+          { status: 402 },
+        );
+      }
+    } else if (!getPlanLimits(active.plan as PlanType).allowedTemplateTypes.includes(item.tier as "Gratis" | "Premium")) {
       return NextResponse.json({ error: "PLAN_UPGRADE_REQUIRED", message: "Template ini tersedia di paket Premium." }, { status: 403 });
     }
 
     const updateData: Prisma.InvitationUpdateInput = {};
 
     if (item.kind === "ENGINE" && item.theme) {
-      const design = await prisma.aiDesign.create({ data: { userId: session.user.id, source: "CATALOG", prompt: `Template: ${item.name}`, theme: item.theme } });
+      const design = await prisma.aiDesign.create({
+        data: { userId: session.user.id, source: "CATALOG", prompt: `Template: ${item.name}`, theme: item.theme, creditsUsed: 0, planCreditsUsed: 0 },
+      });
       updateData.templateSlug = "ai-design";
       updateData.activeAiDesignId = design.id;
     } else {

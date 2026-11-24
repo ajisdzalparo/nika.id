@@ -1,12 +1,21 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { IconArrowLeft, IconLoader2, IconPalette } from "@tabler/icons-react";
+import { IconArrowLeft, IconCheck, IconCode, IconCopy, IconDeviceDesktop, IconDeviceMobile, IconLoader2, IconPalette, IconShieldCheck, IconUpload, IconX } from "@tabler/icons-react";
 import AiDesignTemplate from "@/components/templates/ai-design";
 import { templateRegistry } from "@/components/templates/registry";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  ADMIN_AI_HTML_CONTEXT_PROMPT,
+  CUSTOM_HTML_PLACEHOLDERS,
+  SAMPLE_WEDDING_HTML_STARTER,
+  sanitizeCustomHtml,
+  STANDARD_HTML_SECTIONS,
+  validateStandardHtmlStructure,
+} from "@/lib/ai-design/html-sanitize";
 import { MOCK_WEDDING_DATA } from "@/lib/constants/mock-wedding-data";
 import {
   BODY_FONTS,
@@ -115,10 +124,66 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
   const [prompt, setPrompt] = useState("");
   const [references, setReferences] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [htmlMode, setHtmlMode] = useState(Boolean(initial.theme?.customHtml?.trim()));
+  const [previewDevice, setPreviewDevice] = useState<"mobile" | "pc">("mobile");
+  const [pcPreviewOpen, setPcPreviewOpen] = useState(false);
+  const [showContextPrompt, setShowContextPrompt] = useState(false);
+  const [copiedContext, setCopiedContext] = useState(false);
 
   const set = <K extends keyof CatalogDraft>(k: K, v: CatalogDraft[K]) => setD((p) => ({ ...p, [k]: v }));
   const theme = d.theme ?? DEFAULT_AI_THEME;
   const setTheme = (patch: Partial<AiTheme>) => set("theme", { ...theme, ...patch });
+  const htmlAudit = useMemo(() => sanitizeCustomHtml(theme.customHtml ?? ""), [theme.customHtml]);
+  const structureAudit = useMemo(() => validateStandardHtmlStructure(htmlAudit.html), [htmlAudit.html]);
+
+  const htmlEditorRef = useRef<HTMLTextAreaElement>(null);
+  const insertPlaceholder = (token: string) => {
+    const el = htmlEditorRef.current;
+    const current = theme.customHtml ?? "";
+    const startPos = el ? el.selectionStart : current.length;
+    const endPos = el ? el.selectionEnd : current.length;
+    const next = current.slice(0, startPos) + token + current.slice(endPos);
+    setTheme({ customHtml: next });
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(startPos + token.length, startPos + token.length);
+    });
+  };
+
+  const copyContextPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(ADMIN_AI_HTML_CONTEXT_PROMPT);
+      setCopiedContext(true);
+      toast.success("Context Prompt AI berhasil disalin! Tempel ke ChatGPT / Claude / Gemini.");
+      setTimeout(() => setCopiedContext(false), 2500);
+    } catch {
+      setShowContextPrompt(true);
+      toast.error("Salin manual dari kotak Context Prompt di bawah.");
+    }
+  };
+
+  const handleUploadHtmlFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (!/\.html?$/i.test(file.name) && file.type && !file.type.includes("html") && !file.type.includes("text")) {
+      toast.error("Pilih file .html atau .htm.");
+      return;
+    }
+    const raw = await file.text();
+    const { html, strippedWarnings } = sanitizeCustomHtml(raw);
+    if (!html) {
+      toast.error("File HTML kosong atau tidak memiliki markup yang valid.");
+      return;
+    }
+    set("kind", "ENGINE");
+    setHtmlMode(true);
+    setTheme({ customHtml: html });
+    toast.success(
+      strippedWarnings.length
+        ? "HTML diunggah & tag berisiko dibersihkan otomatis."
+        : "Template HTML berhasil dimuat!",
+    );
+  };
 
   const generate = async () => {
     setGenerating(true);
@@ -134,6 +199,27 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
   };
 
   const save = async () => {
+    if (d.kind === "ENGINE" && htmlMode) {
+      if (!htmlAudit.html) {
+        toast.error("Masukkan kode HTML atau unggah file .html terlebih dahulu.");
+        return;
+      }
+      if (!structureAudit.isValid) {
+        const missing = structureAudit.missingSections.join(", ");
+        const extra = structureAudit.extraSections.join(", ");
+        const dup = structureAudit.duplicateSections.join(", ");
+        toast.error(
+          [
+            missing ? `Section wajib kurang: ${missing}` : "",
+            extra ? `Section tambahan di luar standar dilarang: ${extra}` : "",
+            dup ? `Section ganda: ${dup}` : "",
+          ]
+            .filter(Boolean)
+            .join(" | "),
+        );
+        return;
+      }
+    }
     setSaving(true);
     try {
       const res = await fetch(d.id ? `/api/admin/catalog/${d.id}` : "/api/admin/catalog", {
@@ -254,21 +340,206 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
         <Panel
           title="Desain"
           aside={
-            <div className="flex rounded-full border border-zinc-200 p-1 text-sm">
+            <div className="flex flex-wrap rounded-full border border-zinc-200 p-1 text-xs sm:text-sm">
               {(
                 [
-                  ["ENGINE", "Mesin tema"],
+                  ["VISUAL", "Mesin tema"],
+                  ["HTML", "Upload / Kode HTML"],
                   ["CODE", "Komponen kode"],
                 ] as const
-              ).map(([k, l]) => (
-                <button key={k} type="button" onClick={() => set("kind", k)} className={`h-8 rounded-full px-3 ${d.kind === k ? "bg-zinc-900 text-zinc-50" : "text-zinc-600"}`}>
-                  {l}
-                </button>
-              ))}
+              ).map(([mode, label]) => {
+                const active =
+                  mode === "CODE"
+                    ? d.kind === "CODE"
+                    : mode === "HTML"
+                      ? d.kind === "ENGINE" && htmlMode
+                      : d.kind === "ENGINE" && !htmlMode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => {
+                      if (mode === "CODE") {
+                        set("kind", "CODE");
+                      } else if (mode === "HTML") {
+                        set("kind", "ENGINE");
+                        setHtmlMode(true);
+                        if (!theme.customHtml?.trim()) {
+                          setTheme({ customHtml: SAMPLE_WEDDING_HTML_STARTER });
+                        }
+                      } else {
+                        set("kind", "ENGINE");
+                        setHtmlMode(false);
+                        if (theme.customHtml) setTheme({ customHtml: undefined });
+                      }
+                    }}
+                    className={`h-8 rounded-full px-3 transition ${active ? "bg-zinc-900 text-zinc-50" : "text-zinc-600 hover:text-zinc-900"}`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           }
         >
-          {d.kind === "CODE" ? (
+          {d.kind === "ENGINE" && htmlMode ? (
+            <div className="space-y-5">
+              {/* Toolbar: what this is + how to load code */}
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <p className="flex max-w-md items-start gap-2 text-xs leading-relaxed text-[#6B6358]">
+                  <IconShieldCheck size={16} className="mt-px shrink-0 text-[#8A6A2F]" />
+                  <span>
+                    Khusus admin. Script, event inline (<code className="font-mono">on*</code>) dan URL <code className="font-mono">javascript:</code> otomatis
+                    dibersihkan, lalu dirender di iframe sandbox.
+                  </span>
+                </p>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTheme({ customHtml: SAMPLE_WEDDING_HTML_STARTER })}
+                    className="h-9 rounded-full border border-[#DDD5C7] bg-white px-3.5 text-xs font-medium text-[#3F3A33] hover:bg-[#F3EEE5]"
+                  >
+                    Muat contoh
+                  </button>
+                  <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-[#15130F] px-4 text-xs font-medium text-[#FAF8F4] hover:bg-[#2A261F]">
+                    <IconUpload size={14} /> Upload .html
+                    <input
+                      type="file"
+                      accept=".html,.htm,text/html"
+                      className="sr-only"
+                      onChange={(e) => {
+                        void handleUploadHtmlFile(e.target.files?.[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Secondary: prompt for an external AI */}
+              <div className="rounded-xl border border-[#E6DFD3] bg-[#FAF8F4]">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-[#1E1B17]">Buat dengan AI lain</p>
+                    <p className="text-xs text-[#6B6358]">Prompt berisi aturan 11 bagian dan placeholder, agar HTML dari ChatGPT, Claude atau Gemini langsung cocok.</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowContextPrompt((v) => !v)}
+                      aria-expanded={showContextPrompt}
+                      className="h-9 rounded-full px-3 text-xs font-medium text-[#8A6A2F] hover:bg-[#F3EEE5]"
+                    >
+                      {showContextPrompt ? "Tutup" : "Lihat"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void copyContextPrompt()}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#DDD5C7] bg-white px-3.5 text-xs font-medium text-[#1E1B17] hover:bg-[#F3EEE5]"
+                    >
+                      {copiedContext ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                      {copiedContext ? "Tersalin" : "Salin prompt"}
+                    </button>
+                  </div>
+                </div>
+                {showContextPrompt && (
+                  <pre className="max-h-56 overflow-auto whitespace-pre-wrap border-t border-[#E6DFD3] px-4 py-3 font-mono text-[11px] leading-relaxed text-[#3F3A33]">
+                    {ADMIN_AI_HTML_CONTEXT_PROMPT}
+                  </pre>
+                )}
+              </div>
+
+              {/* Structure check: one status line; only problems get colour */}
+              <div className="space-y-2.5">
+                <p className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className={`h-2 w-2 rounded-full ${structureAudit.isValid ? "bg-[#4E7A55]" : "bg-[#B4483E]"}`} aria-hidden />
+                  <span className="font-medium text-[#1E1B17]">
+                    {structureAudit.isValid ? "Struktur lengkap" : "Struktur belum sesuai"}
+                  </span>
+                  <span className="text-[#6B6358]">
+                    {structureAudit.presentSections.length} dari 11 bagian {structureAudit.isValid ? "terdeteksi" : "terdeteksi, tiap bagian wajib ada tepat satu"}
+                  </span>
+                </p>
+                <ul className="flex flex-wrap gap-1.5" aria-label="Bagian wajib">
+                  {STANDARD_HTML_SECTIONS.map((sec) => {
+                    const ok = structureAudit.presentSections.includes(sec.id) && !structureAudit.duplicateSections.includes(sec.id);
+                    return (
+                      <li
+                        key={sec.id}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-[11px] ${
+                          ok ? "border-[#E1D8C9] bg-white text-[#4A443B]" : "border-[#E3B7B1] bg-[#FBEFED] text-[#9A3A31]"
+                        }`}
+                      >
+                        {ok ? <IconCheck size={12} className="text-[#4E7A55]" /> : <IconX size={12} />}
+                        {sec.id}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {structureAudit.extraSections.length > 0 && (
+                  <p className="text-xs text-[#9A3A31]">
+                    Bagian di luar standar tidak diizinkan: <code className="font-mono">{structureAudit.extraSections.join(", ")}</code>
+                  </p>
+                )}
+                {structureAudit.duplicateSections.length > 0 && (
+                  <p className="text-xs text-[#9A3A31]">
+                    Bagian ganda: <code className="font-mono">{structureAudit.duplicateSections.join(", ")}</code>
+                  </p>
+                )}
+              </div>
+
+              {htmlAudit.strippedWarnings.length > 0 && (
+                <div className="rounded-xl border border-[#E7D4A8] bg-[#FBF5E6] px-4 py-3 text-xs text-[#6E5426]">
+                  <p className="font-medium">Bagian yang dibersihkan demi keamanan:</p>
+                  <ul className="mt-1 list-disc pl-4">
+                    {htmlAudit.strippedWarnings.map((w) => (
+                      <li key={w}>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Code editor with an attached header: insert data at the cursor, character count */}
+              <div className="overflow-hidden rounded-xl border border-[#2A261F] bg-[#15130F]">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
+                  <label htmlFor="custom-html-code" className="inline-flex items-center gap-1.5 text-xs font-medium text-[#E8E1D4]">
+                    <IconCode size={14} /> HTML &amp; CSS
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <select
+                      aria-label="Sisipkan data undangan"
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) insertPlaceholder(e.target.value);
+                      }}
+                      className="h-8 rounded-lg border border-white/15 bg-white/5 px-2 text-xs text-[#E8E1D4] outline-none focus:border-[#C9A45C]"
+                    >
+                      <option value="" className="text-[#1E1B17]">
+                        Sisipkan data…
+                      </option>
+                      {CUSTOM_HTML_PLACEHOLDERS.map((ph) => (
+                        <option key={ph.token} value={ph.token} className="text-[#1E1B17]">
+                          {ph.label} · {ph.token}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-[11px] tabular-nums text-[#A59B8C]">
+                      {(theme.customHtml?.length ?? 0).toLocaleString("id-ID")} / 150.000
+                    </span>
+                  </div>
+                </div>
+                <textarea
+                  id="custom-html-code"
+                  ref={htmlEditorRef}
+                  spellCheck={false}
+                  value={theme.customHtml ?? ""}
+                  onChange={(e) => setTheme({ customHtml: e.target.value })}
+                  placeholder="Tempel kode HTML + <style> di sini, atau upload file .html…"
+                  className="block min-h-[380px] w-full resize-y bg-transparent p-4 font-mono text-xs leading-relaxed text-[#F1ECE3] outline-none placeholder:text-[#6B6358]"
+                />
+              </div>
+            </div>
+          ) : d.kind === "CODE" ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Komponen" hint="Template yang sudah ditulis developer di components/templates. Template baru dari admin dibuat lewat Mesin tema.">
                 <select value={d.componentSlug ?? ""} onChange={(e) => set("componentSlug", e.target.value || null)} className={input}>
@@ -294,7 +565,7 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               <div className="space-y-2 rounded-xl bg-zinc-50 p-4">
                 <p className="text-sm font-medium text-zinc-800">Rancang dengan AI</p>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <input className={input} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Mis. Adat Bali, merah marun dan emas, ornamen ukiran, nuansa sakral" />
+                  <input className={input} aria-label="Deskripsi gaya template" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Mis. Adat Bali, merah marun dan emas, ornamen ukiran, nuansa sakral" />
                   <button onClick={generate} disabled={generating || (prompt.trim().length < 8 && !references.length)} type="button" className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-zinc-900 px-5 text-sm font-medium text-zinc-50 disabled:opacity-50">
                     {generating ? <IconLoader2 size={16} className="animate-spin" /> : <IconPalette size={16} />} {generating ? "Merancang…" : "Rancang"}
                   </button>
@@ -423,13 +694,46 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
         </div>
       </div>
 
-      {/* Live preview */}
+      {/* Live preview with Mobile / PC switcher */}
       <aside className="lg:sticky lg:top-20 lg:self-start">
-        <p className="mb-3 text-center text-xs uppercase tracking-[0.2em] text-zinc-500">Pratinjau</p>
-        <div className="mx-auto w-[340px] overflow-hidden rounded-[40px] border-[9px] border-[#111] bg-white">
-          <div className="h-[660px] overflow-y-auto overscroll-contain [scrollbar-width:none]">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex rounded-full border border-zinc-200 bg-white p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setPreviewDevice("mobile")}
+              className={`inline-flex h-7 items-center gap-1 rounded-full px-3 font-medium ${
+                previewDevice === "mobile" ? "bg-zinc-900 text-white" : "text-zinc-600"
+              }`}
+            >
+              <IconDeviceMobile size={13} /> Mobile
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPreviewDevice("pc");
+                setPcPreviewOpen(true);
+              }}
+              className={`inline-flex h-7 items-center gap-1 rounded-full px-3 font-medium ${
+                previewDevice === "pc" ? "bg-zinc-900 text-white" : "text-zinc-600"
+              }`}
+            >
+              <IconDeviceDesktop size={13} /> Preview PC
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPcPreviewOpen(true)}
+            className="text-xs font-medium text-[#8A6A2F] hover:underline"
+          >
+            Perbesar layar penuh →
+          </button>
+        </div>
+
+        <div className="mx-auto w-full max-w-[350px] overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-sm">
+          {/* HTML templates scroll inside their own iframe, so the frame itself must not scroll too */}
+          <div className={`h-[660px] overscroll-contain [scrollbar-width:thin] ${theme.customHtml?.trim() && d.kind === "ENGINE" ? "overflow-hidden" : "overflow-y-auto"}`}>
             {d.kind === "ENGINE" ? (
-              <div style={{ zoom: 322 / 375, width: 375 }}>
+              <div className={theme.customHtml?.trim() ? "h-full" : undefined} style={theme.customHtml?.trim() ? undefined : { zoom: 346 / 375, width: 375 }}>
                 <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={theme} embedded />
               </div>
             ) : d.thumbnail ? (
@@ -443,6 +747,27 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
           </div>
         </div>
       </aside>
+
+      <Dialog open={pcPreviewOpen} onOpenChange={setPcPreviewOpen}>
+        <DialogContent className="flex! h-[88vh] max-h-[88vh] max-w-[94vw] flex-col gap-0 overflow-hidden border-[#E6DFD3] bg-[#FFFDF9] p-0 sm:max-w-5xl sm:rounded-2xl">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-5 py-3 pr-12">
+            <DialogTitle className="flex items-center gap-2 font-serif text-xl font-medium text-zinc-900">
+              <IconDeviceDesktop size={18} className="text-[#8A6A2F]" />
+              Pratinjau PC / Desktop — {d.name || theme.name}
+            </DialogTitle>
+            <span className="rounded-full bg-zinc-100 px-3 py-0.5 text-[11px] font-medium text-zinc-600">
+              {htmlMode ? "HTML Sandboxed Aman" : "Responsif Desktop"}
+            </span>
+          </div>
+          <div className={`min-h-0 flex-1 overscroll-contain bg-white ${theme.customHtml?.trim() ? "overflow-hidden" : "overflow-y-auto"}`}>
+            {d.kind === "ENGINE" ? (
+              <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={theme} forceOpened />
+            ) : (
+              <p className="p-10 text-center text-sm text-zinc-500">Pratinjau PC tersedia untuk Mesin Tema &amp; HTML.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

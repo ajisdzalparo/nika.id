@@ -7,8 +7,29 @@ import { IconLink, IconLoader2, IconPhotoUp, IconX } from "@tabler/icons-react";
 const MAX_MB = 5;
 const ACCEPT = "image/jpeg,image/png,image/webp";
 
-/** Uploads an image to storage (/api/upload/image) and returns its public URL; a pasted URL also works. */
-export function ImageUploadField({ value, onChange, aspect = "aspect-[9/16]" }: { value: string; onChange: (url: string) => void; aspect?: string }) {
+/** True when the Tailwind aspect class is landscape (e.g. aspect-[16/9]); those boxes get full width instead of a narrow column. */
+function isLandscape(aspect: string) {
+  const m = aspect.match(/aspect-\[(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\]/);
+  if (m) return Number(m[1]) > Number(m[2]);
+  return aspect === "aspect-video";
+}
+
+/**
+ * Uploads an image to storage (/api/upload/image) and returns its public URL; a pasted URL also works.
+ * `fit="contain"` shows the whole image (logos, QRIS); the default crops to fill (thumbnails, photos).
+ */
+export function ImageUploadField({
+  value,
+  onChange,
+  aspect = "aspect-[9/16]",
+  fit = "cover",
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  aspect?: string;
+  fit?: "cover" | "contain";
+}) {
+  const wide = isLandscape(aspect);
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -48,21 +69,30 @@ export function ImageUploadField({ value, onChange, aspect = "aspect-[9/16]" }: 
           setDragging(false);
           upload(e.dataTransfer.files?.[0]);
         }}
-        className={`relative w-40 overflow-hidden rounded-2xl border-2 border-dashed transition-colors ${aspect} ${dragging ? "border-[#8A6A2F] bg-[#F4EAD6]" : "border-zinc-300 bg-zinc-50"}`}
+        className={`relative overflow-hidden rounded-2xl border-2 border-dashed transition-colors ${wide ? "w-full max-w-sm" : "w-40"} ${
+          value ? aspect : `${aspect} min-h-36`
+        } ${dragging ? "border-[#8A6A2F] bg-[#F4EAD6]" : value ? "border-[#E1D8C9] bg-[#FAF8F4]" : "border-[#D6CBB8] bg-[#FAF8F4] hover:border-[#B8AD9A]"}`}
       >
         {value ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value} alt="Thumbnail" className="absolute inset-0 h-full w-full object-cover" />
+            <img src={value} alt="Pratinjau gambar" className={`absolute inset-0 h-full w-full ${fit === "contain" ? "object-contain p-3" : "object-cover"}`} />
             <button type="button" onClick={() => onChange("")} aria-label="Hapus gambar" className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950/70 text-zinc-50 hover:bg-zinc-950">
               <IconX size={15} />
             </button>
           </>
         ) : (
-          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3 text-center text-xs text-zinc-500">
-            {uploading ? <IconLoader2 size={22} className="animate-spin text-[#8A6A2F]" /> : <IconPhotoUp size={22} className="text-[#8A6A2F]" />}
-            {uploading ? "Mengunggah…" : "Klik atau seret gambar ke sini"}
-            <span className="text-[11px] text-zinc-400">JPG, PNG, WebP · maks {MAX_MB}MB</span>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-4 text-center"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F4EAD6] text-[#8A6A2F]">
+              {uploading ? <IconLoader2 size={20} className="animate-spin" /> : <IconPhotoUp size={20} />}
+            </span>
+            <span className="text-sm font-medium text-[#3F3A33]">{uploading ? "Mengunggah…" : wide ? "Klik atau seret gambar ke sini" : "Pilih gambar"}</span>
+            <span className="text-[11px] text-[#7D7468]">JPG, PNG, WebP · maks {MAX_MB}MB</span>
           </button>
         )}
         {uploading && value && (

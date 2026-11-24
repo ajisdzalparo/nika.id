@@ -38,7 +38,7 @@ export function ClosingSection({ data }: { data: WeddingData }) {
 
         <div className="border-t border-white/10 pt-8">
           <p className="text-[11px] uppercase tracking-[0.22em] text-[#9A9082]">
-            Dibuat dengan UNDANGIN YUK
+            {data.agencyBranding?.name ? `Dibuat oleh ${data.agencyBranding.name}` : "Dibuat dengan UNDANGIN YUK"}
           </p>
         </div>
       </div>
