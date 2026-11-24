@@ -1,13 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { AiThemeSchema, ThemeAssetsSchema } from "@/lib/ai-design/schema";
+import { AiThemeSchema, CanvasConfigSchema, ThemeAssetsSchema } from "@/lib/ai-design/schema";
 import { normalizeTheme } from "@/lib/ai-design/color";
+import { validateStandardHtmlStructure } from "@/lib/ai-design/html-sanitize";
 import { templateRegistry } from "@/components/templates/registry";
 
 const CatalogThemeInput = AiThemeSchema.extend({
   assets: ThemeAssetsSchema.optional(),
-});
+}).merge(CanvasConfigSchema);
 
 const DefaultMusicInput = z
   .object({
@@ -23,7 +24,7 @@ export const CatalogInput = z.object({
   name: z.string().min(2).max(80),
   description: z.string().max(400).default(""),
   category: z.string().min(2).max(40),
-  tier: z.enum(["Gratis", "Premium"]),
+  tier: z.enum(["Gratis", "Premium", "Marketplace"]),
   kind: z.enum(["ENGINE", "CODE"]),
   theme: CatalogThemeInput.nullable().optional(),
   defaultMusic: DefaultMusicInput,
@@ -34,15 +35,28 @@ export const CatalogInput = z.object({
   isFeatured: z.boolean().default(false),
   isNew: z.boolean().default(false),
   sortOrder: z.number().int().default(0),
+  price: z.number().int().min(0).max(500000).default(0),
+  platformFeePct: z.number().int().min(0).max(80).default(30),
+  reviewStatus: z.enum(["PENDING_REVIEW", "APPROVED", "REJECTED"]).default("APPROVED"),
+  reviewNote: z.string().max(300).nullable().optional(),
 });
 
 /** Turns validated input into Prisma data, enforcing kind-specific rules. */
 export function toData(input: z.infer<typeof CatalogInput>) {
   if (input.kind === "ENGINE" && !input.theme) throw new Error("Tema wajib diisi untuk template mesin tema");
   if (input.kind === "CODE" && (!input.componentSlug || !templateRegistry[input.componentSlug])) throw new Error("Komponen template tidak ditemukan");
+  const normalizedTheme = input.kind === "ENGINE" && input.theme ? normalizeTheme(input.theme) : undefined;
+  if (normalizedTheme?.customHtml?.trim()) {
+    const structure = validateStandardHtmlStructure(normalizedTheme.customHtml);
+    if (!structure.isValid) {
+      throw new Error(
+        "Struktur HTML wajib memiliki tepat 11 section baku (data-section cover..closing) tanpa tambahan atau pengurangan.",
+      );
+    }
+  }
   return {
     ...input,
-    theme: input.kind === "ENGINE" && input.theme ? normalizeTheme(input.theme) : undefined,
+    theme: normalizedTheme,
     defaultMusic: input.defaultMusic && input.defaultMusic.url ? input.defaultMusic : Prisma.DbNull,
     componentSlug: input.kind === "CODE" ? input.componentSlug : null,
     thumbnail: input.thumbnail || null,

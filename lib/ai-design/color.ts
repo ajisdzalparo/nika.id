@@ -1,4 +1,5 @@
-import { AiThemeSchema, DEFAULT_AI_THEME, ThemeAssetsSchema, type AiTheme } from "./schema";
+import { sanitizeCustomHtml } from "./html-sanitize";
+import { AiThemeSchema, CanvasConfigSchema, DEFAULT_AI_THEME, ThemeAssetsSchema, type AiTheme } from "./schema";
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -46,8 +47,8 @@ export function normalizeTheme(input: unknown): AiTheme {
   palette.muted = ensureContrast(palette.muted, palette.background, 3, palette.ink, palette.ink);
   palette.onAccent = ensureContrast(palette.onAccent, palette.accent, 4.5, "#1F1B16", "#FFFFFF");
 
-  const rawAssets = typeof input === "object" && input !== null ? (input as { assets?: unknown }).assets : undefined;
-  const parsedAssets = ThemeAssetsSchema.safeParse(rawAssets);
+  const rawObj = typeof input === "object" && input !== null ? (input as Record<string, unknown>) : {};
+  const parsedAssets = ThemeAssetsSchema.safeParse(rawObj.assets);
   const assets = parsedAssets.success && (parsedAssets.data.backgroundImage || parsedAssets.data.ornamentImage)
     ? {
         ...(parsedAssets.data.backgroundImage ? { backgroundImage: parsedAssets.data.backgroundImage } : {}),
@@ -55,5 +56,34 @@ export function normalizeTheme(input: unknown): AiTheme {
       }
     : undefined;
 
-  return assets ? { ...theme, palette, assets } : { ...theme, palette };
+  const parsedCanvas = CanvasConfigSchema.safeParse({
+    sectionOrder: rawObj.sectionOrder,
+    hiddenSections: rawObj.hiddenSections,
+    layers: rawObj.layers,
+    sectionStyles: rawObj.sectionStyles,
+    customHtml: rawObj.customHtml,
+    particles: rawObj.particles,
+  });
+
+  const canvasExtra: Partial<AiTheme> = {};
+  if (parsedCanvas.success) {
+    if (parsedCanvas.data.sectionOrder?.length) canvasExtra.sectionOrder = parsedCanvas.data.sectionOrder;
+    if (parsedCanvas.data.hiddenSections?.length) canvasExtra.hiddenSections = parsedCanvas.data.hiddenSections;
+    if (parsedCanvas.data.layers?.length) canvasExtra.layers = parsedCanvas.data.layers;
+    if (parsedCanvas.data.sectionStyles && Object.keys(parsedCanvas.data.sectionStyles).length) {
+      canvasExtra.sectionStyles = parsedCanvas.data.sectionStyles;
+    }
+    if (parsedCanvas.data.particles) canvasExtra.particles = parsedCanvas.data.particles;
+    if (parsedCanvas.data.customHtml?.trim()) {
+      const { html } = sanitizeCustomHtml(parsedCanvas.data.customHtml);
+      if (html) canvasExtra.customHtml = html;
+    }
+  }
+
+  return {
+    ...theme,
+    palette,
+    ...(assets ? { assets } : {}),
+    ...canvasExtra,
+  };
 }

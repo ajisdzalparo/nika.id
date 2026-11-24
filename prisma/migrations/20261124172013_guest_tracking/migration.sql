@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Guest" ADD COLUMN     "lastOpenedAt" TIMESTAMP(3),
+ADD COLUMN     "openCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "openedAt" TIMESTAMP(3),
+ADD COLUMN     "sentAt" TIMESTAMP(3);

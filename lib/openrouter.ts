@@ -21,7 +21,10 @@ export const DEFAULT_OPENROUTER_DESIGN_MODEL = "anthropic/claude-sonnet-4.5";
 export const DEFAULT_OPENROUTER_CHAT_MODEL = "anthropic/claude-haiku-4.5";
 
 export function isOpenRouterConfigured(): boolean {
-  return Boolean(process.env.OPENROUTER_API_KEY?.trim());
+  const key = process.env.OPENROUTER_API_KEY?.trim() ?? "";
+  if (!key) return false;
+  if (/^(ISI_|YOUR_|CHANGE_ME|PLACEHOLDER)/i.test(key)) return false;
+  return true;
 }
 
 export async function openRouterChat({
@@ -51,7 +54,7 @@ export async function openRouterChat({
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": referer,
-      "X-Title": "UNDANGIN YUK",
+      "X-Title": "SatuMoment",
     },
     body: JSON.stringify({
       model,

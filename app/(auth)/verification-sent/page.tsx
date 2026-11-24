@@ -27,8 +27,8 @@ function VerificationSentContent() {
 
   return (
     <div className="space-y-8">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#E1D8C9] bg-white">
-        <IconMail size={26} stroke={1.5} className="text-[#8A6A2F]" />
+      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#E9DDC6] bg-white">
+        <IconMail size={26} stroke={1.5} className="text-[#8A6424]" />
       </div>
 
       <div className="space-y-3">
@@ -39,9 +39,9 @@ function VerificationSentContent() {
       </div>
 
       <ol className="space-y-3 border-y border-zinc-200 py-5 text-[15px] text-zinc-700">
-        {["Buka kotak masuk email", "Cari email dari UNDANGIN YUK (cek juga folder spam)", "Klik tombol verifikasi"].map((s, i) => (
+        {["Buka kotak masuk email", "Cari email dari SatuMoment (cek juga folder spam)", "Klik tombol verifikasi"].map((s, i) => (
           <li key={s} className="flex gap-4">
-            <span className="font-serif text-xl italic leading-none text-[#8A6A2F]">{i + 1}</span>
+            <span className="font-serif text-xl italic leading-none text-[#8A6424]">{i + 1}</span>
             {s}
           </li>
         ))}

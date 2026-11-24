@@ -16,6 +16,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 interface Transaction {
   id: string;
   userId: string;
+  kind?: string;
+  addonUnits?: number;
   amount: number;
   plan?: string | null;
   status: string;
@@ -85,7 +87,7 @@ export function TransactionsClient({ initialTransactions }: TransactionsClientPr
       <div className="flex items-center justify-between">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari user, email, atau ID..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input type="search" aria-label="Cari transaksi" placeholder="Cari user, email, atau ID..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
 
@@ -120,7 +122,21 @@ export function TransactionsClient({ initialTransactions }: TransactionsClientPr
                   <TableCell className="font-mono text-xs text-muted-foreground lowercase">#{t.id.slice(-8)}</TableCell>
                   <TableCell>
                     <span className="font-semibold">Rp {t.amount.toLocaleString("id-ID")}</span>
-                    {t.plan && <span className="ml-2 rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-600">Paket {t.plan}</span>}
+                    {t.kind === "AGENCY_QUOTA" ? (
+                      <span className="ml-2 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[11px] text-[#5C431A]">
+                        Kuota Mitra ({t.addonUnits ?? 0})
+                      </span>
+                    ) : t.kind === "AI_CREDIT" ? (
+                      <span className="ml-2 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[11px] text-[#5C431A]">
+                        Top-up {t.addonUnits ?? 0} Kredit AI
+                      </span>
+                    ) : t.kind === "GUEST_ADDON" ? (
+                      <span className="ml-2 rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-600">
+                        Add-on +{(t.addonUnits ?? 1) * 100} Tamu
+                      </span>
+                    ) : (
+                      t.plan && <span className="ml-2 rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-600">Paket {t.plan}</span>
+                    )}
                     {t.paymentMethod === "MANUAL_TRANSFER" && <span className="ml-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-600">Transfer manual</span>}
                   </TableCell>
                   <TableCell>{getStatusBadge(t.status)}</TableCell>
@@ -134,7 +150,7 @@ export function TransactionsClient({ initialTransactions }: TransactionsClientPr
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={loading === t.id}>
+                        <Button variant="ghost" size="icon" disabled={loading === t.id} aria-label={`Aksi transaksi ${t.user.name || t.user.email}`}>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>

@@ -27,9 +27,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         image: session.user.image,
       }}
     >
-      <SidebarProvider style={shellTokens} className={`${studioClass} bg-[#F1ECE3]`}>
+      <SidebarProvider style={shellTokens} className={`${studioClass} bg-[#F4EDDF]`}>
         <AdminSidebar variant="inset" adminUser={adminUser} />
-        <SidebarInset className="bg-[#F7F3EC]">{children}</SidebarInset>
+        <SidebarInset className="min-w-0 overflow-x-hidden bg-[#FCF8F1]">{children}</SidebarInset>
       </SidebarProvider>
     </PortalUserProvider>
   );

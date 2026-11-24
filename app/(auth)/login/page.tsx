@@ -42,11 +42,16 @@ function LoginForm() {
       }
 
       // The user login always lands in the user area; admins use /admin/login.
-      await fetch("/api/portal/enter", {
+      const gateRes = await fetch("/api/portal/enter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ portal: "user" }),
       });
+      if (!gateRes.ok) {
+        toast.error("Sesi login tidak tersimpan. Coba muat ulang halaman lalu masuk lagi.");
+        setLoading(false);
+        return;
+      }
 
       const from = searchParams.get("from");
       const target = from && from.startsWith("/") && !from.startsWith("/admin") ? from : "/dashboard";
@@ -106,7 +111,7 @@ function LoginForm() {
                 <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#F7F3EC] px-2 text-zinc-400 font-medium">Atau dengan email</span>
+                <span className="bg-[#FCF8F1] px-2 text-zinc-400 font-medium">Atau dengan email</span>
               </div>
             </div>
           </>

@@ -32,6 +32,21 @@ model User {
   plan            Plan      @default(FREE)
   planExpiresAt   DateTime?
   extraGuestQuota Int       @default(0)
+  aiCredits       Int       @default(0)
+
+  referralCode String? @unique
+  referredById String?
+  referredBy   User?   @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals    User[]  @relation("UserReferrals")
+
+  accountType          String    @default("PERSONAL") // PERSONAL | AGENCY
+  agencyName           String?
+  agencyWhatsapp       String?
+  agencyInstagram      String?
+  agencyLogo           String?
+  agencyVerified       Boolean   @default(false)
+  agencyQuota          Int       @default(0)
+  agencyQuotaExpiresAt DateTime?
 
   activeAiDesignId String?
 
@@ -43,7 +58,13 @@ model User {
   rsvps         RSVP[]
   sessions      Session[]
   supportThread SupportThread?
-  transactions  Transaction[]
+  feedbacks     Feedback[]
+  surveys       SurveyResponse[]
+  transactions      Transaction[]
+  ledgerEntries     LedgerEntry[]
+  withdrawals       WithdrawalRequest[]
+  createdTemplates  CatalogTemplate[] @relation("CreatedTemplates")
+  templatePurchases TemplatePurchase[]
 }
 
 model Session {
@@ -105,14 +126,18 @@ model Invitation {
   views            Int            @default(0)
   isPublic         Boolean        @default(true)
   data             Json           @default("{}")
+  clientName       String?
+  clientWhatsapp   String?
+  clientEditToken  String?        @unique
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   guests           Guest[]
   rsvps            RSVP[]
   messages         GuestMessage[]
-  transactions     Transaction[]
-  visitLogs        InvitationVisit[]
+  transactions      Transaction[]
+  visitLogs         InvitationVisit[]
+  templatePurchases TemplatePurchase[]
 
   @@index([userId])
 }
@@ -129,17 +154,31 @@ model InvitationVisit {
 }
 
 model Guest {
-  id           String      @id @default(cuid())
-  userId       String
-  invitationId String?
-  name         String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  id            String      @id @default(cuid())
+  userId        String
+  invitationId  String?
+  name          String
+  recipientType String      @default("PERSONAL") // PERSONAL | GROUP
+  guestType     String      @default("REGULAR") // REGULAR | VIP
+  greeting      String? // e.g. Bapak/Ibu, Yth., Saudara/i, Dear
+  phone         String? // international digits, e.g. 6281234567890
+  label         String? // e.g. Keluarga, Teman Kantor, Blast, Manual
+  maxGuests     Int         @default(1)
+  rsvpEnabled   Boolean     @default(true)
+  eventName     String? // e.g. Umum, Akad Nikah, Resepsi, Livestream
+  note          String?
+  sentAt        DateTime? // when invitation link was sent/copied to this guest
+  openedAt      DateTime? // first time this guest opened the web invitation in a real browser
+  lastOpenedAt  DateTime? // most recent time this guest opened the web invitation
+  openCount     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation    Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([invitationId])
+  @@index([invitationId, label])
 }
 
 model RSVP {
@@ -149,6 +188,12 @@ model RSVP {
   guestName    String
   attendance   String
   guests       Int         @default(1)
+  phone        String? // international digits, e.g. 6281234567890
+  companions   String? // names of the people coming along
+  customAnswer String? // answer to the couple's own RSVP question
+  note         String? // the couple's own note, e.g. a table number
+  checkInToken String?     @unique // secret in the guest's QR code
+  checkedInAt  DateTime? // scanned (or marked) at the venue
   createdAt    DateTime    @default(now())
   user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
@@ -179,11 +224,15 @@ model Transaction {
   invitationId  String?
   amount        Int
   status        String      @default("PENDING") // PENDING, SUCCESS, FAILED
-  kind          String      @default("PLAN") // PLAN | GUEST_ADDON
-  addonUnits    Int         @default(0)
-  snapToken     String?
-  plan          String? // HEMAT, PREMIUM, EKSKLUSIF
-  paymentProof  String? // URL to the uploaded image (for manual)
+  kind             String      @default("PLAN") // PLAN | GUEST_ADDON | AI_CREDIT | AGENCY_QUOTA | MARKETPLACE
+  addonUnits       Int         @default(0)
+  snapToken        String?
+  plan             String? // HEMAT, PREMIUM, EKSKLUSIF
+  templateId       String?
+  referralCodeUsed String?
+  promoCodeUsed    String?
+  discountAmount   Int         @default(0)
+  paymentProof     String? // URL to the uploaded image (for manual)
   paymentMethod String?
   notes         String?
   createdAt     DateTime    @default(now())
@@ -197,13 +246,15 @@ model Transaction {
 }
 
 model AiDesign {
-  id        String   @id @default(cuid())
-  userId    String
-  source    String   @default("AI") // AI (counts toward quota) | CATALOG (picked from the template catalog)
-  prompt    String   @db.Text
-  theme     Json
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  userId          String
+  source          String   @default("AI") // AI (counts toward quota) | CATALOG (picked from the template catalog)
+  prompt          String   @db.Text
+  theme           Json
+  creditsUsed     Int      @default(1)
+  planCreditsUsed Int      @default(1)
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -227,10 +278,39 @@ model CatalogTemplate {
   isNew         Boolean  @default(false)
   sortOrder     Int      @default(0)
   usageCount    Int      @default(0)
+  creatorId     String?
+  creator       User?    @relation("CreatedTemplates", fields: [creatorId], references: [id], onDelete: SetNull)
+  price         Int      @default(0) // 0 = included in plan; > 0 = paid Marketplace template
+  platformFeePct Int     @default(30) // Owner commission % per sale
+  reviewStatus  String   @default("APPROVED") // PENDING_REVIEW | APPROVED | REJECTED
+  reviewNote    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  purchases     TemplatePurchase[]
 
   @@index([isActive, sortOrder])
+  @@index([creatorId])
+  @@index([reviewStatus])
+}
+
+/// Paid template license: one purchase unlocks one Marketplace template for one invitation.
+model TemplatePurchase {
+  id            String          @id @default(cuid())
+  userId        String
+  invitationId  String
+  templateId    String
+  transactionId String?         @unique
+  price         Int
+  platformFee   Int
+  creatorShare  Int
+  createdAt     DateTime        @default(now())
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation    Invitation      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  template      CatalogTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([invitationId, templateId])
+  @@index([userId])
+  @@index([templateId])
 }
 
 /// Default background music presets curated and toggled by superadmin.
@@ -304,4 +384,115 @@ model SupportMessage {
   thread    SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@index([threadId, createdAt])
+}
+
+/// Money ledger: one row per movement. Platform revenue rows have userId = null.
+/// Balances are sums of `amount` (rupiah; positive = credit, negative = debit).
+model LedgerEntry {
+  id            String    @id @default(cuid())
+  /// Idempotency key, e.g. "revenue:<transactionId>", so retries never double-book
+  key           String?   @unique
+  /// PLATFORM_REVENUE (money received by the platform) | USER_EARNINGS (money owed to a user)
+  account       String
+  /// PAYMENT_RECEIVED | COMMISSION | SALE_SHARE | WITHDRAWAL | WITHDRAWAL_REVERSAL | ADJUSTMENT
+  type          String
+  /// What was sold: PLAN | GUEST_ADDON | AI_CREDIT | AGENCY_QUOTA | MARKETPLACE | ...
+  source        String?
+  amount        Int
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  transactionId String?
+  withdrawalId  String?
+  /// User earnings can be withdrawn only after this moment (refund holding period)
+  availableAt   DateTime?
+  note          String?
+  createdAt     DateTime  @default(now())
+
+  @@index([account, createdAt])
+  @@index([userId, account])
+  @@index([transactionId])
+}
+
+/// A user's request to withdraw earnings (commissions, template sales).
+model WithdrawalRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Int
+  /// BANK | EWALLET
+  method        String
+  /// Bank or e-wallet name, e.g. BCA, GoPay
+  provider      String
+  accountNumber String
+  accountName   String
+  /// PENDING | PAID | REJECTED
+  status        String    @default("PENDING")
+  adminNote     String?
+  proofUrl      String?
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status, createdAt])
+}
+
+/// Product feedback from users: feature requests, bug reports, ratings of existing features.
+model Feedback {
+  id           String    @id @default(cuid())
+  userId       String
+  invitationId String?
+  category     String // SARAN | MASALAH | FITUR_BARU | PUJIAN
+  feature      String // EDITOR | DESAIN | TAMU | RSVP | PEMBAYARAN | MITRA | DOMPET | LAINNYA
+  rating       Int? // 1–5, how satisfied with that feature
+  message      String    @db.Text
+  pagePath     String?
+  status       String    @default("BARU") // BARU | DITINJAU | DIRENCANAKAN | SELESAI | DITOLAK
+  adminReply   String?   @db.Text
+  repliedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+/// Admin-managed discount codes typed at checkout ("Kode promo").
+model PromoCode {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  description  String?
+  percentOff   Int? // 1–90; either percentOff or amountOff
+  amountOff    Int? // fixed rupiah off
+  maxDiscount  Int? // cap for percentOff
+  appliesTo    String    @default("ALL") // ALL or comma list of PLAN,GUEST_ADDON,AI_CREDIT,AGENCY_QUOTA
+  minPurchase  Int       @default(0)
+  maxUses      Int? // total redemptions; null = unlimited
+  perUserLimit Int       @default(1)
+  usedCount    Int       @default(0)
+  startsAt     DateTime?
+  expiresAt    DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+/// Short periodic customer survey shown on the dashboard. "DITUNDA" rows record a "Nanti saja" so the
+/// survey can back off; "TERKIRIM" rows hold the answers.
+model SurveyResponse {
+  id          String   @id @default(cuid())
+  userId      String
+  status      String // TERKIRIM | DITUNDA
+  recommend   Int? // 0–10, likelihood to recommend (NPS)
+  source      String? // where they heard about us
+  designScore Int? // 1–5
+  easeScore   Int? // 1–5
+  priceScore  Int? // 1–5
+  wish        String?  @db.Text
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }

@@ -1,4 +1,5 @@
 import { DEFAULT_AI_THEME, type AiTheme } from "./schema";
+import { CATALOG_PRESETS } from "./presets-catalog";
 
 // Hand-tuned example themes: shown in the studio before the first generation (no quota used)
 // and available at /preview/ai-design?preset=<key>.
@@ -16,6 +17,7 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
       corners: "soft",
       frame: "dotted",
       metallic: true,
+      artKit: "deco-emas",
       layout: { cover: "photo-fullbleed", couple: "portrait-circle", events: "cards", gallery: "masonry" },
       copy: {
         coverEyebrow: "The Wedding of",
@@ -30,14 +32,15 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
     label: "Adat Jawa",
     theme: {
       name: "Kawung Sogan",
-      mood: "Tradisi Jawa yang anggun, cokelat sogan dan emas tua.",
-      palette: { background: "#F3EBDF", surface: "#F8F2E9", ink: "#3A2717", muted: "#7A6450", accent: "#8C6239", accentSoft: "#E6D6C1", onAccent: "#FFF8EE" },
+      mood: "Tradisi Jawa yang anggun, cokelat sogan dan motif parang emas tua.",
+      palette: { background: "#EFE2CE", surface: "#F7EFE1", ink: "#3A2717", muted: "#755E49", accent: "#7A4E24", accentSoft: "#E4D1B8", onAccent: "#FFF8EE" },
       typography: { display: "Marcellus", names: "Pinyon Script", body: "EB Garamond", displayItalic: false, labelStyle: "small-caps" },
       ornament: "batik-kawung",
       texture: "linen",
       corners: "arch",
       frame: "double",
       metallic: false,
+      artKit: "batik-parang",
       layout: { cover: "centered-frame", couple: "stacked-arch", events: "timeline", gallery: "grid" },
       copy: {
         coverEyebrow: "Pawiwahan",
@@ -60,9 +63,10 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
       corners: "soft",
       frame: "hairline",
       metallic: false,
+      artKit: "kebun-sage",
       layout: { cover: "split-photo", couple: "side-by-side", events: "ticket", gallery: "filmstrip" },
       copy: {
-        coverEyebrow: "We’re getting married",
+        coverEyebrow: "Kabar Bahagia",
         openButton: "Lihat Undangan",
         greeting: "Halo, keluarga dan sahabat terkasih",
         opening: "Dengan penuh sukacita, kami mengundang Anda untuk merayakan hari pernikahan kami.",
@@ -70,4 +74,127 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
       },
     },
   },
+
+  // ── Former hand-coded templates, rebuilt on the theme engine (same slugs as their catalog rows) ──
+  standard: {
+    label: "Minimalis putih",
+    theme: {
+      name: "Minimalist White",
+      mood: "Bersih dan tenang, tipografi yang bicara, tanpa hiasan berlebih.",
+      palette: { background: "#FFFFFF", surface: "#F9F8F5", ink: "#1D1C1A", muted: "#66635D", accent: "#3A3834", accentSoft: "#EEECE7", onAccent: "#FAF9F6" },
+      typography: { display: "Tenor Sans", names: "Bodoni Moda", body: "Manrope", displayItalic: false, labelStyle: "uppercase-tracked" },
+      ornament: "minimal-rule",
+      texture: "none",
+      corners: "sharp",
+      frame: "hairline",
+      metallic: false,
+      artKit: "none",
+      layout: { cover: "typographic", couple: "editorial", events: "cards", gallery: "grid" },
+      copy: {
+        coverEyebrow: "Pernikahan",
+        openButton: "Buka Undangan",
+        greeting: "Assalamu’alaikum Warahmatullahi Wabarakatuh",
+        opening: "Dengan memohon rahmat Allah SWT, kami bermaksud mengundang Bapak/Ibu/Saudara/i pada hari pernikahan kami.",
+        closing: "Merupakan suatu kehormatan apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.",
+      },
+    },
+  },
+  "classic-premium": {
+    label: "Mawar romantis",
+    theme: {
+      name: "Floral Blossom",
+      mood: "Romantis dengan rona rose quartz lembut, foto sampul penuh layar dan sulur garis bunga halus.",
+      palette: { background: "#F4E2E6", surface: "#FCF3F5", ink: "#3A1F28", muted: "#795661", accent: "#9A3D52", accentSoft: "#EDD2D9", onAccent: "#FFF7F9" },
+      typography: { display: "Cormorant Garamond", names: "Alex Brush", body: "Lora", displayItalic: true, labelStyle: "small-caps" },
+      ornament: "flourish",
+      texture: "paper",
+      corners: "soft",
+      frame: "double",
+      metallic: false,
+      artKit: "garis-halus",
+      layout: { cover: "photo-fullbleed", couple: "portrait-circle", events: "timeline", gallery: "masonry" },
+      copy: {
+        coverEyebrow: "Undangan Pernikahan",
+        openButton: "Buka Undangan",
+        greeting: "Assalamu’alaikum Warahmatullahi Wabarakatuh",
+        opening: "Dengan penuh rasa syukur, kami mengundang Bapak/Ibu/Saudara/i untuk turut berbahagia di hari pernikahan kami.",
+        closing: "Doa restu Bapak/Ibu/Saudara/i adalah hadiah terindah bagi kami. Terima kasih.",
+      },
+    },
+  },
+  "modern-dark": {
+    label: "Gelap modern",
+    theme: {
+      name: "Modern Dark",
+      mood: "Tegas dan modern, nada gelap dengan aksen perak yang sejuk.",
+      palette: { background: "#0F1012", surface: "#17181B", ink: "#EDEBE7", muted: "#A3A09A", accent: "#D6D1C7", accentSoft: "#222327", onAccent: "#0F1012" },
+      typography: { display: "DM Serif Display", names: "Italiana", body: "Outfit", displayItalic: false, labelStyle: "uppercase-tracked" },
+      ornament: "wave-line",
+      texture: "grain",
+      corners: "sharp",
+      frame: "hairline",
+      metallic: true,
+      artKit: "garis-halus",
+      layout: { cover: "photo-fullbleed", couple: "editorial", events: "ticket", gallery: "filmstrip" },
+      copy: {
+        coverEyebrow: "Kami Menikah",
+        openButton: "Buka Undangan",
+        greeting: "Halo, keluarga dan sahabat",
+        opening: "Kami mengundang Anda untuk hadir dan merayakan awal perjalanan baru kami.",
+        closing: "Terima kasih telah menjadi bagian dari cerita kami. Sampai bertemu di hari bahagia.",
+      },
+    },
+  },
+  "royal-gold": {
+    label: "Biru & emas",
+    theme: {
+      name: "Golden Royale",
+      mood: "Megah dan berwibawa, biru malam berpadu emas bergaya art deco.",
+      palette: { background: "#0E1A2B", surface: "#13233A", ink: "#F2EAD8", muted: "#AEB5C0", accent: "#C8A55A", accentSoft: "#1C2D45", onAccent: "#0E1A2B" },
+      typography: { display: "Cinzel", names: "Allura", body: "EB Garamond", displayItalic: false, labelStyle: "small-caps" },
+      ornament: "art-deco",
+      texture: "none",
+      corners: "arch",
+      frame: "double",
+      metallic: true,
+      artKit: "deco-emas",
+      layout: { cover: "centered-frame", couple: "portrait-circle", events: "cards", gallery: "grid" },
+      copy: {
+        coverEyebrow: "Walimatul Ursy",
+        openButton: "Buka Undangan",
+        greeting: "Assalamu’alaikum Warahmatullahi Wabarakatuh",
+        opening: "Dengan memohon rahmat dan ridho Allah SWT, kami bermaksud menyelenggarakan resepsi pernikahan putra-putri kami.",
+        closing: "Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir.",
+      },
+    },
+  },
+  "romantic-elegance": {
+    label: "Merah muda bersih",
+    theme: {
+      name: "Romantic Elegance",
+      mood: "Lembut, bersih dan romantis, merah muda kusam berbingkai lengkung tanpa ornamen ramai.",
+      palette: { background: "#F6E6EA", surface: "#FFFAF9", ink: "#3B262B", muted: "#7A5D64", accent: "#964B59", accentSoft: "#EED7DC", onAccent: "#FFF8F7" },
+      typography: { display: "Gilda Display", names: "Parisienne", body: "Figtree", displayItalic: false, labelStyle: "uppercase-tracked" },
+      ornament: "flourish",
+      texture: "linen",
+      corners: "arch",
+      frame: "hairline",
+      metallic: false,
+      artKit: "none",
+      layout: { cover: "arch-window", couple: "side-by-side", events: "timeline", gallery: "masonry" },
+      copy: {
+        coverEyebrow: "Undangan Pernikahan",
+        openButton: "Buka Undangan",
+        greeting: "Assalamu’alaikum Warahmatullahi Wabarakatuh",
+        opening: "Dengan segala kerendahan hati, kami mengundang Bapak/Ibu/Saudara/i untuk menyaksikan janji suci kami.",
+        closing: "Kebahagiaan kami akan lengkap dengan kehadiran dan doa restu Bapak/Ibu/Saudara/i.",
+      },
+    },
+  },
+
+  // ── Catalog batch 2: adat, Islami, luxury, minimalis and modern themes ──
+  ...CATALOG_PRESETS,
 };
+
+/** Catalog rows that used to be hand-coded templates and now render on the theme engine. */
+export const CODE_TEMPLATES_REBUILT_ON_ENGINE = ["standard", "classic-premium", "modern-dark", "royal-gold", "romantic-elegance"] as const;

@@ -29,7 +29,7 @@ export default async function AdminChatPage({
       <div className="flex flex-1 flex-col gap-4 px-4 py-4 md:gap-5 md:py-5 lg:px-6">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Customer Chat</h1>
+            <h1 className="font-serif text-4xl font-medium text-[#1F1A14]">Chat pelanggan</h1>
             <p className="text-sm text-muted-foreground">Live chat real-time dengan indikator mengetik, handoff Asisten AI, dan manajemen sesi</p>
           </div>
         </div>

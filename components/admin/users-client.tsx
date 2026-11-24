@@ -16,6 +16,11 @@ export interface User {
   name: string | null;
   email: string;
   role: string;
+  accountType?: string;
+  agencyName?: string | null;
+  agencyVerified?: boolean;
+  agencyQuota?: number;
+  referralCode?: string | null;
   createdAt: string;
   invitationSlug: string | null;
   partnerName: string | null;
@@ -107,6 +112,25 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
     }
   };
 
+  const handleToggleAgencyVerified = async (user: User) => {
+    const next = !user.agencyVerified;
+    setIsUpdatingRole(user.id);
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agencyVerified: next }),
+      });
+      if (!res.ok) throw new Error("Gagal memperbarui status mitra");
+      toast.success(next ? `${user.agencyName || user.name} ditandai Mitra Terverifikasi` : "Verifikasi mitra dicabut");
+      router.refresh();
+    } catch {
+      toast.error("Gagal memperbarui status mitra");
+    } finally {
+      setIsUpdatingRole(null);
+    }
+  };
+
   const handleToggleAdmin = async (user: User) => {
     const isAdmin = user.role?.toLowerCase() === "admin";
     const nextRole = isAdmin ? "USER" : "admin";
@@ -154,10 +178,39 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
   return (
     <div className="space-y-6">
       {/* Search Header */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari nama, email, atau slug..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-1 flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input type="search" aria-label="Cari pengguna" placeholder="Cari nama, usaha mitra, email, atau slug..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
+          <div className="flex gap-1.5">
+            {(
+              [
+                ["all", "Semua"],
+                ["agency", "Mitra B2B"],
+              ] as const
+            ).map(([k, l]) => {
+              const active = (searchParams.get("tipe") === "agency" ? "agency" : "all") === k;
+              return (
+                <Button
+                  key={k}
+                  type="button"
+                  variant={active ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    if (k === "agency") params.set("tipe", "agency");
+                    else params.delete("tipe");
+                    params.set("page", "1");
+                    startTransition(() => router.replace(`${pathname}?${params.toString()}`));
+                  }}
+                >
+                  {l}
+                </Button>
+              );
+            })}
+          </div>
         </div>
         <div className="text-sm text-muted-foreground flex items-center gap-2">
           {isPending && <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />}
@@ -235,9 +288,22 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.role?.toLowerCase() === "admin" ? "default" : "secondary"}>
-                      {user.role?.toLowerCase() === "admin" ? "Admin" : user.role}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge variant={user.role?.toLowerCase() === "admin" ? "default" : "secondary"} className="w-fit">
+                        {user.role?.toLowerCase() === "admin" ? "Admin" : user.role}
+                      </Badge>
+                      {user.accountType === "AGENCY" && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAgencyVerified(user)}
+                          disabled={isUpdatingRole === user.id}
+                          title="Klik untuk toggle verifikasi mitra"
+                          className="inline-flex w-fit items-center gap-1 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[10px] font-medium text-[#5C431A] hover:bg-[#ECE2CE]"
+                        >
+                          {user.agencyVerified ? "Mitra Terverifikasi" : "Mitra"} · {user.agencyQuota ?? 0} kuota
+                        </button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1 opacity-100 transition-opacity">
@@ -251,7 +317,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                               disabled={isUpdatingRole === user.id}
                               title={user.role?.toLowerCase() === "admin" ? "Cabut akses admin" : "Jadikan admin"}
                             >
-                              {user.role?.toLowerCase() === "admin" ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5 text-[#8A6A2F]" />}
+                              {user.role?.toLowerCase() === "admin" ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5 text-[#8A6424]" />}
                               <span className="hidden sm:inline">{user.role?.toLowerCase() === "admin" ? "Cabut admin" : "Jadikan admin"}</span>
                             </Button>
                           </AlertDialogTrigger>
@@ -275,13 +341,13 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                           </AlertDialogContent>
                         </AlertDialog>
                       )}
-                      <Button variant="ghost" size="icon-sm" title="Login As" onClick={() => handleImpersonate(user.id)} disabled={isImpersonating === user.id}>
+                      <Button variant="ghost" size="icon-sm" title="Masuk sebagai pengguna ini" aria-label={`Masuk sebagai ${user.name || user.email}`} onClick={() => handleImpersonate(user.id)} disabled={isImpersonating === user.id}>
                         <LogIn className={`h-4 w-4 ${isImpersonating === user.id ? "animate-pulse" : ""}`} />
                       </Button>
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                          <Button variant="ghost" size="icon-sm" aria-label={`Hapus ${user.name || user.email}`} title="Hapus pengguna" className="text-destructive hover:text-destructive hover:bg-destructive/10">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>

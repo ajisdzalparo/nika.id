@@ -26,7 +26,7 @@ const features = [
   },
   {
     title: "Optimasi Mobile & Fast Loading",
-    description: "90% tamu akan membuka undangan melalui smartphone. Undangan undangin yuk dioptimalkan agar ringan dan tampil sempurna di semua layar perangkat, memberikan pengalaman terbaik bagi tamu Anda.",
+    description: "90% tamu akan membuka undangan melalui smartphone. Undangan SatuMoment dioptimalkan agar ringan dan tampil sempurna di semua layar perangkat, memberikan pengalaman terbaik bagi tamu Anda.",
     icon: IconDeviceMobile,
   },
   {
@@ -67,7 +67,7 @@ export function FeaturesGrid() {
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-foreground">Fitur Unggulan Yang Memudahkan</h2>
           <p className="text-muted-foreground text-lg leading-relaxed">
-            Kami memahami bahwa persiapan pernikahan itu melelahkan. Itulah mengapa undangin yuk hadir dengan fitur lengkap yang dirancang khusus untuk menghemat waktu dan tenaga Anda.
+            Kami memahami bahwa persiapan pernikahan itu melelahkan. Itulah mengapa SatuMoment hadir dengan fitur lengkap yang dirancang khusus untuk menghemat waktu dan tenaga Anda.
           </p>
         </div>
 

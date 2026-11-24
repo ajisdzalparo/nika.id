@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
+  <!-- Top garland: a soft swag of eucalyptus and olive across the top, gathered with white roses at both ends -->
+  <defs>
+    <linearGradient id="eu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#BFCDBE"/><stop offset="1" stop-color="#7E968A"/></linearGradient>
+    <linearGradient id="ol" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A9B693"/><stop offset="1" stop-color="#617252"/></linearGradient>
+    <radialGradient id="wr" cx=".45" cy=".4" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".7" stop-color="#F3EDE2"/><stop offset="1" stop-color="#D8CDBB"/></radialGradient>
+    <g id="rose">
+      <g fill="url(#wr)" stroke="#CFC3B0" stroke-width=".5">
+        <ellipse cx="0" cy="-11" rx="10" ry="13"/><ellipse cx="0" cy="-11" rx="10" ry="13" transform="rotate(72)"/>
+        <ellipse cx="0" cy="-11" rx="10" ry="13" transform="rotate(144)"/><ellipse cx="0" cy="-11" rx="10" ry="13" transform="rotate(216)"/>
+        <ellipse cx="0" cy="-11" rx="10" ry="13" transform="rotate(288)"/>
+      </g>
+      <path d="M-4 0 C-4 -5 4 -6 4 0" stroke="#C9BBA4" stroke-width="1.1" fill="none"/>
+    </g>
+  </defs>
+  <path d="M0 18 C100 90 300 90 400 18" stroke="#7E968A" stroke-width="1.6" fill="none"/>
+  <g fill="url(#eu)" stroke="#6F877B" stroke-width=".35">
+    <circle cx="34" cy="38" r="8"/><circle cx="60" cy="52" r="8.5"/><circle cx="90" cy="62" r="8"/><circle cx="122" cy="70" r="8.5"/>
+    <circle cx="160" cy="76" r="8"/><circle cx="200" cy="78" r="8.5"/><circle cx="240" cy="76" r="8"/><circle cx="278" cy="70" r="8.5"/>
+    <circle cx="310" cy="62" r="8"/><circle cx="340" cy="52" r="8.5"/><circle cx="366" cy="38" r="8"/>
+  </g>
+  <g fill="url(#ol)">
+    <ellipse cx="46" cy="52" rx="3" ry="11" transform="rotate(-30 46 52)"/><ellipse cx="104" cy="74" rx="3" ry="11" transform="rotate(-20 104 74)"/>
+    <ellipse cx="180" cy="86" rx="3" ry="11" transform="rotate(10 180 86)"/><ellipse cx="220" cy="86" rx="3" ry="11" transform="rotate(-10 220 86)"/>
+    <ellipse cx="296" cy="74" rx="3" ry="11" transform="rotate(20 296 74)"/><ellipse cx="354" cy="52" rx="3" ry="11" transform="rotate(30 354 52)"/>
+  </g>
+  <use href="#rose" transform="translate(22 24) scale(1.2)"/><use href="#rose" transform="translate(44 14) scale(.9)"/>
+  <use href="#rose" transform="translate(378 24) scale(1.2)"/><use href="#rose" transform="translate(356 14) scale(.9)"/>
+  <use href="#rose" transform="translate(200 84) scale(.85)"/>
+</svg>

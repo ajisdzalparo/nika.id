@@ -1,9 +1,10 @@
 "use client";
+import { BrandLogo } from "@/components/common/brand-logo";
 
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon } from "@tabler/icons-react";
+import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon, IconReportMoney, IconMessageCircleHeart, IconTicket } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
 import {
@@ -31,7 +32,10 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
       { title: "Pengguna", url: "/admin/users", icon: IconUsers },
       { title: "Moderasi Ucapan", url: "/admin/moderasi", icon: IconMessage },
       { title: "Transaksi", url: "/admin/transaksi", icon: IconCurrencyDollar },
+      { title: "Keuangan", url: "/admin/keuangan", icon: IconReportMoney },
+      { title: "Kode Promo", url: "/admin/promo", icon: IconTicket },
       { title: "Customer Chat", url: "/admin/chat", icon: IconHeadset },
+      { title: "Masukan Pengguna", url: "/admin/masukan", icon: IconMessageCircleHeart },
     ],
   },
   {
@@ -61,21 +65,11 @@ export function AdminSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" tooltip="UNDANGIN YUK Admin" className="hover:bg-transparent">
+            <SidebarMenuButton asChild size="lg" tooltip="SatuMoment Admin" className="hover:bg-transparent">
               <Link href="/admin" className="flex items-center gap-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/logo-mark.png"
-                  alt="UNDANGIN YUK Admin"
-                  className="hidden size-7 shrink-0 object-contain group-data-[collapsible=icon]:block"
-                />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/logo.png"
-                  alt="UNDANGIN YUK"
-                  className="h-7 w-auto object-contain group-data-[collapsible=icon]:hidden"
-                />
-                <span className="rounded-full border border-[#DFD7C8] bg-[#F7F3EC] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#8A6A2F] group-data-[collapsible=icon]:hidden">
+                <BrandLogo variant="symbol" className="hidden size-7 shrink-0 group-data-[collapsible=icon]:block" />
+                <BrandLogo className="h-7 group-data-[collapsible=icon]:hidden" />
+                <span className="rounded-full border border-[#E9DDC6] bg-[#FCF8F1] px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#8A6424] group-data-[collapsible=icon]:hidden">
                   Admin
                 </span>
               </Link>
@@ -94,7 +88,7 @@ export function AdminSidebar({
                   const active = item.url === "/admin" ? pathname === "/admin" : pathname.startsWith(item.url);
                   return (
                     <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton asChild tooltip={item.title} isActive={active} className="h-10 data-[active=true]:bg-[#1E1B17] data-[active=true]:font-normal data-[active=true]:text-[#F7F3EC]">
+                      <SidebarMenuButton asChild tooltip={item.title} isActive={active} className="relative h-10 rounded-xl transition-colors hover:bg-[#EEE2C9]/70 data-[active=true]:bg-[#1F1A14] data-[active=true]:font-medium data-[active=true]:text-[#F6EEDD] data-[active=true]:shadow-[0_8px_18px_-12px_rgba(26,21,16,.7)] data-[active=true]:before:absolute data-[active=true]:before:inset-y-2.5 data-[active=true]:before:left-0 data-[active=true]:before:w-[3px] data-[active=true]:before:rounded-full data-[active=true]:before:bg-[linear-gradient(180deg,#E6CB86,#B8903F)] [&[data-active=true]>svg]:text-[#D9B56A]">
                         <Link href={item.url}>
                           <item.icon stroke={1.6} />
                           <span>{item.title}</span>
@@ -112,7 +106,7 @@ export function AdminSidebar({
       <SidebarFooter className="gap-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Ke dashboard user" className="h-10 text-[#6B6358]">
+            <SidebarMenuButton asChild tooltip="Ke dashboard user" className="h-10 text-[#6B5F50]">
               <Link href="/dashboard">
                 <IconArrowLeft stroke={1.6} />
                 <span>Ke dashboard user</span>

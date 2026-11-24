@@ -19,37 +19,11 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import type { BankAccount, PaymentAndContactSettings } from "@/lib/system-settings";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
+import { PhoneInput } from "@/components/common/phone-input";
+import { normalizePhoneDigits, waLink } from "@/lib/phone";
 
 interface SystemSettingsManagerProps {
   initialSettings: PaymentAndContactSettings;
-}
-
-const WA_COUNTRIES = [
-  { code: "62", label: "Indonesia (+62)" },
-  { code: "60", label: "Malaysia (+60)" },
-  { code: "65", label: "Singapura (+65)" },
-  { code: "61", label: "Australia (+61)" },
-  { code: "81", label: "Jepang (+81)" },
-  { code: "44", label: "Inggris (+44)" },
-  { code: "1", label: "AS / Kanada (+1)" },
-];
-
-function splitWhatsappNumber(full: string): { country: string; local: string } {
-  const digits = full.replace(/\D/g, "");
-  if (!digits) return { country: "62", local: "" };
-  const matched = WA_COUNTRIES.find((c) => digits.startsWith(c.code));
-  if (matched) {
-    return { country: matched.code, local: digits.slice(matched.code.length).replace(/^0+/, "") };
-  }
-  return { country: "62", local: digits.replace(/^0+/, "") };
-}
-
-function normalizeLocalPhone(raw: string, countryCode: string): string {
-  let digits = raw.replace(/\D/g, "");
-  if (digits.startsWith(countryCode) && digits.length > countryCode.length + 6) {
-    digits = digits.slice(countryCode.length);
-  }
-  return digits.replace(/^0+/, "");
 }
 
 export function SystemSettingsManager({ initialSettings }: SystemSettingsManagerProps) {
@@ -58,9 +32,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
   const [aiDesignEnabled, setAiDesignEnabled] = useState(initialSettings.aiDesignEnabled);
   const [togglingAiDesign, setTogglingAiDesign] = useState(false);
 
-  const initialWa = splitWhatsappNumber(initialSettings.manualWhatsapp);
-  const [waCountry, setWaCountry] = useState(initialWa.country);
-  const [waLocal, setWaLocal] = useState(initialWa.local);
+  const [waNumber, setWaNumber] = useState(normalizePhoneDigits(initialSettings.manualWhatsapp));
   const [manualBanks, setManualBanks] = useState<BankAccount[]>(
     initialSettings.manualBanks.length > 0
       ? initialSettings.manualBanks
@@ -165,7 +137,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          manualWhatsapp: waLocal ? `${waCountry}${waLocal}` : "",
+          manualWhatsapp: waNumber,
           manualBanks: cleanedBanks,
           midtransServerKey: midtransServerKey.trim(),
           midtransClientKey: midtransClientKey.trim(),
@@ -181,9 +153,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
         return toast.error(d.message || "Gagal menyimpan konfigurasi");
       }
       if (d.settings) {
-        const parsedWa = splitWhatsappNumber(d.settings.manualWhatsapp ?? "");
-        setWaCountry(parsedWa.country);
-        setWaLocal(parsedWa.local);
+        setWaNumber(normalizePhoneDigits(d.settings.manualWhatsapp));
         setManualBanks(
           d.settings.manualBanks?.length > 0
             ? d.settings.manualBanks
@@ -295,36 +265,11 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
               </div>
               <div className="space-y-2">
                 <Label htmlFor="wa-admin">Nomor WhatsApp Admin</Label>
-                <div className="flex gap-2">
-                  <select
-                    aria-label="Kode negara WhatsApp"
-                    value={waCountry}
-                    onChange={(e) => {
-                      const nextCountry = e.target.value;
-                      setWaCountry(nextCountry);
-                      setWaLocal((prev) => normalizeLocalPhone(prev, nextCountry));
-                    }}
-                    className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    {WA_COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                  <Input
-                    id="wa-admin"
-                    value={waLocal}
-                    onChange={(e) => setWaLocal(normalizeLocalPhone(e.target.value, waCountry))}
-                    placeholder="81234567890"
-                    inputMode="numeric"
-                    className="flex-1"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {waLocal
-                    ? `Nomor tersimpan: +${waCountry} ${waLocal} (https://wa.me/${waCountry}${waLocal})`
-                    : "Pilih kode negara lalu ketik langsung mulai angka 8 (tanpa 0 di depan), contoh: 81234567890."}
+                <PhoneInput id="wa-admin" value={waNumber} onChange={setWaNumber} aria-describedby="wa-admin-hint" />
+                <p id="wa-admin-hint" className="text-xs text-muted-foreground">
+                  {waNumber
+                    ? `Tautan WhatsApp: ${waLink(waNumber)}`
+                    : "Pilih kode negara lalu ketik nomor mulai angka 8 (tanpa 0 di depan), contoh: 81234567890."}
                 </p>
               </div>
             </div>
@@ -357,13 +302,13 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
             {/* QRIS manual */}
             <div className="space-y-3 border-t pt-5">
               <div className="flex items-center gap-2">
-                <IconQrcode size={18} className="text-[#8A6A2F]" />
+                <IconQrcode size={18} className="text-[#8A6424]" />
                 <div>
                   <h4 className="font-semibold">QRIS manual</h4>
                   <p className="text-xs text-muted-foreground">Unggah gambar QRIS toko (dari bank atau e-wallet merchant). User memindai, membayar sesuai nominal, lalu mengunggah bukti.</p>
                 </div>
               </div>
-              <ImageUploadField value={manualQrisImage} onChange={setManualQrisImage} aspect="aspect-square" />
+              <ImageUploadField value={manualQrisImage} onChange={setManualQrisImage} aspect="aspect-square" fit="contain" />
               {manualQrisEnabled && !manualQrisImage && <p className="text-xs text-amber-700">QRIS manual aktif tapi gambar belum diunggah, jadi belum ditampilkan ke user.</p>}
             </div>
 
@@ -371,7 +316,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
             <div className="space-y-4 border-t pt-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <IconBuildingBank size={18} className="text-[#8A6A2F]" />
+                  <IconBuildingBank size={18} className="text-[#8A6424]" />
                   <div>
                     <h4 className="font-semibold">Rekening Transfer Manual</h4>
                     <p className="text-xs text-muted-foreground">Rekening tujuan yang tampil saat user memilih metode Transfer Manual</p>
@@ -410,7 +355,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
                         id={`bank-holder-${idx}`}
                         value={bank.holder}
                         onChange={(e) => updateBankField(idx, "holder", e.target.value)}
-                        placeholder="PT Undangin Yuk"
+                        placeholder="PT SatuMoment"
                       />
                     </div>
                     <Button
@@ -432,7 +377,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
             <div className="space-y-4 border-t pt-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <IconQrcode size={18} className="text-[#8A6A2F]" />
+                  <IconQrcode size={18} className="text-[#8A6424]" />
                   <div>
                     <h4 className="font-semibold">Payment Gateway (Midtrans Snap)</h4>
                     <p className="text-xs text-muted-foreground">Kosongkan bila hanya ingin menerima Transfer Manual</p>

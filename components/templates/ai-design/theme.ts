@@ -19,7 +19,14 @@ const FONT_SPECS: Record<string, { axes?: string; italic: boolean; fallback: "se
   "Pinyon Script": { italic: false, fallback: "cursive" },
   Allura: { italic: false, fallback: "cursive" },
   "Alex Brush": { italic: false, fallback: "cursive" },
-  Jost: { axes: "wght@300;400;500;600", italic: false, fallback: "sans-serif" },
+  "Dancing Script": { axes: "wght@400;500;600;700", italic: false, fallback: "cursive" },
+  Sacramento: { italic: false, fallback: "cursive" },
+  Tangerine: { axes: "wght@400;700", italic: false, fallback: "cursive" },
+  "Plus Jakarta Sans": { axes: "ital,wght@0,400;0,500;0,600;0,700;1,400", italic: true, fallback: "sans-serif" },
+  Montserrat: { axes: "ital,wght@0,300;0,400;0,500;0,600;0,700;1,400", italic: true, fallback: "sans-serif" },
+  Poppins: { axes: "ital,wght@0,300;0,400;0,500;0,600;0,700;1,400", italic: true, fallback: "sans-serif" },
+  Inter: { axes: "wght@300;400;500;600;700", italic: false, fallback: "sans-serif" },
+  Jost: { axes: "wght@300;400;500;600;700", italic: false, fallback: "sans-serif" },
   Manrope: { axes: "wght@300;400;500;600", italic: false, fallback: "sans-serif" },
   "DM Sans": { axes: "wght@300;400;500;600", italic: false, fallback: "sans-serif" },
   Figtree: { axes: "wght@300;400;500;600", italic: false, fallback: "sans-serif" },
@@ -35,12 +42,16 @@ export function fontHref(family: string) {
   return `https://fonts.googleapis.com/css2?family=${name}${spec?.axes ? `:${spec.axes}` : ""}&display=swap`;
 }
 
-function stack(family: string) {
+export function fontStack(family: string) {
   return `"${family}", ${FONT_SPECS[family]?.fallback ?? "serif"}`;
 }
 
 export function themeFonts(theme: AiTheme) {
-  return Array.from(new Set([theme.typography.display, theme.typography.names, theme.typography.body]));
+  const layerFonts = (theme.layers ?? []).map((l) => l.font).filter((f): f is NonNullable<typeof f> => Boolean(f));
+  const sectionFonts = Object.values(theme.sectionStyles ?? {}).flatMap((s) =>
+    [s?.displayFont, s?.bodyFont].filter((f): f is NonNullable<typeof f> => Boolean(f)),
+  );
+  return Array.from(new Set([theme.typography.display, theme.typography.names, theme.typography.body, ...layerFonts, ...sectionFonts]));
 }
 
 /** Italic only when the display face actually ships an italic (no faux slanting). */
@@ -69,13 +80,13 @@ export function themeStyle(theme: AiTheme): CSSProperties {
     "--accent": p.accent,
     "--accent-soft": p.accentSoft,
     "--on-accent": p.onAccent,
-    "--font-display": stack(theme.typography.display),
-    "--font-names": stack(theme.typography.names),
-    "--font-body": stack(theme.typography.body),
+    "--font-display": fontStack(theme.typography.display),
+    "--font-names": fontStack(theme.typography.names),
+    "--font-body": fontStack(theme.typography.body),
     backgroundColor: p.background,
     backgroundImage: TEXTURES[theme.texture],
     color: p.ink,
-    fontFamily: stack(theme.typography.body),
+    fontFamily: fontStack(theme.typography.body),
   } as CSSProperties;
 }
 

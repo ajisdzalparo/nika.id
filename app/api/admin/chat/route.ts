@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         userId: target.userId,
         type: "SYSTEM",
         title: "Sesi live chat selesai",
-        message: "Admin menutup sesi chat. Terima kasih sudah menghubungi UNDANGIN YUK.",
+        message: "Admin menutup sesi chat. Terima kasih sudah menghubungi SatuMoment.",
         href: "/dashboard",
       });
 

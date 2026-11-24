@@ -46,7 +46,7 @@ function ResetPasswordForm() {
         <div className="grid gap-3">
           <Link
             href="/forgot-password"
-            className="flex h-11 items-center justify-center rounded-full bg-[#1E1B17] text-sm font-medium text-[#F7F3EC] hover:opacity-90"
+            className="flex h-11 items-center justify-center rounded-full bg-[#1F1A14] text-sm font-medium text-[#FCF8F1] hover:opacity-90"
           >
             Minta Tautan Baru
           </Link>
@@ -77,7 +77,7 @@ function ResetPasswordForm() {
         </div>
         <Link
           href="/login"
-          className="flex h-11 items-center justify-center rounded-full bg-[#1E1B17] text-sm font-medium text-[#F7F3EC] hover:opacity-90"
+          className="flex h-11 items-center justify-center rounded-full bg-[#1F1A14] text-sm font-medium text-[#FCF8F1] hover:opacity-90"
         >
           Masuk Sekarang
         </Link>
@@ -121,7 +121,7 @@ function ResetPasswordForm() {
   return (
     <div className="w-full space-y-8">
       <div className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">
+        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">
           Keamanan Akun
         </p>
         <h1 className="font-serif text-[2.5rem] font-medium leading-tight tracking-tight text-zinc-900">
@@ -196,7 +196,7 @@ function ResetPasswordForm() {
         <Button
           type="submit"
           disabled={loading}
-          className="mt-2 h-11 w-full rounded-full bg-[#1E1B17] text-sm font-medium text-[#F7F3EC] hover:bg-[#2E2A24]"
+          className="mt-2 h-11 w-full rounded-full bg-[#1F1A14] text-sm font-medium text-[#FCF8F1] hover:bg-[#2E2A24]"
         >
           {loading ? (
             <>

@@ -150,7 +150,7 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
       {
         question: "Berapa lama undangan aktif?",
         answer:
-          "Masa aktif mengikuti paket yang dipilih, dari beberapa bulan hingga selamanya.",
+          "Masa aktif mengikuti paket yang dipilih, dari 3 bulan hingga 1 tahun.",
       },
       {
         question: "Apakah bisa memakai lagu sendiri?",
@@ -168,6 +168,6 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
   },
   footer: {
     tagline: "Undangan pernikahan digital yang dirancang sesuai cerita kalian.",
-    copyright: "© 2026 UNDANGIN YUK",
+    copyright: "© 2026 SatuMoment",
   },
 };

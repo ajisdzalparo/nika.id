@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 220">
+  <!-- Vintage bouquet anchored bottom-left: dusty-rose and burgundy roses, blush buds, dusty-miller leaves -->
+  <defs>
+    <radialGradient id="dr" cx=".45" cy=".4" r=".75"><stop offset="0" stop-color="#F6DCD6"/><stop offset=".6" stop-color="#D9A3A0"/><stop offset="1" stop-color="#B07477"/></radialGradient>
+    <radialGradient id="bg" cx=".45" cy=".4" r=".75"><stop offset="0" stop-color="#B4505F"/><stop offset=".6" stop-color="#83293C"/><stop offset="1" stop-color="#5A1828"/></radialGradient>
+    <radialGradient id="bl" cx=".45" cy=".4" r=".75"><stop offset="0" stop-color="#FFF3EE"/><stop offset=".7" stop-color="#F2D7CE"/><stop offset="1" stop-color="#D9B2A6"/></radialGradient>
+    <linearGradient id="dm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D3D7CF"/><stop offset="1" stop-color="#93A096"/></linearGradient>
+    <g id="rose">
+      <g stroke="#00000022" stroke-width=".6">
+        <ellipse cx="0" cy="-15" rx="13" ry="17"/><ellipse cx="0" cy="-15" rx="13" ry="17" transform="rotate(60)"/>
+        <ellipse cx="0" cy="-15" rx="13" ry="17" transform="rotate(120)"/><ellipse cx="0" cy="-15" rx="13" ry="17" transform="rotate(180)"/>
+        <ellipse cx="0" cy="-15" rx="13" ry="17" transform="rotate(240)"/><ellipse cx="0" cy="-15" rx="13" ry="17" transform="rotate(300)"/>
+        <ellipse cx="0" cy="-8" rx="9" ry="11" transform="rotate(30)"/><ellipse cx="0" cy="-8" rx="9" ry="11" transform="rotate(150)"/>
+        <ellipse cx="0" cy="-8" rx="9" ry="11" transform="rotate(270)"/>
+      </g>
+      <path d="M-6 0 C-6 -7 6 -8 6 0 C6 5 -1 6 -2 2" stroke="#FFFFFF55" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="bud"><ellipse cx="0" cy="-6" rx="6" ry="9"/><path d="M-6 -2 C-4 4 4 4 6 -2 L0 6Z" fill="#8FA08B"/></g>
+    <path id="lf" d="M0 0 C6 -16 22 -26 40 -24 C32 -10 16 0 0 0Z"/>
+  </defs>
+  <g fill="url(#dm)">
+    <use href="#lf" transform="translate(60 160) rotate(-50) scale(1.5)"/><use href="#lf" transform="translate(130 160) rotate(-80) scale(1.3)"/>
+    <use href="#lf" transform="translate(170 190) rotate(-10) scale(1.4)"/><use href="#lf" transform="translate(20 175) rotate(-100) scale(1.2)"/>
+    <use href="#lf" transform="translate(210 205) rotate(-25) scale(1.1)"/>
+  </g>
+  <path d="M60 220 C80 170 110 130 160 104" stroke="#8FA08B" stroke-width="2" fill="none"/>
+  <g fill="url(#dr)"><use href="#bud" transform="translate(160 104) rotate(50)"/><use href="#bud" transform="translate(132 118) rotate(30) scale(.9)"/></g>
+  <g fill="url(#bl)"><use href="#rose" transform="translate(156 150) scale(1)"/></g>
+  <g fill="url(#dr)"><use href="#rose" transform="translate(104 164) scale(1.2)"/></g>
+  <g fill="url(#bg)"><use href="#rose" transform="translate(50 160) scale(1)"/></g>
+  <g fill="url(#dr)"><use href="#rose" transform="translate(42 202) scale(1.4)"/></g>
+  <g fill="url(#bl)"><use href="#rose" transform="translate(196 196) scale(1.15)"/></g>
+  <g fill="url(#bg)"><use href="#rose" transform="translate(132 206) scale(.95)"/></g>
+  <g fill="url(#bl)"><use href="#rose" transform="translate(92 212) scale(.9)"/></g>
+</svg>

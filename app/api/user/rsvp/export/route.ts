@@ -10,6 +10,17 @@ function escapeCsvCell(raw: string | number | null | undefined): string {
   return `"${neutralized.replace(/"/g, '""')}"`;
 }
 
+function formatWib(date: Date): string {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Jakarta",
+  }).format(date);
+}
+
 export async function GET(request: Request) {
   try {
     const session = await requireAuth(request);
@@ -27,16 +38,41 @@ export async function GET(request: Request) {
     ]);
 
     const rows: string[] = [
-      ["Tipe", "Nama Tamu", "Status / Kehadiran", "Jumlah Tamu", "Ucapan / Keterangan", "Waktu"].map(escapeCsvCell).join(","),
+      [
+        "Tipe",
+        "Nama Tamu",
+        "Status / Kehadiran",
+        "Jumlah Tamu",
+        "No. WA",
+        "Pendamping",
+        "Jawaban Tambahan",
+        "Catatan",
+        "Check-in",
+        "Ucapan / Keterangan",
+        "Waktu",
+      ]
+        .map(escapeCsvCell)
+        .join(","),
     ];
 
     for (const r of attendees) {
+      const checkInStatus = r.checkedInAt
+        ? `Sudah (${formatWib(r.checkedInAt)} WIB)`
+        : r.attendance.toUpperCase() === "TIDAK HADIR"
+          ? "-"
+          : "Belum";
+
       rows.push(
         [
           "RSVP",
           r.guestName,
           r.attendance,
           r.guests,
+          r.phone ?? "",
+          r.companions ?? "",
+          r.customAnswer ?? "",
+          r.note ?? "",
+          checkInStatus,
           "",
           r.createdAt.toISOString(),
         ]
@@ -51,6 +87,11 @@ export async function GET(request: Request) {
           "UCAPAN",
           m.guestName,
           m.status,
+          "",
+          "",
+          "",
+          "",
+          "",
           "",
           m.message,
           m.createdAt.toISOString(),

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 300">
+  <!-- Climbing rose vine for the side edges: thin stem, dusty-miller leaves, small roses and buds -->
+  <defs>
+    <radialGradient id="dr" cx=".45" cy=".4" r=".75"><stop offset="0" stop-color="#F6DCD6"/><stop offset=".6" stop-color="#D9A3A0"/><stop offset="1" stop-color="#B07477"/></radialGradient>
+    <linearGradient id="dm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D3D7CF"/><stop offset="1" stop-color="#93A096"/></linearGradient>
+    <path id="lf" d="M0 0 C6 -12 18 -18 32 -16 C26 -6 14 2 0 0Z"/>
+    <g id="r">
+      <circle r="9" fill="url(#dr)" stroke="#B0747744" stroke-width=".6"/>
+      <path d="M-4 0 C-4 -5 4 -5 4 0 C4 3 0 4 -1 1" stroke="#FFFFFF66" stroke-width="1.1" fill="none"/>
+    </g>
+  </defs>
+  <path d="M16 0 C44 46 24 104 48 150 C72 196 42 244 58 300" stroke="#8FA08B" stroke-width="1.6" fill="none"/>
+  <g fill="url(#dm)">
+    <use href="#lf" transform="translate(28 30) rotate(20)"/><use href="#lf" transform="translate(32 66) rotate(160)"/>
+    <use href="#lf" transform="translate(34 104) rotate(25)"/><use href="#lf" transform="translate(50 142) rotate(165)"/>
+    <use href="#lf" transform="translate(56 184) rotate(30)"/><use href="#lf" transform="translate(48 226) rotate(165)"/>
+    <use href="#lf" transform="translate(58 266) rotate(35)"/>
+  </g>
+  <use href="#r" transform="translate(38 48)"/><use href="#r" transform="translate(56 124) scale(.85)"/>
+  <use href="#r" transform="translate(62 204)"/><use href="#r" transform="translate(52 282) scale(.8)"/>
+</svg>

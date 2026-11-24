@@ -345,47 +345,47 @@ export function AdminChatInbox({
     <div className="space-y-4">
       {/* Antrean Permintaan Hubungi Admin (FIFO Queue Strip) */}
       {queueThreads.length > 0 && (
-        <div className="rounded-2xl border border-[#DFC793] bg-[#FBF4E3] p-4 shadow-2xs">
+        <div className="rounded-2xl border border-[#E3C77F] bg-[#FBF4E3] p-4 shadow-2xs">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8A6A2F] text-white">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8A6424] text-white">
                 <IconClock size={14} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-[#15130F]">
+                <p className="text-sm font-semibold text-[#1A1510]">
                   Antrean Minta Hubungi Admin ({queueThreads.length})
                 </p>
-                <p className="text-xs text-[#6E5426]">Urutan paling awal berada di posisi #1</p>
+                <p className="text-xs text-[#6E4F1C]">Urutan paling awal berada di posisi #1</p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setFilter("QUEUE")}
-              className="rounded-full border border-[#D4BC82] bg-white px-3 py-1 text-xs font-medium text-[#5C4620] hover:bg-[#FAF8F4]"
+              className="rounded-full border border-[#D4BC82] bg-white px-3 py-1 text-xs font-medium text-[#5C431A] hover:bg-[#FCF8F1]"
             >
               Tampilkan Antrean
             </button>
           </div>
 
-          <div className="flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:thin]">
+          <div className="flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:thin] sm:flex-wrap sm:overflow-visible">
             {queueThreads.map((q) => {
               const name = q.user?.name || q.user?.email || "User";
               return (
                 <div
                   key={q.id}
-                  className="flex shrink-0 items-center gap-3 rounded-xl border border-[#DFC793] bg-white px-3 py-2 shadow-2xs"
+                  className="flex shrink-0 items-center gap-3 rounded-xl border border-[#E3C77F] bg-white px-3 py-2 shadow-2xs"
                 >
                   <button
                     type="button"
                     onClick={() => selectThread(q.id)}
                     className="flex items-center gap-2.5 text-left"
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#15130F] text-[11px] font-semibold text-[#FAF8F4]">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1A1510] text-[11px] font-semibold text-[#FCF8F1]">
                       #{q.queuePosition}
                     </span>
                     <div className="min-w-0">
-                      <p className="max-w-36 truncate text-xs font-semibold text-[#15130F]">{name}</p>
-                      <p className="text-[10px] text-[#6B6358]">
+                      <p className="max-w-36 truncate text-xs font-semibold text-[#1A1510]">{name}</p>
+                      <p className="text-[10px] text-[#6B5F50]">
                         Menunggu · {timeAgoShort(q.requestedAdminAt || q.lastMessageAt)}
                       </p>
                     </div>
@@ -394,7 +394,7 @@ export function AdminChatInbox({
                     type="button"
                     disabled={sending}
                     onClick={() => handleAction("TAKEOVER", q.id)}
-                    className="rounded-full bg-[#8A6A2F] px-3 py-1 text-[11px] font-medium text-white transition hover:bg-[#735724] disabled:opacity-50"
+                    className="rounded-full bg-[#8A6424] px-3 py-1 text-[11px] font-medium text-white transition hover:bg-[#735724] disabled:opacity-50"
                   >
                     Layani
                   </button>
@@ -406,12 +406,12 @@ export function AdminChatInbox({
       )}
 
       {/* Main Inbox Container */}
-      <div className="grid min-h-[600px] overflow-hidden rounded-2xl border border-[#DFD7C8] bg-white shadow-xs lg:h-[calc(100vh-12rem)] lg:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid min-h-[600px] overflow-hidden rounded-2xl border border-[#E9DDC6] bg-white shadow-xs lg:h-[calc(100vh-12rem)] lg:grid-cols-[340px_minmax(0,1fr)]">
         {/* Left Thread List */}
-        <aside className="flex flex-col border-b border-[#EFEAE0] bg-[#FDFBF7] lg:border-b-0 lg:border-r">
-          <div className="space-y-3 border-b border-[#EFEAE0] p-4">
+        <aside className="flex flex-col border-b border-[#F3EBDB] bg-[#FDFBF7] lg:border-b-0 lg:border-r">
+          <div className="space-y-3 border-b border-[#F3EBDB] p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-[#15130F]">Percakapan ({threads.length})</p>
+              <p className="text-sm font-semibold text-[#1A1510]">Percakapan ({threads.length})</p>
               {queueThreads.length > 0 && (
                 <span className="rounded-full border border-[#E3CFA0] bg-[#FBF3E0] px-2.5 py-0.5 text-[11px] font-semibold text-[#78571E]">
                   {queueThreads.length} Antre
@@ -422,11 +422,12 @@ export function AdminChatInbox({
             <div className="relative">
               <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8C8272]" />
               <input
-                type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                type="search"
+                aria-label="Cari percakapan"
                 placeholder="Cari nama atau email..."
-                className="h-9 w-full rounded-xl border border-[#E1D8C9] bg-white pl-8 pr-3 text-xs text-[#15130F] placeholder:text-[#8C8272] focus:border-[#8A6A2F] focus:outline-none"
+                className="h-9 w-full rounded-xl border border-[#E9DDC6] bg-white pl-8 pr-3 text-xs text-[#1A1510] placeholder:text-[#8C8272] focus:border-[#8A6424] focus:outline-none"
               />
             </div>
 
@@ -445,8 +446,8 @@ export function AdminChatInbox({
                   onClick={() => setFilter(key)}
                   className={`rounded-lg px-1.5 py-1.5 text-[11px] font-medium transition ${
                     filter === key
-                      ? "bg-[#15130F] text-[#FAF8F4]"
-                      : "border border-[#E6DFD3] bg-white text-[#5E574D] hover:bg-[#FAF8F4]"
+                      ? "bg-[#1A1510] text-[#FCF8F1]"
+                      : "border border-[#EDE3CF] bg-white text-[#5E5446] hover:bg-[#FCF8F1]"
                   }`}
                 >
                   {label}
@@ -455,9 +456,9 @@ export function AdminChatInbox({
             </div>
           </div>
 
-          <div className="flex-1 divide-y divide-[#EFEAE0] overflow-y-auto [scrollbar-width:thin]">
+          <div className="flex-1 divide-y divide-[#F3EBDB] overflow-y-auto [scrollbar-width:thin]">
             {filteredThreads.length === 0 ? (
-              <div className="px-4 py-14 text-center text-xs text-[#6B6358]">
+              <div className="px-4 py-14 text-center text-xs text-[#6B5F50]">
                 Tidak ada percakapan di filter ini.
               </div>
             ) : (
@@ -476,22 +477,22 @@ export function AdminChatInbox({
                     type="button"
                     onClick={() => selectThread(t.id)}
                     className={`flex w-full items-start gap-3 border-l-2 px-4 py-3.5 text-left transition hover:bg-[#F7F2E8]/70 ${
-                      isSelected ? "border-[#8A6A2F] bg-[#F8F2E6]" : "border-transparent"
+                      isSelected ? "border-[#8A6424] bg-[#F8F2E6]" : "border-transparent"
                     }`}
                   >
-                    <Avatar className="h-9 w-9 shrink-0 border border-[#E6DFD3]">
+                    <Avatar className="h-9 w-9 shrink-0 border border-[#EDE3CF]">
                       <AvatarImage src={t.user?.image || undefined} alt={name} />
-                      <AvatarFallback className="bg-[#EFE8DC] text-xs font-medium text-[#5C4620]">
+                      <AvatarFallback className="bg-[#F5EDDD] text-xs font-medium text-[#5C431A]">
                         {name[0]?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-[13px] font-semibold text-[#15130F]">{name}</p>
+                        <p className="truncate text-[13px] font-semibold text-[#1A1510]">{name}</p>
                         <span className="shrink-0 text-[10px] text-[#8C8272]">{timeAgoShort(t.lastMessageAt)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <p className={`truncate text-xs ${isTyping ? "font-medium text-[#8A6A2F]" : "text-[#6B6358]"}`}>
+                        <p className={`truncate text-xs ${isTyping ? "font-medium text-[#8A6424]" : "text-[#6B5F50]"}`}>
                           {isTyping ? "Sedang mengetik..." : lastMsg ? formatChatPreview(lastMsg.content) : t.user?.email}
                         </p>
                         <span
@@ -499,10 +500,10 @@ export function AdminChatInbox({
                             isClosed
                               ? "bg-zinc-100 text-zinc-500"
                               : isQueued
-                                ? "bg-[#15130F] text-[#F4EAD6]"
+                                ? "bg-[#1A1510] text-[#F5E8CA]"
                                 : isLiveAdmin
-                                  ? "border border-[#DFC793] bg-[#FBF4E3] text-[#78571E]"
-                                  : "border border-[#E6DFD3] bg-white text-[#5E574D]"
+                                  ? "border border-[#E3C77F] bg-[#FBF4E3] text-[#78571E]"
+                                  : "border border-[#EDE3CF] bg-white text-[#5E5446]"
                           }`}
                         >
                           {isClosed
@@ -527,17 +528,17 @@ export function AdminChatInbox({
           {activeThread ? (
             <>
               {/* Header */}
-              <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EFEAE0] bg-white px-5 py-3.5">
+              <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F3EBDB] bg-white px-5 py-3.5">
                 <div className="flex min-w-0 items-center gap-3">
-                  <Avatar className="h-10 w-10 shrink-0 border border-[#E6DFD3]">
+                  <Avatar className="h-10 w-10 shrink-0 border border-[#EDE3CF]">
                     <AvatarImage src={activeThread.user?.image || undefined} alt={activeThread.user?.name || "User"} />
-                    <AvatarFallback className="bg-[#EFE8DC] text-xs font-medium text-[#5C4620]">
+                    <AvatarFallback className="bg-[#F5EDDD] text-xs font-medium text-[#5C431A]">
                       {(activeThread.user?.name || activeThread.user?.email || "U")[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-[#15130F]">
+                      <p className="truncate text-sm font-semibold text-[#1A1510]">
                         {activeThread.user?.name || activeThread.user?.email}
                       </p>
                       <span
@@ -545,10 +546,10 @@ export function AdminChatInbox({
                           activeThread.status === "CLOSED"
                             ? "bg-zinc-100 text-zinc-600"
                             : activeThread.waitingInQueue
-                              ? "bg-[#15130F] text-[#F4EAD6]"
+                              ? "bg-[#1A1510] text-[#F5E8CA]"
                               : activeThread.mode === "ADMIN"
-                                ? "border border-[#DFC793] bg-[#FBF4E3] text-[#78571E]"
-                                : "border border-[#E6DFD3] bg-[#FAF8F4] text-[#5E574D]"
+                                ? "border border-[#E3C77F] bg-[#FBF4E3] text-[#78571E]"
+                                : "border border-[#EDE3CF] bg-[#FCF8F1] text-[#5E5446]"
                         }`}
                       >
                         {activeThread.status === "CLOSED"
@@ -560,9 +561,9 @@ export function AdminChatInbox({
                               : "Asisten AI"}
                       </span>
                     </div>
-                    <p className="truncate text-xs text-[#6B6358]">
+                    <p className="truncate text-xs text-[#6B5F50]">
                       {activeUserTyping ? (
-                        <span className="font-medium text-[#8A6A2F]">Sedang mengetik...</span>
+                        <span className="font-medium text-[#8A6424]">Sedang mengetik...</span>
                       ) : (
                         activeThread.user?.email
                       )}
@@ -583,7 +584,7 @@ export function AdminChatInbox({
                           size="sm"
                           onClick={() => handleAction("TAKEOVER")}
                           disabled={sending}
-                          className="bg-[#8A6A2F] text-white hover:bg-[#735724]"
+                          className="bg-[#8A6424] text-white hover:bg-[#735724]"
                         >
                           <IconHeadset size={14} className="mr-1.5" /> Layani Sekarang
                         </Button>
@@ -612,12 +613,12 @@ export function AdminChatInbox({
               </header>
 
               {/* Messages Thread */}
-              <div className="flex-1 space-y-4 overflow-y-auto bg-[#FAF8F4] px-5 py-5 [scrollbar-width:thin] sm:px-6">
+              <div className="flex-1 space-y-4 overflow-y-auto bg-[#FCF8F1] px-5 py-5 [scrollbar-width:thin] sm:px-6">
                 {messages.map((m) => {
                   if (m.sender === "SYSTEM") {
                     return (
                       <div key={m.id} className="py-1 text-center">
-                        <span className="inline-block rounded-full border border-[#E5DDD0] bg-[#EFE9DD] px-3 py-1 text-[11px] text-[#5E574D]">
+                        <span className="inline-block rounded-full border border-[#E5DDD0] bg-[#EFE9DD] px-3 py-1 text-[11px] text-[#5E5446]">
                           {m.content}
                         </span>
                       </div>
@@ -634,10 +635,10 @@ export function AdminChatInbox({
                       <div
                         className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-2xs ${
                           isAdmin
-                            ? "rounded-br-sm bg-[#15130F] text-[#FAF8F4]"
+                            ? "rounded-br-sm bg-[#1A1510] text-[#FCF8F1]"
                             : isAi
-                              ? "rounded-bl-sm border border-[#E6DFD3] bg-white text-[#2E2A24]"
-                              : "rounded-bl-sm border border-[#DFC793] bg-[#FBF4E3] text-[#15130F]"
+                              ? "rounded-bl-sm border border-[#EDE3CF] bg-white text-[#2E2A24]"
+                              : "rounded-bl-sm border border-[#E3C77F] bg-[#FBF4E3] text-[#1A1510]"
                         }`}
                       >
                         <ChatMessageText content={m.content} isUserBubble={isAdmin} />
@@ -648,13 +649,13 @@ export function AdminChatInbox({
 
                 {activeUserTyping && (
                   <div className="flex flex-col items-start">
-                    <span className="mb-1 px-1 text-[10px] font-medium text-[#8A6A2F]">
+                    <span className="mb-1 px-1 text-[10px] font-medium text-[#8A6424]">
                       {activeThread.user?.name || "User"} sedang mengetik
                     </span>
-                    <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-[#DFC793] bg-[#FBF4E3] px-4 py-3">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6A2F] [animation-delay:0ms]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6A2F] [animation-delay:150ms]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6A2F] [animation-delay:300ms]" />
+                    <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-[#E3C77F] bg-[#FBF4E3] px-4 py-3">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6424] [animation-delay:0ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6424] [animation-delay:150ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6424] [animation-delay:300ms]" />
                     </div>
                   </div>
                 )}
@@ -663,17 +664,17 @@ export function AdminChatInbox({
 
               {/* Pending Image Preview */}
               {attachmentUrl && (
-                <div className="flex items-center justify-between gap-3 border-t border-[#EFEAE0] bg-[#FAF8F4] px-4 py-2">
+                <div className="flex items-center justify-between gap-3 border-t border-[#F3EBDB] bg-[#FCF8F1] px-4 py-2">
                   <div className="flex items-center gap-2.5">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={attachmentUrl} alt="Pratinjau lampiran" className="h-11 w-11 rounded-lg border border-[#E1D8C9] object-cover" />
-                    <span className="text-xs font-medium text-[#5E574D]">Gambar siap dikirim</span>
+                    <img src={attachmentUrl} alt="Pratinjau lampiran" className="h-11 w-11 rounded-lg border border-[#E9DDC6] object-cover" />
+                    <span className="text-xs font-medium text-[#5E5446]">Gambar siap dikirim</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setAttachmentUrl(null)}
                     aria-label="Hapus lampiran"
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[#6B6358] hover:bg-[#EFEAE0] hover:text-[#15130F]"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[#6B5F50] hover:bg-[#F3EBDB] hover:text-[#1A1510]"
                   >
                     <IconX size={14} />
                   </button>
@@ -681,7 +682,7 @@ export function AdminChatInbox({
               )}
 
               {/* Quick Replies + Composer */}
-              <div className="border-t border-[#EFEAE0] bg-white px-4 py-3">
+              <div className="border-t border-[#F3EBDB] bg-white px-4 py-3">
                 {activeThread.status !== "CLOSED" && (
                   <div className="mb-2.5 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
                     {QUICK_REPLIES.map((qr) => (
@@ -689,7 +690,7 @@ export function AdminChatInbox({
                         key={qr}
                         type="button"
                         onClick={() => handleReplyChange(qr)}
-                        className="shrink-0 rounded-full border border-[#E6DFD3] bg-[#FAF8F4] px-3 py-1 text-[11px] text-[#4E473E] transition hover:border-[#8A6A2F] hover:text-[#15130F]"
+                        className="shrink-0 rounded-full border border-[#EDE3CF] bg-[#FCF8F1] px-3 py-1 text-[11px] text-[#4E473E] transition hover:border-[#8A6424] hover:text-[#1A1510]"
                       >
                         {qr}
                       </button>
@@ -711,12 +712,13 @@ export function AdminChatInbox({
                     onClick={() => fileInputRef.current?.click()}
                     aria-label="Lampirkan gambar"
                     title="Lampirkan gambar (JPG, PNG, WebP, GIF)"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E1D8C9] bg-[#FAF8F4] text-[#5E574D] transition hover:border-[#8A6A2F] hover:text-[#15130F] disabled:opacity-40"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E9DDC6] bg-[#FCF8F1] text-[#5E5446] transition hover:border-[#8A6424] hover:text-[#1A1510] disabled:opacity-40"
                   >
                     {uploading ? <IconLoader2 size={16} className="animate-spin" /> : <IconPhotoPlus size={17} />}
                   </button>
                   <input
                     type="text"
+                    aria-label="Tulis balasan"
                     value={reply}
                     onChange={(e) => handleReplyChange(e.target.value)}
                     onPaste={handlePaste}
@@ -726,12 +728,12 @@ export function AdminChatInbox({
                         ? "Kirim pesan untuk membuka kembali sesi..."
                         : "Balas langsung sebagai admin atau tempel gambar..."
                     }
-                    className="h-10 flex-1 rounded-full border border-[#E1D8C9] bg-[#FAF8F4] px-4 text-sm text-[#15130F] placeholder:text-[#8C8272] focus:border-[#8A6A2F] focus:outline-none"
+                    className="h-10 flex-1 rounded-full border border-[#E9DDC6] bg-[#FCF8F1] px-4 text-sm text-[#1A1510] placeholder:text-[#8C8272] focus:border-[#8A6424] focus:outline-none"
                   />
                   <Button
                     type="submit"
                     disabled={(!reply.trim() && !attachmentUrl) || sending || uploading}
-                    className="h-10 rounded-full bg-[#15130F] px-5 text-[#FAF8F4] hover:bg-[#2A261F]"
+                    className="h-10 rounded-full bg-[#1A1510] px-5 text-[#FCF8F1] hover:bg-[#2B241B]"
                   >
                     {sending ? <IconLoader2 size={16} className="animate-spin" /> : <IconSend size={16} className="mr-1.5" />}
                     Kirim
@@ -740,7 +742,7 @@ export function AdminChatInbox({
               </div>
             </>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-[#6B6358]">
+            <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-[#6B5F50]">
               <IconMessageCircle size={32} className="mb-2 opacity-30" />
               <p className="text-sm">Pilih percakapan di sebelah kiri untuk membalas user.</p>
             </div>

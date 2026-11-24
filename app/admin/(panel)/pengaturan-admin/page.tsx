@@ -37,11 +37,11 @@ export default async function PengaturanPage() {
       <div className="flex flex-1 flex-col">
         <div className="flex flex-col gap-4 px-4 py-4 md:gap-6 md:py-6 lg:px-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Pengaturan Sistem</h1>
+            <h1 className="font-serif text-4xl font-medium text-[#1F1A14]">Pengaturan sistem</h1>
             <p className="text-muted-foreground">Musik default undangan, maintenance mode, WhatsApp admin, dan rekening pembayaran</p>
           </div>
 
-          <div className="max-w-4xl space-y-6">
+          <div className="w-full space-y-6">
             <DefaultMusicManager initialItems={initialDefaultMusic} />
             <SystemSettingsManager initialSettings={initialSettings} />
           </div>

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { IconEye, IconEyeOff, IconLoader2, IconLock, IconShieldLock } from "@tabler/icons-react";
 import { signIn, signOut, useSession } from "@/lib/auth-client";
 
-const field = "h-12 w-full rounded-xl border border-[#3A352C] bg-[#1B1915] px-4 text-[15px] text-[#F3EBDD] outline-none transition placeholder:text-[#6F675B] focus:border-[#C9A45C] focus:ring-2 focus:ring-[#C9A45C]/25";
+const field = "h-12 w-full rounded-xl border border-[#3A352C] bg-[#1B1915] px-4 text-[15px] text-[#F6EEDD] outline-none transition placeholder:text-[#6F675B] focus:border-[#D9B56A] focus:ring-2 focus:ring-[#D9B56A]/25";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -59,7 +59,7 @@ export function AdminLoginForm() {
     <div className="space-y-8">
       <div className="space-y-3">
         <span className="flex h-12 w-12 items-center justify-center rounded-full border border-[#3A352C]">
-          <IconShieldLock size={22} className="text-[#C9A45C]" />
+          <IconShieldLock size={22} className="text-[#D9B56A]" />
         </span>
         <h1 className="font-(family-name:--font-landing-display) text-[2.6rem] font-medium leading-tight">Masuk panel admin</h1>
         <p className="text-[15px] text-[#B8AD9A]">Kelola template, pengguna, transaksi, dan moderasi.</p>
@@ -97,19 +97,19 @@ export function AdminLoginForm() {
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Sembunyikan password" : "Lihat password"}
-            className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#8C8272] transition-colors hover:text-[#F3EBDD]"
+            className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[#8C8272] transition-colors hover:text-[#F6EEDD]"
           >
             {showPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
           </button>
         </div>
-        <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#F3EBDD] text-[15px] font-medium text-[#15130F] transition-opacity hover:opacity-90 disabled:opacity-60">
+        <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#F6EEDD] text-[15px] font-medium text-[#1A1510] transition-opacity hover:opacity-90 disabled:opacity-60">
           {loading ? <IconLoader2 size={18} className="animate-spin" /> : <IconLock size={17} />} Masuk
         </button>
       </form>
 
       <p className="text-center text-sm text-[#8C8272]">
         Bukan admin?{" "}
-        <Link href="/login" className="text-[#C9A45C] underline-offset-4 hover:underline">
+        <Link href="/login" className="text-[#D9B56A] underline-offset-4 hover:underline">
           Masuk sebagai pengguna
         </Link>
       </p>

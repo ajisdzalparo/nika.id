@@ -29,6 +29,8 @@ interface ActiveInvitationContextValue {
   invitations: SwitchableInvitation[];
   switchingId: string | null;
   switchInvitation: (id: string) => Promise<void>;
+  /** Remaining AI credits (plan + top-up); null when AI design is disabled. */
+  aiCredits: number | null;
 }
 
 const ActiveInvitationContext = createContext<ActiveInvitationContextValue | null>(null);
@@ -39,10 +41,12 @@ const useHydrated = () => useSyncExternalStore(subscribe, () => true, () => fals
 export function ActiveInvitationProvider({
   active,
   invitations,
+  aiCredits = null,
   children,
 }: {
   active: SwitchableInvitation;
   invitations: SwitchableInvitation[];
+  aiCredits?: number | null;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -72,7 +76,7 @@ export function ActiveInvitationProvider({
   };
 
   return (
-    <ActiveInvitationContext.Provider value={{ active, invitations, switchingId, switchInvitation }}>
+    <ActiveInvitationContext.Provider value={{ active, invitations, switchingId, switchInvitation, aiCredits }}>
       {children}
     </ActiveInvitationContext.Provider>
   );
@@ -102,18 +106,18 @@ function SwitcherMenuContent({ align = "start" }: { align?: "start" | "end" }) {
             className="flex items-center justify-between gap-2 py-2"
           >
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-[#15130F]">{inv.title}</p>
-              <p className="truncate text-[11px] text-[#6B6358]">
+              <p className="truncate text-xs font-semibold text-[#1A1510]">{inv.title}</p>
+              <p className="truncate text-[11px] text-[#6B5F50]">
                 /{inv.slug || "draft"} · {inv.plan === "FREE" ? "Pratinjau" : PLAN_LIMITS[inv.plan]?.name}
               </p>
             </div>
-            {isCurrent && <IconCheck size={15} className="shrink-0 text-[#8A6A2F]" />}
+            {isCurrent && <IconCheck size={15} className="shrink-0 text-[#8A6424]" />}
           </DropdownMenuItem>
         );
       })}
       <DropdownMenuSeparator />
       <DropdownMenuItem asChild>
-        <Link href="/undangan" className="flex items-center gap-2 text-xs font-medium text-[#8A6A2F]">
+        <Link href="/undangan" className="flex items-center gap-2 text-xs font-medium text-[#8A6424]">
           <IconPlus size={14} /> Kelola / Buat Undangan Baru
         </Link>
       </DropdownMenuItem>
@@ -133,13 +137,13 @@ export function InvitationSwitcher({ compact = false }: { compact?: boolean }) {
     const compactBtn = (
       <button
         type="button"
-        className="inline-flex h-8 max-w-48 items-center gap-1.5 rounded-full border border-[#DFD7C8] bg-white px-3 text-xs font-medium text-[#1E1B17] transition hover:border-[#8A6A2F]"
+        className="inline-flex h-9 max-w-48 items-center gap-1.5 rounded-full border border-[#E9DDC6] bg-white px-3.5 text-xs font-medium text-[#1F1A14] transition hover:border-[#8A6424]"
       >
         <span className="truncate">{active.title}</span>
         {switchingId ? (
-          <IconLoader2 size={13} className="shrink-0 animate-spin text-[#8A6A2F]" />
+          <IconLoader2 size={13} className="shrink-0 animate-spin text-[#8A6424]" />
         ) : (
-          <IconChevronDown size={13} className="shrink-0 text-[#6B6358]" />
+          <IconChevronDown size={13} className="shrink-0 text-[#6B5F50]" />
         )}
       </button>
     );
@@ -157,17 +161,17 @@ export function InvitationSwitcher({ compact = false }: { compact?: boolean }) {
     <SidebarMenuButton
       size="lg"
       tooltip={active.title}
-      className="rounded-lg border border-[#E1D8C9] bg-[#FFFDF9] hover:bg-[#FAF8F4] data-[state=open]:bg-[#FAF8F4]"
+      className="rounded-lg border border-[#E9DDC6] bg-[#FFFDF9] hover:bg-[#FCF8F1] data-[state=open]:bg-[#FCF8F1]"
     >
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[#EFE8DC] text-[#8A6A2F]">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[#F5EDDD] text-[#8A6424]">
         <IconMailHeart size={17} stroke={1.7} />
       </span>
       <div className="grid flex-1 text-left leading-tight">
-        <span className="truncate text-[13px] font-medium text-[#1E1B17]">{active.title}</span>
-        <span className="truncate text-[11px] text-[#6B6358]">/{active.slug || "draft"}</span>
+        <span className="truncate text-[13px] font-medium text-[#1F1A14]">{active.title}</span>
+        <span className="truncate text-[11px] text-[#6B5F50]">/{active.slug || "draft"}</span>
       </div>
       {switchingId ? (
-        <IconLoader2 className="ml-auto size-4 shrink-0 animate-spin text-[#8A6A2F]" />
+        <IconLoader2 className="ml-auto size-4 shrink-0 animate-spin text-[#8A6424]" />
       ) : (
         <IconSelector className="ml-auto size-4 shrink-0 text-[#8C8272]" />
       )}
@@ -206,18 +210,18 @@ export function InvitationSwitcher({ compact = false }: { compact?: boolean }) {
                   className="flex items-center justify-between gap-2 py-2"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-semibold text-[#15130F]">{inv.title}</p>
-                    <p className="truncate text-[11px] text-[#6B6358]">
+                    <p className="truncate text-xs font-semibold text-[#1A1510]">{inv.title}</p>
+                    <p className="truncate text-[11px] text-[#6B5F50]">
                       /{inv.slug || "draft"} · {inv.plan === "FREE" ? "Pratinjau" : PLAN_LIMITS[inv.plan]?.name}
                     </p>
                   </div>
-                  {isCurrent && <IconCheck size={15} className="shrink-0 text-[#8A6A2F]" />}
+                  {isCurrent && <IconCheck size={15} className="shrink-0 text-[#8A6424]" />}
                 </DropdownMenuItem>
               );
             })}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/undangan" className="flex items-center gap-2 text-xs font-medium text-[#8A6A2F]">
+              <Link href="/undangan" className="flex items-center gap-2 text-xs font-medium text-[#8A6424]">
                 <IconPlus size={14} /> Kelola / Buat Undangan Baru
               </Link>
             </DropdownMenuItem>

@@ -26,4 +26,9 @@ export interface CatalogItem {
   isNew: boolean;
   sortOrder: number;
   usageCount: number;
+  creatorId: string | null;
+  creatorName: string | null;
+  price: number;
+  platformFeePct: number;
+  reviewStatus: string;
 }

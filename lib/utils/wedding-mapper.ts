@@ -53,6 +53,7 @@ export function mapInvitationToWeddingData(invitationData: any, guestName?: stri
     loveStory: invitationData.loveStory || { enabled: false, chapters: [] },
     extendedFamily: invitationData.extendedFamily,
     protocol: invitationData.protocol,
+    rsvp: invitationData.rsvp,
     streaming: invitationData.streaming,
     extra: invitationData.extra,
   };

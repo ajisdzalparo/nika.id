@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { IconSend, IconCheck, IconMail } from "@tabler/icons-react";
+import { IconCheck, IconMail } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 

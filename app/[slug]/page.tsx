@@ -8,13 +8,14 @@ import { prisma } from "@/lib/prisma";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 import { getTemplateBySlug } from "@/lib/templates";
 import { InvitationGuard } from "@/components/invitation/invitation-guard";
+import { GuestIdentityMemory, type StoredGuestIdentity } from "@/components/public/guest-identity-memory";
 import { getActiveAiTheme } from "@/lib/ai-design/server";
 import type { AiTheme } from "@/lib/ai-design/schema";
 import type { PlanType } from "@/lib/limits";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ to?: string; preview?: string }>;
+  searchParams: Promise<{ to?: string; preview?: string; grup?: string }>;
 }
 
 async function resolvePublicInvitation(slug: string) {
@@ -54,35 +55,39 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
   const invitation = await resolvePublicInvitation(slug);
   if (!invitation) {
-    return { title: "Invitation Not Found - UNDANGIN YUK" };
+    return { title: "Undangan tidak ditemukan · SatuMoment", robots: { index: false } };
   }
 
+  // This is what WhatsApp shows when the link is shared, so never fall back to placeholder names
   const invitationData = (invitation.data as unknown as import("@/types/wedding").WeddingData) || {};
-  const groomName = invitationData.groom?.nickname || "Pria";
-  const brideName = invitationData.bride?.nickname || "Wanita";
-  const title = `Undangan Pernikahan ${groomName} & ${brideName}`;
-  const description = `The Wedding Celebration of ${invitationData.groom?.fullName || groomName} & ${invitationData.bride?.fullName || brideName}. Klik untuk melihat detail acara.`;
+  const firstWord = (s?: string) => s?.trim().split(/\s+/)[0];
+  const groomName = invitationData.groom?.nickname || firstWord(invitationData.groom?.fullName);
+  const brideName = invitationData.bride?.nickname || firstWord(invitationData.bride?.fullName);
+  const couple = groomName && brideName ? `${groomName} & ${brideName}` : invitation.title || "Undangan Pernikahan";
+  const title = `Undangan Pernikahan ${couple}`;
+  const salutationTo = to
+    ? /^(kepada|yth\.?)/i.test(to.trim())
+      ? to.trim()
+      : `Kepada Yth. ${to.trim()}`
+    : null;
+  const description = salutationTo
+    ? `${salutationTo}, dengan hormat kami mengundang Anda di hari bahagia ${couple}. Buka untuk melihat detail acara.`
+    : `Dengan hormat kami mengundang Anda di hari bahagia ${couple}. Buka untuk melihat detail acara.`;
+  const gallery = Array.isArray(invitationData.gallery) ? (invitationData.gallery as string[]) : [];
+  const image = gallery[0] || invitationData.groom?.photo || invitationData.bride?.photo || "/brand/icon-512.png";
 
   return {
-    title: to ? `${to}, Anda diundang! | ${title}` : title,
+    title: to ? `${to}, Anda diundang · ${title}` : title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: [invitationData.groom?.photo || invitationData.bride?.photo || "/og-image.jpg"],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [invitationData.groom?.photo || invitationData.bride?.photo || "/og-image.jpg"],
-    },
+    robots: { index: false },
+    openGraph: { title, description, images: [image], type: "website", locale: "id_ID" },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 
 export default async function PublicInvitationPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { to, preview } = await searchParams;
+  const { to, preview, grup } = await searchParams;
 
   const invitation = await resolvePublicInvitation(slug);
   if (!invitation) {
@@ -106,8 +111,8 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
   }
 
   const aiTheme = invitation.templateSlug === "ai-design" ? await getActiveAiTheme(invitation.activeAiDesignId) : null;
-  const wishes = (
-    await prisma.guestMessage.findMany({
+  const [wishRows, owner] = await Promise.all([
+    prisma.guestMessage.findMany({
       where: {
         OR: [
           ...(!invitation.id.startsWith("legacy_") ? [{ invitationId: invitation.id }] : []),
@@ -118,8 +123,58 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
       orderBy: { createdAt: "desc" },
       take: 50,
       select: { guestName: true, message: true, createdAt: true },
-    })
-  ).map((w) => ({ ...w, createdAt: w.createdAt.toISOString() }));
+    }),
+    prisma.user.findUnique({
+      where: { id: invitation.userId },
+      select: { accountType: true, agencyName: true, agencyInstagram: true, agencyWhatsapp: true },
+    }),
+  ]);
+  const wishes = wishRows.map((w) => ({ ...w, createdAt: w.createdAt.toISOString() }));
+  const agencyBranding =
+    owner?.accountType === "AGENCY" && owner.agencyName
+      ? { name: owner.agencyName, instagram: owner.agencyInstagram, whatsapp: owner.agencyWhatsapp }
+      : null;
+
+  // Remember personal vs group recipient on the guest's device for 1-tap venue QR check-in
+  // and track real browser opens for named guests
+  let guestIdentity: StoredGuestIdentity | null = null;
+  let matchedGuestId: string | null = null;
+  const cleanTo = to?.trim();
+  if (cleanTo) {
+    let recipientType: "PERSONAL" | "GROUP" = grup === "1" ? "GROUP" : "PERSONAL";
+    let matchedName = cleanTo;
+    let matchedMax: number | undefined = undefined;
+    if (!invitation.id.startsWith("legacy_")) {
+      const inviteGuests = await prisma.guest.findMany({
+        where: { invitationId: invitation.id },
+        select: { id: true, name: true, greeting: true, recipientType: true, maxGuests: true },
+        take: 500,
+      });
+      const lowered = cleanTo.toLowerCase();
+      const matched = inviteGuests.find((g) => {
+        const cleanedGreet = (g.greeting ?? "")
+          .trim()
+          .replace(/^kepada\s+yth\.?\s*/i, "")
+          .replace(/^kepada\s+/i, "")
+          .replace(/^yth\.?\s*/i, "")
+          .trim();
+        const fullRaw = g.greeting ? `${g.greeting} ${g.name}`.trim().toLowerCase() : "";
+        const fullClean = cleanedGreet ? `${cleanedGreet} ${g.name}`.trim().toLowerCase() : "";
+        return (
+          g.name.trim().toLowerCase() === lowered ||
+          (fullRaw && fullRaw === lowered) ||
+          (fullClean && fullClean === lowered)
+        );
+      });
+      if (matched) {
+        matchedGuestId = matched.id;
+        matchedName = matched.name;
+        matchedMax = matched.maxGuests;
+        recipientType = matched.recipientType === "GROUP" ? "GROUP" : "PERSONAL";
+      }
+    }
+    guestIdentity = { name: matchedName, recipientType, maxGuests: matchedMax };
+  }
 
   return (
     <InvitationGuard
@@ -131,6 +186,12 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
       }}
       isOwnerPreview={isOwnerPreview}
     >
+      <GuestIdentityMemory
+        slug={invitation.slug || slug}
+        guest={guestIdentity}
+        trackGuestId={matchedGuestId}
+        isOwnerPreview={isOwnerPreview}
+      />
       <PageContent
         templateSlug={invitation.templateSlug || ""}
         weddingDateRaw={invitation.weddingDate}
@@ -138,6 +199,7 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
         to={to}
         aiTheme={aiTheme}
         wishes={wishes}
+        agencyBranding={agencyBranding}
       />
     </InvitationGuard>
   );
@@ -150,6 +212,7 @@ function PageContent({
   to,
   aiTheme,
   wishes,
+  agencyBranding,
 }: {
   templateSlug: string;
   weddingDateRaw?: Date | string | null;
@@ -157,6 +220,7 @@ function PageContent({
   to?: string;
   aiTheme: AiTheme | null;
   wishes: import("@/lib/rsvp").Wish[];
+  agencyBranding: import("@/types/wedding").WeddingData["agencyBranding"];
 }) {
   const template = getTemplateBySlug(templateSlug);
   if (!template) {
@@ -174,6 +238,7 @@ function PageContent({
   const weddingData = mapInvitationToWeddingData(rawData, to, weddingDate);
   if (aiTheme) weddingData.aiTheme = aiTheme;
   weddingData.wishes = wishes;
+  weddingData.agencyBranding = agencyBranding;
 
   const eventName = `Pernikahan ${weddingData.groom.fullName} & ${weddingData.bride.fullName}`;
   const mainEvent = weddingData.events?.[0] || weddingData.event;

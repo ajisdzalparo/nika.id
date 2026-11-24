@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,20 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [referralInfo, setReferralInfo] = useState<{ code: string; referrerName: string } | null>(null);
+
+  useEffect(() => {
+    const urlRef = new URLSearchParams(window.location.search).get("ref")?.trim() ?? "";
+    const cookieMatch = document.cookie.match(/(?:^|;\s*)uy_ref=([^;]+)/);
+    const code = (urlRef || (cookieMatch ? decodeURIComponent(cookieMatch[1]) : "")).trim().toUpperCase();
+    if (!code) return;
+    fetch(`/api/referral/validate?code=${encodeURIComponent(code)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.valid && d.code) setReferralInfo({ code: d.code, referrerName: d.referrerName });
+      })
+      .catch(() => {});
+  }, []);
 
   const passwordStrength = getPasswordStrength(password);
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
@@ -105,6 +119,12 @@ export default function RegisterPage() {
       <div className="mb-8">
         <h1 className="font-serif text-[2.6rem] leading-tight font-medium text-zinc-900 dark:text-zinc-50 tracking-tight mb-2">Buat Akun Baru</h1>
         <p className="text-zinc-500 dark:text-zinc-400">Mulai perjalanan pernikahan digital Anda di sini.</p>
+        {referralInfo && (
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-3.5 py-1.5 text-xs font-medium text-[#5C431A]">
+            <IconCheck className="h-3.5 w-3.5 text-[#8A6424]" />
+            Referral <strong>{referralInfo.code}</strong> aktif ({referralInfo.referrerName}) · Diskon 10% di transaksi pertama
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -126,7 +146,7 @@ export default function RegisterPage() {
                 <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#F7F3EC] px-2 text-zinc-400 font-medium">Atau dengan email</span>
+                <span className="bg-[#FCF8F1] px-2 text-zinc-400 font-medium">Atau dengan email</span>
               </div>
             </div>
           </>

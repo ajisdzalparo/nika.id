@@ -8,7 +8,7 @@ import { IconStarFilled, IconQuote } from "@tabler/icons-react";
 const reviews = [
   {
     name: "Aditya & Sarah",
-    text: "Puaass banget sama undangin yuk! Editornya gampang banget dipake, template-nya cantik-cantik dan keliatan premium. Tamu banyak yang muji undangannya.",
+    text: "Puaass banget sama SatuMoment! Editornya gampang banget dipake, template-nya cantik-cantik dan keliatan premium. Tamu banyak yang muji undangannya.",
     role: "Pengantin",
     avatar: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=200&auto=format&fit=crop",
   },
@@ -20,7 +20,7 @@ const reviews = [
   },
   {
     name: "Reza & Indah",
-    text: "Awalnya bingung mau pake yang mana, tapi support team undangin yuk responsif banget. Hasilnya memuaskan dan prosesnya cepet banget.",
+    text: "Awalnya bingung mau pake yang mana, tapi support team SatuMoment responsif banget. Hasilnya memuaskan dan prosesnya cepet banget.",
     role: "Pengantin",
     avatar: "https://images.unsplash.com/photo-1522673607200-164883eecd0c?q=80&w=200&auto=format&fit=crop",
   },

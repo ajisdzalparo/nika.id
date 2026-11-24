@@ -35,7 +35,10 @@ RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" \
 FROM base AS runner
 WORKDIR /app
 
-RUN apk add --no-cache nodejs
+RUN apk add --no-cache nodejs npm
+
+# Prisma CLI for running migrations at startup (the standalone build does not include it)
+RUN mkdir -p /opt/db && cd /opt/db && npm init -y >/dev/null &&     npm install --omit=dev --no-audit --no-fund prisma@6.19.2 &&     chown -R 1001:1001 /opt/db
 
 ENV NODE_ENV=production
 
@@ -44,6 +47,7 @@ RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts/db-migrate.mjs /opt/db/db-migrate.mjs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -55,4 +59,5 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 
-CMD ["node", "server.js"]
+# Apply pending database migrations, then start. Set SKIP_DB_MIGRATE=true to skip.
+CMD ["sh", "-c", "if [ \"$SKIP_DB_MIGRATE\" != \"true\" ]; then node /opt/db/db-migrate.mjs || exit 1; fi; exec node server.js"]

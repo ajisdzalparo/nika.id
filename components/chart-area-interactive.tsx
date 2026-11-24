@@ -39,11 +39,11 @@ const chartConfig = {
   },
   mobile: {
     label: "Mobile",
-    color: "#8A6A2F",
+    color: "#8A6424",
   },
   desktop: {
     label: "Desktop",
-    color: "#1E1B17",
+    color: "#1F1A14",
   },
 } satisfies ChartConfig;
 
@@ -80,7 +80,7 @@ export function ChartAreaInteractive({
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Total Kunjungan ({rangeTotal.toLocaleString("id-ID")})</CardTitle>
+        <CardTitle>Kunjungan undangan ({rangeTotal.toLocaleString("id-ID")})</CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
             {rangeLabel} · Akumulasi seluruh undangan: {totalViews.toLocaleString("id-ID")} kunjungan

@@ -15,6 +15,8 @@ export default async function ModerasiPage() {
           invitationSlug: true,
         },
       },
+      // The invitation the wish was sent to; user.invitationSlug is only the legacy single-invitation slug
+      invitation: { select: { slug: true } },
     },
     take: 100,
   });
@@ -30,7 +32,7 @@ export default async function ModerasiPage() {
       <div className="flex flex-1 flex-col">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
           <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-bold tracking-tight">Moderasi Konten</h1>
+            <h1 className="font-serif text-4xl font-medium text-[#1F1A14]">Moderasi ucapan</h1>
             <p className="text-muted-foreground">Kelola ucapan tamu dan audit media sistem</p>
           </div>
 

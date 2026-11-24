@@ -381,7 +381,7 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
               </h3>
               <div className="pt-24 space-y-2 opacity-30">
                 <p className="text-[8px] uppercase tracking-[0.4em] font-sans font-bold">Made with Heart</p>
-                <p className="text-[10px] uppercase tracking-[0.2em] font-sans font-bold">Official Invitation by Undangin Yuk</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-sans font-bold">Official Invitation by SatuMoment</p>
               </div>
             </div>
           </footer>

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 220">
+  <!-- Tropical cluster anchored bottom-left: monstera and palm leaves, frangipani and a terracotta hibiscus -->
+  <defs>
+    <linearGradient id="mo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6F9A78"/><stop offset="1" stop-color="#2F5A43"/></linearGradient>
+    <linearGradient id="pa" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9DB98A"/><stop offset="1" stop-color="#4E7550"/></linearGradient>
+    <radialGradient id="fr" cx=".5" cy=".75" r=".9"><stop offset="0" stop-color="#F6C25A"/><stop offset=".35" stop-color="#FFF4DC"/><stop offset="1" stop-color="#FFFFFF"/></radialGradient>
+    <radialGradient id="hb" cx=".5" cy=".6" r=".8"><stop offset="0" stop-color="#7E2A1B"/><stop offset=".35" stop-color="#C8553A"/><stop offset="1" stop-color="#E9906F"/></radialGradient>
+    <!-- monstera leaf with notches -->
+    <path id="mon" d="M0 0 C-10 -30 -6 -70 30 -86 C66 -100 96 -76 98 -44 C100 -14 70 8 0 0Z M24 -70 L46 -52 M40 -82 L58 -60 M62 -86 L70 -62 M14 -50 L40 -36 M10 -30 L42 -20"/>
+    <!-- palm frond -->
+    <g id="palm">
+      <path d="M0 0 C30 -30 70 -50 120 -56" stroke="#4E7550" stroke-width="2" fill="none"/>
+      <g fill="url(#pa)">
+        <path d="M20 -18 l-10 -30 18 24Z"/><path d="M36 -28 l-6 -32 16 28Z"/><path d="M54 -38 l-2 -32 14 30Z"/>
+        <path d="M72 -46 l2 -30 10 30Z"/><path d="M90 -51 l6 -26 6 28Z"/>
+        <path d="M24 -16 l24 22 -28 -14Z"/><path d="M42 -26 l26 18 -28 -10Z"/><path d="M60 -36 l28 14 -28 -6Z"/><path d="M80 -44 l26 10 -26 -2Z"/>
+      </g>
+    </g>
+    <g id="fran">
+      <g fill="url(#fr)" stroke="#E4CFA8" stroke-width=".5">
+        <path d="M0 0 C-6 -10 -2 -24 10 -24 C16 -12 10 -4 0 0Z"/><path d="M0 0 C-6 -10 -2 -24 10 -24 C16 -12 10 -4 0 0Z" transform="rotate(72)"/>
+        <path d="M0 0 C-6 -10 -2 -24 10 -24 C16 -12 10 -4 0 0Z" transform="rotate(144)"/><path d="M0 0 C-6 -10 -2 -24 10 -24 C16 -12 10 -4 0 0Z" transform="rotate(216)"/>
+        <path d="M0 0 C-6 -10 -2 -24 10 -24 C16 -12 10 -4 0 0Z" transform="rotate(288)"/>
+      </g>
+    </g>
+    <g id="hib">
+      <g fill="url(#hb)">
+        <ellipse cx="0" cy="-14" rx="12" ry="15"/><ellipse cx="0" cy="-14" rx="12" ry="15" transform="rotate(72)"/>
+        <ellipse cx="0" cy="-14" rx="12" ry="15" transform="rotate(144)"/><ellipse cx="0" cy="-14" rx="12" ry="15" transform="rotate(216)"/>
+        <ellipse cx="0" cy="-14" rx="12" ry="15" transform="rotate(288)"/>
+      </g>
+      <path d="M0 0 L14 -20" stroke="#F3D27A" stroke-width="2"/><circle cx="14" cy="-20" r="2.5" fill="#F3D27A"/>
+    </g>
+  </defs>
+  <use href="#palm" transform="translate(30 215) rotate(-20)"/>
+  <use href="#palm" transform="translate(120 215) rotate(-50) scale(.9)"/>
+  <g fill="url(#mo)" stroke="#F4EFE2" stroke-width="2.5" stroke-linecap="round">
+    <use href="#mon" transform="translate(60 210) rotate(-25) scale(1.05)"/>
+    <use href="#mon" transform="translate(150 215) rotate(10) scale(.8)"/>
+  </g>
+  <use href="#hib" transform="translate(92 176) scale(1.2)"/>
+  <use href="#fran" transform="translate(48 190) scale(1.3)"/>
+  <use href="#fran" transform="translate(146 172) scale(1.1)"/>
+  <use href="#fran" transform="translate(196 200) scale(1.2)"/>
+  <use href="#fran" transform="translate(110 210) scale(.9)"/>
+</svg>

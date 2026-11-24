@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { getMidtransClients } from "@/lib/midtrans";
-import { getActiveInvitation } from "@/lib/active-invitation";
-import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PAID_PLANS, PLAN_LIMITS, getUpgradePrice, type PlanType } from "@/lib/limits";
+import { CheckoutOrderError, openOrderWhere, resolveCheckoutOrder } from "@/lib/payment";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
@@ -20,47 +19,18 @@ export async function POST(req: Request) {
     );
   }
 
-  const body = await req.json();
-  const kind = body?.kind === "GUEST_ADDON" ? "GUEST_ADDON" : "PLAN";
-
-  const active = await getActiveInvitation(session.user.id, typeof body?.invitationId === "string" ? body.invitationId : undefined);
-  const currentPlan = (active.plan ?? "FREE") as PlanType;
-
-  let price = 0;
-  let plan: PlanType | null = null;
-  let addonUnits = 0;
-  let itemId = "";
-  let itemName = "";
-
-  if (kind === "GUEST_ADDON") {
-    if (currentPlan === "FREE") {
-      return NextResponse.json({ error: "PLAN_REQUIRED", message: "Pilih paket aktif terlebih dahulu" }, { status: 400 });
+  const body = await req.json().catch(() => ({}));
+  let resolved;
+  try {
+    resolved = await resolveCheckoutOrder(session.user.id, body);
+  } catch (error) {
+    if (error instanceof CheckoutOrderError) {
+      return NextResponse.json({ error: error.code, message: error.message }, { status: error.status });
     }
-    if (currentPlan === "EKSKLUSIF") {
-      return NextResponse.json({ error: "UNLIMITED_PLAN", message: "Paket Eksklusif sudah tanpa batas tamu" }, { status: 400 });
-    }
-    const units = Number(body?.addonUnits ?? 1);
-    if (!Number.isInteger(units) || units < 1 || units > 20) {
-      return NextResponse.json({ error: "INVALID_UNITS", message: "Jumlah paket add-on harus 1–20" }, { status: 400 });
-    }
-    addonUnits = units;
-    price = units * GUEST_ADDON_PRICE;
-    itemId = `ADDON_GUEST_${units * GUEST_ADDON_SIZE}`;
-    itemName = `Tambah +${units * GUEST_ADDON_SIZE} Tamu (${active.title})`;
-  } else {
-    const target = body?.plan as PlanType;
-    if (!target || !PAID_PLANS.includes(target)) {
-      return NextResponse.json({ error: "INVALID_PLAN", message: "Paket tidak valid" }, { status: 400 });
-    }
-    const diff = getUpgradePrice(currentPlan, target);
-    if (diff === null) {
-      return NextResponse.json({ error: "UPGRADE_NOT_ALLOWED", message: "Upgrade tidak tersedia untuk paket ini" }, { status: 400 });
-    }
-    plan = target;
-    price = diff;
-    itemId = target;
-    itemName = currentPlan === "FREE" ? `Paket ${PLAN_LIMITS[target].name} (${active.title})` : `Upgrade ${PLAN_LIMITS[target].name} (${active.title})`;
+    throw error;
   }
+
+  const { kind, price, discountAmount, referralCodeUsed, promoCodeUsed, plan, templateId, addonUnits, invitationId, activeId, itemId, itemName } = resolved;
 
   try {
     const orderId = `TRX-${Date.now()}-${session.user.id.slice(0, 5)}`;
@@ -86,9 +56,9 @@ export async function POST(req: Request) {
 
     const token = await snap.createTransaction(parameter);
 
-    // Supersede older pending Midtrans orders on the same invitation
+    // Supersede older pending Midtrans orders on the same invitation or user-level AI credit orders
     await prisma.transaction.updateMany({
-      where: { userId: session.user.id, invitationId: active.id, paymentMethod: "MIDTRANS", status: "PENDING" },
+      where: openOrderWhere(session.user.id, activeId, "MIDTRANS"),
       data: { status: "FAILED", notes: "Diganti transaksi baru" },
     });
 
@@ -96,15 +66,19 @@ export async function POST(req: Request) {
       data: {
         id: orderId,
         userId: session.user.id,
-        invitationId: active.id,
+        invitationId,
         kind,
         addonUnits,
         amount: price,
+        discountAmount,
+        referralCodeUsed,
+        promoCodeUsed,
         status: "PENDING",
         plan,
+        templateId,
         paymentMethod: "MIDTRANS",
         snapToken: token.token,
-        notes: `Midtrans Snap · ${itemName}`,
+        notes: `Midtrans Snap · ${itemName}${promoCodeUsed ? ` · Promo ${promoCodeUsed}` : referralCodeUsed ? ` · Kode ${referralCodeUsed}` : ""}`,
       },
     });
 

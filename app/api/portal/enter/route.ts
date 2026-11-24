@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { bindUserReferrerFromCode, REFERRAL_COOKIE } from "@/lib/referral";
 import {
   ADMIN_PORTAL_COOKIE,
   USER_PORTAL_COOKIE,
@@ -62,6 +63,11 @@ export async function GET(request: Request) {
     return res;
   }
 
+  const refCookie = extractCookieFromHeader(request.headers.get("cookie"), REFERRAL_COOKIE);
+  if (refCookie) {
+    await bindUserReferrerFromCode(session.user.id, refCookie).catch(() => {});
+  }
+
   const res = NextResponse.redirect(buildRedirectUrl(next, request));
   res.cookies.set(
     USER_PORTAL_COOKIE,
@@ -94,6 +100,11 @@ export async function POST(request: Request) {
       COOKIE_OPTS,
     );
     return res;
+  }
+
+  const refCookie = extractCookieFromHeader(request.headers.get("cookie"), REFERRAL_COOKIE);
+  if (refCookie) {
+    await bindUserReferrerFromCode(session.user.id, refCookie).catch(() => {});
   }
 
   const res = NextResponse.json({ success: true, portal: "user" });

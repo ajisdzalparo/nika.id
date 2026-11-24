@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "AiDesign" ADD COLUMN     "creditsUsed" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "planCreditsUsed" INTEGER NOT NULL DEFAULT 1;
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "aiCredits" INTEGER NOT NULL DEFAULT 0;

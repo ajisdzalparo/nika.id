@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
+  <!-- Soft sage backdrop: pale wash with faint leaf shadows at the edges -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3F4EE"/><stop offset="1" stop-color="#E6EAE0"/></linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#FFFFFC" stop-opacity=".9"/><stop offset="1" stop-color="#FFFFFC" stop-opacity="0"/></radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="5"/></filter>
+    <ellipse id="lf" cx="0" cy="0" rx="14" ry="38"/>
+  </defs>
+  <rect width="400" height="800" fill="url(#bg)"/>
+  <g fill="#9FB29E" opacity=".22" filter="url(#blur)">
+    <use href="#lf" transform="translate(10 120) rotate(30)"/><use href="#lf" transform="translate(40 200) rotate(-20)"/>
+    <use href="#lf" transform="translate(16 300) rotate(40)"/><use href="#lf" transform="translate(390 160) rotate(-30)"/>
+    <use href="#lf" transform="translate(360 260) rotate(20)"/><use href="#lf" transform="translate(386 360) rotate(-40)"/>
+    <use href="#lf" transform="translate(20 620) rotate(-30)"/><use href="#lf" transform="translate(380 640) rotate(30)"/>
+  </g>
+  <rect width="400" height="800" fill="url(#glow)"/>
+</svg>

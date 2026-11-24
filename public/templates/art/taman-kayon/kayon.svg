@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+  <!-- A gilded kayon (gunungan): leaf-shaped mountain, tree of life, a small pavilion gate at the base -->
+  <defs>
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="260">
+      <stop offset="0" stop-color="#B8903F"/>
+      <stop offset=".45" stop-color="#EFD89E"/>
+      <stop offset=".7" stop-color="#C9A24E"/>
+      <stop offset="1" stop-color="#9C7632"/>
+    </linearGradient>
+  </defs>
+  <!-- outline -->
+  <path d="M100 6 C136 44 176 100 182 160 C186 196 160 214 100 214 C40 214 14 196 18 160 C24 100 64 44 100 6Z" fill="none" stroke="url(#g)" stroke-width="5"/>
+  <path d="M100 22 C130 56 164 104 168 158 C170 188 148 202 100 202 C52 202 30 188 32 158 C36 104 70 56 100 22Z" fill="url(#g)" opacity=".12"/>
+  <!-- tree of life -->
+  <g fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round">
+    <path d="M100 190 V40"/>
+    <path d="M100 150 C80 140 66 124 60 104"/><path d="M100 150 C120 140 134 124 140 104"/>
+    <path d="M100 118 C84 108 74 92 72 74"/><path d="M100 118 C116 108 126 92 128 74"/>
+    <path d="M100 86 C90 76 86 64 88 52"/><path d="M100 86 C110 76 114 64 112 52"/>
+  </g>
+  <g fill="url(#g)">
+    <circle cx="60" cy="102" r="6"/><circle cx="140" cy="102" r="6"/>
+    <circle cx="72" cy="72" r="5"/><circle cx="128" cy="72" r="5"/>
+    <circle cx="88" cy="50" r="4"/><circle cx="112" cy="50" r="4"/>
+    <circle cx="100" cy="36" r="5"/>
+    <path d="M46 132c-8-4-10-14-2-16 8 2 8 10 2 16Z"/><path d="M154 132c8-4 10-14 2-16-8 2-8 10-2 16Z"/>
+  </g>
+  <!-- pavilion gate -->
+  <g fill="url(#g)">
+    <path d="M70 214 V184 H130 V214Z" opacity=".9"/>
+    <path d="M64 184 L100 166 L136 184Z"/>
+  </g>
+  <path d="M88 214 V196 Q100 188 112 196 V214" fill="#FBF7EE"/>
+  <!-- base -->
+  <path d="M60 214 H140 L146 226 H54Z" fill="url(#g)"/>
+  <path d="M84 226 H116 L120 252 H80Z" fill="url(#g)" opacity=".9"/>
+</svg>

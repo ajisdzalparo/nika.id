@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { checkChatRateLimit } from "@/lib/chat-security";
 import { createNotification } from "@/lib/notifications";
 import { NextResponse } from "next/server";
+import { isValidPhoneDigits, normalizePhoneDigits } from "@/lib/phone";
+import { newCheckInToken } from "@/lib/checkin";
 
 const MAX_GUEST_NAME_LENGTH = 100;
 const MAX_MESSAGE_LENGTH = 500;
@@ -45,6 +47,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "USER_NOT_FOUND" }, { status: 404 });
     }
 
+    // Guests can only reach a published invitation; an unpaid preview or a hidden one must not collect
+    // RSVPs/wishes from whoever guesses the slug.
+    if (invitation && (invitation.plan === "FREE" || invitation.isPublic === false)) {
+      return NextResponse.json({ error: "NOT_PUBLISHED", message: "Undangan ini belum diterbitkan." }, { status: 403 });
+    }
+
     const guestName = String(body.guestName ?? "")
       .trim()
       .slice(0, MAX_GUEST_NAME_LENGTH);
@@ -58,7 +66,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "INVALID_ATTENDANCE", allowed: VALID_ATTENDANCE }, { status: 400 });
       }
 
-      const guests = Math.min(Math.max(parseInt(body.guests) || 1, 1), MAX_GUESTS);
+      const guests = attendance === "TIDAK HADIR" ? 1 : Math.min(Math.max(parseInt(body.guests) || 1, 1), MAX_GUESTS);
+      const phoneDigits = normalizePhoneDigits(String(body.phone ?? ""));
+      const phone = phoneDigits && isValidPhoneDigits(phoneDigits) ? phoneDigits : null;
+      const companions = guests > 1 ? String(body.companions ?? "").trim().slice(0, 300) || null : null;
+      const customAnswer = String(body.customAnswer ?? "").trim().slice(0, 120) || null;
+      // Optional per invitation: guests who are coming get a personal QR for check-in at the venue
+      const rsvpSettings = ((invitation?.data ?? {}) as { rsvp?: { qrCheckIn?: boolean } }).rsvp;
+      const checkInToken = rsvpSettings?.qrCheckIn && attendance !== "TIDAK HADIR" ? newCheckInToken() : null;
 
       const rsvp = await prisma.rSVP.create({
         data: {
@@ -67,6 +82,10 @@ export async function POST(req: Request) {
           guestName,
           attendance,
           guests,
+          phone,
+          companions,
+          customAnswer,
+          checkInToken,
         },
       });
       await createNotification({
@@ -77,7 +96,8 @@ export async function POST(req: Request) {
         message: `Konfirmasi ${attendance} untuk ${guests} tamu${invitation?.title ? ` (${invitation.title})` : ""}.`,
         href: "/buku-tamu",
       });
-      return NextResponse.json(rsvp);
+      // Only what the guest needs back: their own check-in code
+      return NextResponse.json({ id: rsvp.id, checkInToken: rsvp.checkInToken });
     }
 
     if (type === "MESSAGE") {

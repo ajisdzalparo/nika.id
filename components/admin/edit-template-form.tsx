@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +68,7 @@ export function EditTemplateForm({ template }: EditTemplateFormProps) {
       setThumbnailUrl(data.url);
     } catch (error) {
       console.error(error);
-      alert("Gagal mengupload thumbnail");
+      toast.error("Gagal mengupload thumbnail");
     } finally {
       setIsUploadingThumbnail(false);
     }

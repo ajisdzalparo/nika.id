@@ -45,3 +45,11 @@ next-env.d.ts
 
 # Windows reserved device names
 nul
+
+# Local MCP config (contains API keys)
+.mcp.json
+testsprite_tests/tmp/
+testsprite_tests/tmp/config.json
+
+# TestSprite runs: local test accounts, generated tests and reports
+testsprite_tests/

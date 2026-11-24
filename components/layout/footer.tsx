@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/common/brand-logo";
 import Link from "next/link";
 import { IconHeart, IconBrandInstagram, IconBrandWhatsapp, IconBrandTiktok } from "@tabler/icons-react";
 
@@ -9,8 +10,7 @@ export function Footer() {
           {/* Brand Column */}
           <div className="space-y-6">
             <Link href="/" className="inline-flex items-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="UNDANGIN YUK" className="h-8 w-auto object-contain" />
+              <BrandLogo className="h-8" />
             </Link>
             <p className="text-muted-foreground leading-relaxed max-w-xs">Membantu setiap pasangan menciptakan undangan digital yang indah dan berkesan untuk hari bahagia mereka.</p>
             <div className="flex items-center gap-4">
@@ -92,7 +92,7 @@ export function Footer() {
         </div>
 
         <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} UNDANGIN YUK. Seluruh hak cipta dilindungi.</p>
+          <p>© {new Date().getFullYear()} SatuMoment. Seluruh hak cipta dilindungi.</p>
           <div className="flex items-center gap-1">
             Dibuat dengan <IconHeart className="text-primary fill-primary" size={14} /> untuk Cinta
           </div>

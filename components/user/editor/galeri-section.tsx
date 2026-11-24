@@ -32,33 +32,33 @@ export function GaleriSection({ data, setData, renderExtraFields }: GaleriSectio
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-[#E1D8C9] bg-[#F7F3EC]/55 p-5 sm:p-6 space-y-6">
+      <section className="rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1]/55 p-5 sm:p-6 space-y-6">
         <div className="space-y-2">
-          <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">
-            <IconVideo size={14} className="text-[#8A6A2F]" />
+          <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">
+            <IconVideo size={14} className="text-[#8A6424]" />
             Link Video Prewedding (YouTube / Vimeo)
           </Label>
           <Input
             value={data.video || ""}
             onChange={(e) => setData((prev) => ({ ...prev, video: e.target.value }))}
             placeholder="https://www.youtube.com/watch?v=..."
-            className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+            className="h-11 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
           />
-          <p className="text-xs text-[#6B6358]">Opsional. Video akan ditampilkan di bagian galeri undangan.</p>
+          <p className="text-xs text-[#6B5F50]">Opsional. Video akan ditampilkan di bagian galeri undangan.</p>
         </div>
 
-        <div className="h-px bg-[#E1D8C9]" />
+        <div className="h-px bg-[#E9DDC6]" />
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">
-              <IconPhoto size={14} className="text-[#8A6A2F]" />
+            <Label className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">
+              <IconPhoto size={14} className="text-[#8A6424]" />
               Foto Galeri ({(data.gallery || []).length})
             </Label>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 @md:grid-cols-3 @2xl:grid-cols-4">
             {(data.gallery || []).map((photo, index) => (
-              <div key={index} className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[#E1D8C9] bg-[#FFFDF9]">
+              <div key={index} className="group relative aspect-[3/4] overflow-hidden rounded-xl border border-[#E9DDC6] bg-[#FFFDF9]">
                 <img src={photo} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" alt={`Galeri ${index + 1}`} />
                 <button
                   type="button"
@@ -70,11 +70,11 @@ export function GaleriSection({ data, setData, renderExtraFields }: GaleriSectio
                 </button>
               </div>
             ))}
-            <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#CFC5B4] bg-[#FFFDF9] p-4 text-center transition-colors hover:border-[#8A6A2F]">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EFE8DC] text-[#8A6A2F]">
+            <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#D9CBAE] bg-[#FFFDF9] p-4 text-center transition-colors hover:border-[#8A6424]">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F5EDDD] text-[#8A6424]">
                 <IconPlus className="h-5 w-5" />
               </span>
-              <span className="text-xs font-medium text-[#1E1B17]">Tambah Foto</span>
+              <span className="text-xs font-medium text-[#1F1A14]">Tambah Foto</span>
               <input
                 type="file"
                 className="hidden"

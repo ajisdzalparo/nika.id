@@ -43,12 +43,12 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <div className="space-y-6">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#D8CBB8] bg-[#FFFDF9] text-[#8A6A2F]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#D8CBB8] bg-[#FFFDF9] text-[#8A6424]">
           <IconCheck size={22} stroke={1.8} />
         </div>
 
         <div className="space-y-2.5">
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">
             Email Terkirim
           </p>
           <h1 className="font-serif text-[2.4rem] font-medium leading-tight tracking-tight text-zinc-900">
@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
           </Button>
           <Link
             href="/login"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#1E1B17] px-6 text-sm font-medium text-[#F7F3EC] transition-opacity hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#1F1A14] px-6 text-sm font-medium text-[#FCF8F1] transition-opacity hover:opacity-90"
           >
             <IconArrowLeft size={16} />
             Kembali ke halaman masuk
@@ -83,14 +83,14 @@ export default function ForgotPasswordPage() {
   return (
     <div className="w-full space-y-8">
       <div className="space-y-2">
-        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">
+        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">
           Pemulihan Akun
         </p>
         <h1 className="font-serif text-[2.5rem] font-medium leading-tight tracking-tight text-zinc-900">
           Lupa Password?
         </h1>
         <p className="text-sm leading-relaxed text-zinc-500">
-          Masukkan email yang terdaftar pada akun UNDANGIN YUK. Kami akan mengirimkan tautan untuk membuat password baru.
+          Masukkan email yang terdaftar pada akun SatuMoment. Kami akan mengirimkan tautan untuk membuat password baru.
         </p>
       </div>
 
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
         <Button
           type="submit"
           disabled={loading}
-          className="h-11 w-full rounded-full bg-[#1E1B17] text-sm font-medium text-[#F7F3EC] shadow-sm transition-opacity hover:bg-[#2E2A24] hover:opacity-95"
+          className="h-11 w-full rounded-full bg-[#1F1A14] text-sm font-medium text-[#FCF8F1] shadow-sm transition-opacity hover:bg-[#2E2A24] hover:opacity-95"
         >
           {loading ? (
             <>
