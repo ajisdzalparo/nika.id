@@ -74,7 +74,7 @@ async function sendAuthEmail({
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fffdf9; border: 1px solid #e1d8c9; border-radius: 16px; overflow: hidden;">
                 <tr>
                   <td style="background-color: #1e1b17; padding: 36px 40px; text-align: center;">
-                    <p style="color: #c8b08a; margin: 0 0 8px 0; font-size: 11px; letter-spacing: 3px; text-transform: uppercase;">UNDANGIN YUK</p>
+                    <p style="color: #c8b08a; margin: 0 0 8px 0; font-size: 11px; letter-spacing: 3px; text-transform: uppercase;">SatuMoment</p>
                     <h1 style="color: #f7f3ec; margin: 0; font-size: 24px; font-weight: 600;">${escapeHtml(heading)}</h1>
                   </td>
                 </tr>
@@ -120,12 +120,14 @@ async function sendAuthEmail({
 
   await mailer.sendMail({
     // Gmail always sends from GMAIL_USER; EMAIL_FROM only sets the display name
-    from: `"${process.env.EMAIL_FROM_NAME || "UNDANGIN YUK"}" <${process.env.GMAIL_USER}>`,
+    from: `"${process.env.EMAIL_FROM_NAME || "SatuMoment"}" <${process.env.GMAIL_USER}>`,
     to,
     subject,
     html: emailHtml,
   });
 }
+
+const IS_LOCAL_AUTH_URL = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(process.env.BETTER_AUTH_URL ?? "");
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -138,13 +140,20 @@ export const auth = betterAuth({
     "https://undanginyuk.ajisdzalparo.com",
     // Local development is always allowed, even if .env carries production URLs
     ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
+    // A local `next start` (any port) is trusted too; never applies when BETTER_AUTH_URL is a real domain
+    ...(IS_LOCAL_AUTH_URL ? ["http://localhost:*", "http://127.0.0.1:*"] : []),
   ].filter(Boolean) as string[],
   advanced: {
     crossSubDomainCookies: {
-      enabled: true,
+      // A Domain=localhost cookie is dropped by browsers reaching the app through any other host
+      // (LAN IP on a phone, test tunnels), which silently breaks login. Keep host-only cookies locally.
+      enabled: !IS_LOCAL_AUTH_URL,
     },
     trustProxy: true,
   },
+  // Local runs: automated test browsers all sign in from one IP and would trip the limiter.
+  // Real deployments (BETTER_AUTH_URL is a domain) keep Better Auth's default rate limiting.
+  ...(IS_LOCAL_AUTH_URL ? { rateLimit: { enabled: false } } : {}),
   secret: process.env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
@@ -152,10 +161,10 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       await sendAuthEmail({
         to: user.email,
-        subject: "Reset Password Akun - UNDANGIN YUK",
+        subject: "Reset Password Akun - SatuMoment",
         heading: "Reset Password Akun",
         greetingName: user.name || "Pengguna",
-        message: "Kami menerima permintaan untuk mereset password akun UNDANGIN YUK Anda. Klik tombol di bawah untuk membuat password baru.",
+        message: "Kami menerima permintaan untuk mereset password akun SatuMoment Anda. Klik tombol di bawah untuk membuat password baru.",
         ctaLabel: "Buat Password Baru",
         ctaUrl: url,
         footerNote: "Link berlaku selama 1 jam. Jika Anda tidak meminta reset password, abaikan email ini.",
@@ -167,13 +176,13 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url }: { user: { name: string; email: string }; url: string }) => {
       await sendAuthEmail({
         to: user.email,
-        subject: "Verifikasi Email Anda - UNDANGIN YUK",
+        subject: "Verifikasi Email Anda - SatuMoment",
         heading: "Verifikasi Email Anda",
         greetingName: user.name || "Pengguna",
-        message: "Terima kasih telah mendaftar di UNDANGIN YUK. Klik tombol di bawah untuk memverifikasi alamat email Anda dan mulai membuat undangan pernikahan digital.",
+        message: "Terima kasih telah mendaftar di SatuMoment. Klik tombol di bawah untuk memverifikasi alamat email Anda dan mulai membuat undangan pernikahan digital.",
         ctaLabel: "Verifikasi Email Saya",
         ctaUrl: url,
-        footerNote: "Email ini dikirim oleh UNDANGIN YUK. Jika Anda tidak mendaftar, abaikan email ini.",
+        footerNote: "Email ini dikirim oleh SatuMoment. Jika Anda tidak mendaftar, abaikan email ini.",
         consoleLabel: "EMAIL VERIFICATION LINK",
       });
     },

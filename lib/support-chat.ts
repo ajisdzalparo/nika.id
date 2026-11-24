@@ -58,7 +58,7 @@ export async function getOrCreateUserThread(userId: string): Promise<{
           threadId: thread.id,
           sender: "AI",
           content:
-            "Halo! Saya asisten AI UNDANGIN YUK. Ada yang bisa dibantu soal paket, pembayaran, musik latar, atau edit undangan? Kamu juga bisa klik tombol \"Hubungi Admin\" kapan saja untuk terhubung langsung dengan admin.",
+            "Halo! Saya asisten AI SatuMoment. Ada yang bisa dibantu soal paket, pembayaran, musik latar, atau edit undangan? Kamu juga bisa klik tombol \"Hubungi Admin\" kapan saja untuk terhubung langsung dengan admin.",
         },
       });
     }
@@ -87,7 +87,7 @@ export async function getOrCreateUserThread(userId: string): Promise<{
     `;
     const welcomeId = crypto.randomUUID();
     const welcomeText =
-      'Halo! Saya asisten AI UNDANGIN YUK. Ada yang bisa dibantu soal paket, pembayaran, musik latar, atau edit undangan? Kamu juga bisa klik tombol "Hubungi Admin" kapan saja untuk terhubung langsung dengan admin.';
+      'Halo! Saya asisten AI SatuMoment. Ada yang bisa dibantu soal paket, pembayaran, musik latar, atau edit undangan? Kamu juga bisa klik tombol "Hubungi Admin" kapan saja untuk terhubung langsung dengan admin.';
     await prisma.$executeRaw`
       INSERT INTO "SupportMessage" ("id", "threadId", "sender", "content", "createdAt")
       VALUES (${welcomeId}, ${threadId}, 'AI', ${welcomeText}, NOW())
@@ -383,7 +383,7 @@ function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisito
           : `Paket aktifmu saat ini **${PLAN_LIMITS[plan].name}**. Upgrade ke paket lebih tinggi cukup membayar selisih harganya di /upgrade.`;
 
     return {
-      reply: `Daftar paket UNDANGIN YUK (sekali bayar per undangan):\n• **Hemat (Rp49.000)**: 100 tamu, 10 foto, 1× Desain AI, aktif 90 hari.\n• **Premium (Rp79.000)**: 300 tamu, 20 foto, 5× Desain AI, template Premium & Kisah Cinta, aktif 180 hari.\n• **Eksklusif (Rp99.000)**: Tamu & galeri tanpa batas, 10× Desain AI, Video, Tanpa Watermark, aktif 1 tahun.\n• **Add-on Tamu**: +${GUEST_ADDON_SIZE} tamu seharga Rp${GUEST_ADDON_PRICE.toLocaleString("id-ID")}.\n• **Top-up Kredit AI**: 10 kredit Rp29.000 · 30 kredit Rp75.000 · 100 kredit Rp229.000 (1 generate = 1 kredit, dengan referensi = 2 kredit).\n• **Mitra B2B (/mitra)**: Paket grosir Mitra 10 (Rp299rb), Mitra 30 (Rp749rb), Mitra 100 (Rp1,99jt) + link isi data klien tanpa login.\n• **Referral (/dompet)**: Teman dapat diskon 10% (maks Rp15rb), kamu dapat komisi 15% (maks Rp100rb per transaksi; tidak berlaku untuk top-up Kredit AI & template marketplace).\n\n${statusNote}`,
+      reply: `Daftar paket SatuMoment (sekali bayar per undangan):\n• **Hemat (Rp49.000)**: 100 tamu, 10 foto, 1× Desain AI, aktif 90 hari.\n• **Premium (Rp79.000)**: 300 tamu, 20 foto, 5× Desain AI, template Premium & Kisah Cinta, aktif 180 hari.\n• **Eksklusif (Rp99.000)**: Tamu & galeri tanpa batas, 10× Desain AI, Video, Tanpa Watermark, aktif 1 tahun.\n• **Add-on Tamu**: +${GUEST_ADDON_SIZE} tamu seharga Rp${GUEST_ADDON_PRICE.toLocaleString("id-ID")}.\n• **Top-up Kredit AI**: 10 kredit Rp29.000 · 30 kredit Rp75.000 · 100 kredit Rp229.000 (1 generate = 1 kredit, dengan referensi = 2 kredit).\n• **Mitra B2B (/mitra)**: Paket grosir Mitra 10 (Rp299rb), Mitra 30 (Rp749rb), Mitra 100 (Rp1,99jt) + link isi data klien tanpa login.\n• **Referral (/dompet)**: Teman dapat diskon 10% (maks Rp15rb), kamu dapat komisi 15% (maks Rp100rb per transaksi; tidak berlaku untuk top-up Kredit AI & template marketplace).\n\n${statusNote}`,
       suggestAdmin: false,
     };
   }
@@ -424,7 +424,7 @@ function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisito
   if (/(rsvp|ucapan|tamu|link|bagikan|share|publik|cara buat|mulai|daftar)/.test(q)) {
     return {
       reply: isPublicVisitor
-        ? "Cara membuat undangan di **UNDANGIN YUK**:\n• Daftar gratis di /register\n• Pilih template atau rancang tema pakai **Desain AI**\n• Isi data mempelai, jadwal acara, galeri foto, musik & daftar tamu bernama\n• Aktifkan paket saat siap dibagikan lewat WhatsApp."
+        ? "Cara membuat undangan di **SatuMoment**:\n• Daftar gratis di /register\n• Pilih template atau rancang tema pakai **Desain AI**\n• Isi data mempelai, jadwal acara, galeri foto, musik & daftar tamu bernama\n• Aktifkan paket saat siap dibagikan lewat WhatsApp."
         : "Untuk membagikan undangan, aktifkan toggle **Publikasikan** di /undangan. Kelola daftar tamu personal di /manajemen-tamu, dan pantau RSVP serta doa tamu di /buku-tamu.",
       suggestAdmin: false,
     };
@@ -433,14 +433,14 @@ function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisito
   if (isPublicVisitor) {
     return {
       reply:
-        'Saya asisten **UNDANGIN YUK**! Silakan tanya soal **harga paket**, **fitur undangan**, **Desain AI**, atau **cara buat undangan** di /register. Untuk tanya langsung ke tim kami, gunakan tombol **WhatsApp Admin** di atas.',
+        'Saya asisten **SatuMoment**! Silakan tanya soal **harga paket**, **fitur undangan**, **Desain AI**, atau **cara buat undangan** di /register. Untuk tanya langsung ke tim kami, gunakan tombol **WhatsApp Admin** di atas.',
       suggestAdmin: false,
     };
   }
 
   return {
     reply:
-      'Saya siap membantu seputar **UNDANGIN YUK** (paket & upgrade, progress transfer manual, desain AI, musik YouTube/MP3, serta manajemen tamu). Boleh ceritakan detail kendalamu, atau klik **"Hubungi Admin"** jika ingin ditangani langsung oleh tim admin.',
+      'Saya siap membantu seputar **SatuMoment** (paket & upgrade, progress transfer manual, desain AI, musik YouTube/MP3, serta manajemen tamu). Boleh ceritakan detail kendalamu, atau klik **"Hubungi Admin"** jika ingin ditangani langsung oleh tim admin.',
     suggestAdmin: false,
   };
 }
@@ -477,7 +477,7 @@ export async function generateSupportAiReply(params: {
         {
           role: "system",
           content: [
-            "Kamu adalah asisten customer support resmi UNDANGIN YUK (platform undangan pernikahan digital Indonesia).",
+            "Kamu adalah asisten customer support resmi SatuMoment (platform undangan pernikahan digital Indonesia).",
             "Jawab ramah, ringkas, jelas dalam Bahasa Indonesia.",
             "Fakta layanan:",
             "- Paket Hemat: Rp49.000 (90 hari, 100 tamu, 10 foto, 1x Desain AI, template Gratis).",

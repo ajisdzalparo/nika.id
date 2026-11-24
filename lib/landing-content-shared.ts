@@ -168,6 +168,6 @@ export const DEFAULT_LANDING_CONTENT: LandingContent = {
   },
   footer: {
     tagline: "Undangan pernikahan digital yang dirancang sesuai cerita kalian.",
-    copyright: "© 2026 UNDANGIN YUK",
+    copyright: "© 2026 SatuMoment",
   },
 };

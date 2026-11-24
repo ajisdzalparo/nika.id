@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/common/brand-logo";
 import React from "react";
 
 export function TemplateLoadingScreen({
@@ -7,7 +8,7 @@ export function TemplateLoadingScreen({
 }) {
   return (
     <div
-      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#F7F3EC] px-6 text-[#1E1B17]"
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#FCF8F1] px-6 text-[#1F1A14]"
       role="status"
       aria-live="polite"
     >
@@ -28,19 +29,14 @@ export function TemplateLoadingScreen({
         <div className="relative flex flex-col items-center space-y-5">
           <div className="relative flex h-14 w-14 items-center justify-center">
             <span className="absolute inset-0 animate-spin rounded-full border border-[#D9CEBE] border-t-[#9A7B4F]" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo-mark.png"
-              alt="UNDANGIN YUK"
-              className="h-7 w-7 object-contain opacity-90"
-            />
+            <BrandLogo variant="symbol" className="h-7 w-7 opacity-90" />
           </div>
 
           <div className="space-y-1.5">
             <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#9A7B4F]">
-              UNDANGIN YUK
+              SatuMoment
             </p>
-            <p className="font-serif text-lg text-[#1E1B17]">{label}&hellip;</p>
+            <p className="font-serif text-lg text-[#1F1A14]">{label}&hellip;</p>
           </div>
 
           <div className="h-0.5 w-32 overflow-hidden rounded-full bg-[#EAE2D6]">

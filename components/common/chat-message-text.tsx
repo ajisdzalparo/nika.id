@@ -8,7 +8,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/pilih-template": "Lihat Koleksi Template",
   "/editor": "Buka Editor",
   "/desain-ai": "Buka Desain AI",
-  "/desain": "Lihat Koleksi Desain",
+  "/desain": "Lihat Template",
   "/register": "Daftar Gratis",
   "/pengaturan": "Buka Pengaturan",
   "/manajemen-tamu": "Buka Daftar Tamu",
@@ -28,7 +28,7 @@ function renderInline(line: string, isUserBubble: boolean): ReactNode[] {
     if (!part) return null;
     if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
       return (
-        <strong key={idx} className={`font-semibold ${isUserBubble ? "text-white" : "text-[#15130F]"}`}>
+        <strong key={idx} className={`font-semibold ${isUserBubble ? "text-white" : "text-[#1A1510]"}`}>
           {part.slice(2, -2)}
         </strong>
       );
@@ -38,7 +38,7 @@ function renderInline(line: string, isUserBubble: boolean): ReactNode[] {
         <code
           key={idx}
           className={`rounded px-1.5 py-0.5 font-mono text-[11px] ${
-            isUserBubble ? "bg-white/15 text-[#F4EAD6]" : "bg-[#EFEAE0] text-[#3F3A33]"
+            isUserBubble ? "bg-white/15 text-[#F5E8CA]" : "bg-[#F3EBDB] text-[#40372B]"
           }`}
         >
           {part.slice(1, -1)}
@@ -53,8 +53,8 @@ function renderInline(line: string, isUserBubble: boolean): ReactNode[] {
           href={normalizedPath}
           className={`mx-0.5 inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium underline underline-offset-2 transition ${
             isUserBubble
-              ? "bg-white/15 text-[#F4EAD6] hover:bg-white/25"
-              : "bg-[#F4EAD6]/70 text-[#78571E] hover:bg-[#EFE2C2]"
+              ? "bg-white/15 text-[#F5E8CA] hover:bg-white/25"
+              : "bg-[#F5E8CA]/70 text-[#78571E] hover:bg-[#EFE2C2]"
           }`}
         >
           {ROUTE_LABELS[normalizedPath]}
@@ -108,7 +108,7 @@ export function ChatMessageText({ content, isUserBubble = false }: { content: st
             <div key={i} className="flex items-start gap-2 pl-0.5">
               <span
                 className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${
-                  isUserBubble ? "bg-[#C9A45C]" : "bg-[#8A6A2F]"
+                  isUserBubble ? "bg-[#D9B56A]" : "bg-[#8A6424]"
                 }`}
               />
               <div className="min-w-0 flex-1">{renderInline(bulletMatch[1], isUserBubble)}</div>

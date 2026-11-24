@@ -36,7 +36,7 @@ export function UserDesigns({ rows }: { rows: UserDesignRow[] }) {
   if (!rows.length) return <p className="py-16 text-center text-zinc-500">Belum ada desain AI dari user.</p>;
 
   return (
-    <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       {rows.map((r) => (
         <article key={r.id} className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
           <CoverThumb theme={r.theme} zoom={0.6} className="aspect-[9/14] w-full" />

@@ -579,7 +579,7 @@ export function LandingCmsEditor({ initialContent }: { initialContent: LandingCo
           <AlertDialogHeader>
             <AlertDialogTitle>Reset semua tulisan ke bawaan awal?</AlertDialogTitle>
             <AlertDialogDescription>
-              Perubahan teks yang sudah Anda simpan di CMS akan dikembalikan ke teks bawaan UNDANGIN YUK.
+              Perubahan teks yang sudah Anda simpan di CMS akan dikembalikan ke teks bawaan SatuMoment.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

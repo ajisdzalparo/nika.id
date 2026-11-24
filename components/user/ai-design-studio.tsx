@@ -146,7 +146,7 @@ export function AiDesignStudio({
 
   return (
     <div className="flex-1 bg-zinc-50 dark:bg-zinc-950">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:px-8 lg:py-12">
+      <div className="grid w-full gap-10 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:px-8 lg:py-12">
         {/* ── Composer ── */}
         <div className="space-y-8">
           <header className="space-y-3">
@@ -164,7 +164,7 @@ export function AiDesignStudio({
               </label>
               {quota && (
                 <div className="flex flex-wrap items-center gap-2.5 text-xs text-zinc-500">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-2.5 py-1 font-medium tabular-nums text-[#5C4620]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2.5 py-1 font-medium tabular-nums text-[#5C431A]">
                     {quota.remaining} kredit tersedia
                     {quota.topupCredits > 0 && quota.planRemaining > 0 && (
                       <span className="text-[11px] font-normal text-[#7A6132]">
@@ -172,7 +172,7 @@ export function AiDesignStudio({
                       </span>
                     )}
                   </span>
-                  <Link href="/upgrade?pilih=kredit#kredit-ai" className="font-medium text-[#8A6A2F] hover:underline">
+                  <Link href="/upgrade?pilih=kredit#kredit-ai" className="font-medium text-[#8A6424] hover:underline">
                     + Top-up kredit
                   </Link>
                 </div>
@@ -210,7 +210,7 @@ export function AiDesignStudio({
                 <button
                   type="button"
                   onClick={() => setPreserveContext((v) => !v)}
-                  className="font-medium text-[#8A6A2F] hover:underline"
+                  className="font-medium text-[#8A6424] hover:underline"
                 >
                   {preserveContext ? "Mulai gaya baru" : "Ikuti gaya aktif"}
                 </button>
@@ -284,11 +284,11 @@ export function AiDesignStudio({
                 </div>
               </dl>
               {activeId === selected.id ? (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#DFD2BC] bg-[#F5EFE3] px-4 py-2.5 text-sm font-medium text-[#5C4620]">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E6D5B2] bg-[#F7F0E1] px-4 py-2.5 text-sm font-medium text-[#5C431A]">
                   <span className="flex items-center gap-2">
-                    <IconCheck size={17} className="text-[#8A6A2F]" /> Sedang dipakai di undangan Anda
+                    <IconCheck size={17} className="text-[#8A6424]" /> Sedang dipakai di undangan Anda
                   </span>
-                  <Link href={`/kanvas/editor?designId=${selected.id}`} className="text-xs font-semibold text-[#8A6A2F] underline underline-offset-4">
+                  <Link href={`/kanvas/editor?designId=${selected.id}`} className="text-xs font-semibold text-[#8A6424] underline underline-offset-4">
                     Edit kreatif di Kanvas →
                   </Link>
                 </div>
@@ -338,7 +338,7 @@ export function AiDesignStudio({
                     <div className="space-y-1 bg-white p-3 dark:bg-zinc-900">
                       <div className="flex items-center justify-between gap-2">
                         <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">{d.theme.name}</p>
-                        {d.id === activeId && <span className="shrink-0 rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-2 py-0.5 text-[10px] font-medium text-[#6E5426]">Aktif</span>}
+                        {d.id === activeId && <span className="shrink-0 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[10px] font-medium text-[#6E4F1C]">Aktif</span>}
                       </div>
                       <p className="line-clamp-1 text-xs text-zinc-500">{d.prompt}</p>
                     </div>

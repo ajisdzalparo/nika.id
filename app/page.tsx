@@ -8,13 +8,13 @@ import { getCatalog } from "@/lib/catalog";
 import { getLandingContent } from "@/lib/landing-content";
 import { getManualPaymentInfo } from "@/lib/payment";
 import { prisma } from "@/lib/prisma";
-import { studioDisplay } from "@/lib/studio";
+import { landingFontClass } from "@/lib/studio";
 
 export const dynamic = "force-dynamic";
 
 
 export const metadata: Metadata = {
-  title: "UNDANGIN YUK · Undangan pernikahan digital dengan Desain AI",
+  title: "SatuMoment · Undangan pernikahan digital dengan Desain AI",
   description: "Rancang undangan pernikahan digital sesuai konsep kalian dengan AI. RSVP, amplop digital, musik, galeri, dan kirim ke tamu lewat WhatsApp.",
 };
 
@@ -40,7 +40,7 @@ export default async function Home() {
       agencyVerified: p.agencyVerified,
     }));
   return (
-    <div className={`${studioDisplay.variable} min-h-screen antialiased`} style={{ background: L.bg, color: L.ink }}>
+    <div className={`${landingFontClass} min-h-screen antialiased`} style={{ background: L.bg, color: L.ink }}>
       <LandingNavbar />
       <main>
         <Hero content={cms.hero} />

@@ -62,7 +62,7 @@ export function ReferenceUploader({ value, onChange, disabled = false }: { value
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={disabled || uploading > 0}
-            className="flex h-20 w-14 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-zinc-300 text-[10px] leading-tight text-zinc-500 transition-colors hover:border-[#8A6A2F] hover:text-zinc-700 disabled:opacity-50"
+            className="flex h-20 w-14 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-zinc-300 text-[10px] leading-tight text-zinc-500 transition-colors hover:border-[#8A6424] hover:text-zinc-700 disabled:opacity-50"
             aria-label="Tambah screenshot referensi"
           >
             {uploading ? <IconLoader2 size={18} className="animate-spin" /> : <IconPhotoPlus size={18} />}

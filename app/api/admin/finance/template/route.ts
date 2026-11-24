@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     return new Response(new Uint8Array(buf), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": 'attachment; filename="template-keuangan-undangin-yuk.xlsx"',
+        "Content-Disposition": 'attachment; filename="template-keuangan-satumoment.xlsx"',
       },
     });
   } catch (error) {

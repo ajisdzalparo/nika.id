@@ -125,7 +125,7 @@ export async function resolveReferralForBuyer(input: {
       valid: true,
       code: referrer.referralCode ?? clean,
       referrerId: referrer.id,
-      referrerName: referrer.name || "Mitra UNDANGIN YUK",
+      referrerName: referrer.name || "Mitra SatuMoment",
     };
   }
 
@@ -134,7 +134,7 @@ export async function resolveReferralForBuyer(input: {
       valid: true,
       code: buyer.referredBy.referralCode,
       referrerId: buyer.referredBy.id,
-      referrerName: buyer.referredBy.name || "Mitra UNDANGIN YUK",
+      referrerName: buyer.referredBy.name || "Mitra SatuMoment",
     };
   }
 

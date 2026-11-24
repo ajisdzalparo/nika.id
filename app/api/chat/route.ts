@@ -82,7 +82,7 @@ export async function POST(request: Request) {
         const sysMsg = await addSupportMessage({
           threadId: thread.id,
           sender: "SYSTEM",
-          content: "Beralih kembali ke Asisten AI UNDANGIN YUK.",
+          content: "Beralih kembali ke Asisten AI SatuMoment.",
           nextMode: "AI",
           nextStatus: "OPEN",
         });

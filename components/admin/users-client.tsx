@@ -298,7 +298,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                           onClick={() => handleToggleAgencyVerified(user)}
                           disabled={isUpdatingRole === user.id}
                           title="Klik untuk toggle verifikasi mitra"
-                          className="inline-flex w-fit items-center gap-1 rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-2 py-0.5 text-[10px] font-medium text-[#5C4620] hover:bg-[#ECE2CE]"
+                          className="inline-flex w-fit items-center gap-1 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[10px] font-medium text-[#5C431A] hover:bg-[#ECE2CE]"
                         >
                           {user.agencyVerified ? "Mitra Terverifikasi" : "Mitra"} · {user.agencyQuota ?? 0} kuota
                         </button>
@@ -317,7 +317,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                               disabled={isUpdatingRole === user.id}
                               title={user.role?.toLowerCase() === "admin" ? "Cabut akses admin" : "Jadikan admin"}
                             >
-                              {user.role?.toLowerCase() === "admin" ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5 text-[#8A6A2F]" />}
+                              {user.role?.toLowerCase() === "admin" ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5 text-[#8A6424]" />}
                               <span className="hidden sm:inline">{user.role?.toLowerCase() === "admin" ? "Cabut admin" : "Jadikan admin"}</span>
                             </Button>
                           </AlertDialogTrigger>

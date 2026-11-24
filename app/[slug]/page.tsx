@@ -8,13 +8,14 @@ import { prisma } from "@/lib/prisma";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 import { getTemplateBySlug } from "@/lib/templates";
 import { InvitationGuard } from "@/components/invitation/invitation-guard";
+import { GuestIdentityMemory, type StoredGuestIdentity } from "@/components/public/guest-identity-memory";
 import { getActiveAiTheme } from "@/lib/ai-design/server";
 import type { AiTheme } from "@/lib/ai-design/schema";
 import type { PlanType } from "@/lib/limits";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ to?: string; preview?: string }>;
+  searchParams: Promise<{ to?: string; preview?: string; grup?: string }>;
 }
 
 async function resolvePublicInvitation(slug: string) {
@@ -54,7 +55,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
   const invitation = await resolvePublicInvitation(slug);
   if (!invitation) {
-    return { title: "Undangan tidak ditemukan · UNDANGIN YUK", robots: { index: false } };
+    return { title: "Undangan tidak ditemukan · SatuMoment", robots: { index: false } };
   }
 
   // This is what WhatsApp shows when the link is shared, so never fall back to placeholder names
@@ -64,11 +65,16 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const brideName = invitationData.bride?.nickname || firstWord(invitationData.bride?.fullName);
   const couple = groomName && brideName ? `${groomName} & ${brideName}` : invitation.title || "Undangan Pernikahan";
   const title = `Undangan Pernikahan ${couple}`;
-  const description = to
-    ? `Kepada Yth. ${to}, dengan hormat kami mengundang Anda di hari bahagia ${couple}. Buka untuk melihat detail acara.`
+  const salutationTo = to
+    ? /^(kepada|yth\.?)/i.test(to.trim())
+      ? to.trim()
+      : `Kepada Yth. ${to.trim()}`
+    : null;
+  const description = salutationTo
+    ? `${salutationTo}, dengan hormat kami mengundang Anda di hari bahagia ${couple}. Buka untuk melihat detail acara.`
     : `Dengan hormat kami mengundang Anda di hari bahagia ${couple}. Buka untuk melihat detail acara.`;
   const gallery = Array.isArray(invitationData.gallery) ? (invitationData.gallery as string[]) : [];
-  const image = gallery[0] || invitationData.groom?.photo || invitationData.bride?.photo || "/logo.png";
+  const image = gallery[0] || invitationData.groom?.photo || invitationData.bride?.photo || "/brand/icon-512.png";
 
   return {
     title: to ? `${to}, Anda diundang · ${title}` : title,
@@ -81,7 +87,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
 export default async function PublicInvitationPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const { to, preview } = await searchParams;
+  const { to, preview, grup } = await searchParams;
 
   const invitation = await resolvePublicInvitation(slug);
   if (!invitation) {
@@ -129,6 +135,47 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
       ? { name: owner.agencyName, instagram: owner.agencyInstagram, whatsapp: owner.agencyWhatsapp }
       : null;
 
+  // Remember personal vs group recipient on the guest's device for 1-tap venue QR check-in
+  // and track real browser opens for named guests
+  let guestIdentity: StoredGuestIdentity | null = null;
+  let matchedGuestId: string | null = null;
+  const cleanTo = to?.trim();
+  if (cleanTo) {
+    let recipientType: "PERSONAL" | "GROUP" = grup === "1" ? "GROUP" : "PERSONAL";
+    let matchedName = cleanTo;
+    let matchedMax: number | undefined = undefined;
+    if (!invitation.id.startsWith("legacy_")) {
+      const inviteGuests = await prisma.guest.findMany({
+        where: { invitationId: invitation.id },
+        select: { id: true, name: true, greeting: true, recipientType: true, maxGuests: true },
+        take: 500,
+      });
+      const lowered = cleanTo.toLowerCase();
+      const matched = inviteGuests.find((g) => {
+        const cleanedGreet = (g.greeting ?? "")
+          .trim()
+          .replace(/^kepada\s+yth\.?\s*/i, "")
+          .replace(/^kepada\s+/i, "")
+          .replace(/^yth\.?\s*/i, "")
+          .trim();
+        const fullRaw = g.greeting ? `${g.greeting} ${g.name}`.trim().toLowerCase() : "";
+        const fullClean = cleanedGreet ? `${cleanedGreet} ${g.name}`.trim().toLowerCase() : "";
+        return (
+          g.name.trim().toLowerCase() === lowered ||
+          (fullRaw && fullRaw === lowered) ||
+          (fullClean && fullClean === lowered)
+        );
+      });
+      if (matched) {
+        matchedGuestId = matched.id;
+        matchedName = matched.name;
+        matchedMax = matched.maxGuests;
+        recipientType = matched.recipientType === "GROUP" ? "GROUP" : "PERSONAL";
+      }
+    }
+    guestIdentity = { name: matchedName, recipientType, maxGuests: matchedMax };
+  }
+
   return (
     <InvitationGuard
       invitation={{
@@ -139,6 +186,12 @@ export default async function PublicInvitationPage({ params, searchParams }: Pag
       }}
       isOwnerPreview={isOwnerPreview}
     >
+      <GuestIdentityMemory
+        slug={invitation.slug || slug}
+        guest={guestIdentity}
+        trackGuestId={matchedGuestId}
+        isOwnerPreview={isOwnerPreview}
+      />
       <PageContent
         templateSlug={invitation.templateSlug || ""}
         weddingDateRaw={invitation.weddingDate}

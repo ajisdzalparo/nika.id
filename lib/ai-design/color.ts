@@ -62,6 +62,7 @@ export function normalizeTheme(input: unknown): AiTheme {
     layers: rawObj.layers,
     sectionStyles: rawObj.sectionStyles,
     customHtml: rawObj.customHtml,
+    particles: rawObj.particles,
   });
 
   const canvasExtra: Partial<AiTheme> = {};
@@ -72,6 +73,7 @@ export function normalizeTheme(input: unknown): AiTheme {
     if (parsedCanvas.data.sectionStyles && Object.keys(parsedCanvas.data.sectionStyles).length) {
       canvasExtra.sectionStyles = parsedCanvas.data.sectionStyles;
     }
+    if (parsedCanvas.data.particles) canvasExtra.particles = parsedCanvas.data.particles;
     if (parsedCanvas.data.customHtml?.trim()) {
       const { html } = sanitizeCustomHtml(parsedCanvas.data.customHtml);
       if (html) canvasExtra.customHtml = html;

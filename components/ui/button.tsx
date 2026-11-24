@@ -4,7 +4,7 @@ import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
-const buttonVariants = cva(
+const _buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
@@ -19,6 +19,10 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        /** Brand primary call to action: gold foil with a passing sheen (same as the landing page) */
+        gold: "uy-sheen rounded-full bg-[linear-gradient(120deg,#B8903F_0%,#E6CB86_45%,#C9A24E_70%,#A8823A_100%)] font-semibold text-[#1F1A14] shadow-[0_10px_24px_-12px_rgba(176,138,62,.8)] hover:-translate-y-px hover:shadow-[0_14px_28px_-12px_rgba(176,138,62,.9)]",
+        /** Dark espresso pill, the secondary brand action */
+        ink: "rounded-full bg-[#1F1A14] text-[#F6EEDD] hover:bg-[#2B241B]",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
@@ -38,6 +42,10 @@ const buttonVariants = cva(
   }
 )
 
+function buttonVariants(props?: Parameters<typeof _buttonVariants>[0]) {
+  return cn(_buttonVariants(props))
+}
+
 function Button({
   className,
   variant = "default",
@@ -45,7 +53,7 @@ function Button({
   asChild = false,
   ...props
 }: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
+  VariantProps<typeof _buttonVariants> & {
     asChild?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
@@ -55,7 +63,7 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={buttonVariants({ variant, size, className })}
       {...props}
     />
   )

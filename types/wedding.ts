@@ -89,6 +89,17 @@ export interface WeddingData {
     url: string;
   };
   rsvpDeadline?: string | Date;
+  /** RSVP form options set by the couple in the editor */
+  rsvp?: {
+    /** Most people one RSVP may bring, including the guest (default 5) */
+    maxGuests?: number;
+    /** Ask for a WhatsApp number (default true) */
+    askPhone?: boolean;
+    /** Give guests who are coming a personal QR to show at the venue (optional, default off) */
+    qrCheckIn?: boolean;
+    /** One extra question of their own, e.g. "Alergi makanan?" with fixed answers */
+    question?: { label: string; options: string[] };
+  };
   extra?: Record<string, string | number | boolean>;
   // Theme for the "ai-design" template, attached server-side from the user's active AiDesign
   aiTheme?: AiTheme;

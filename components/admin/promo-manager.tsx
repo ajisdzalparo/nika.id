@@ -4,6 +4,8 @@ import { useState } from "react";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { describePromo, PROMO_KIND_LABELS } from "@/lib/promo-shared";
+import { DatePickerField } from "@/components/common/date-time-picker";
+import { SelectField } from "@/components/ui/select";
 
 export interface AdminPromo {
   id: string;
@@ -24,7 +26,7 @@ export interface AdminPromo {
 const KIND_OPTIONS = Object.entries(PROMO_KIND_LABELS) as [keyof typeof PROMO_KIND_LABELS, string][];
 const dateFmt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" });
 const fieldCls =
-  "h-10 w-full rounded-xl border border-[#DDD5C7] bg-white px-3 text-sm text-[#1E1B17] outline-none placeholder:text-[#A59B8C] focus:border-[#8A6A2F]";
+  "h-10 w-full rounded-xl border border-[#DDD5C7] bg-white px-3 text-sm text-[#1F1A14] outline-none placeholder:text-[#A59B8C] focus:border-[#8A6424]";
 
 function numOrNull(v: string) {
   const n = Number(v.replace(/\D/g, ""));
@@ -82,10 +84,10 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
   };
 
   return (
-    <form onSubmit={submit} className="space-y-5 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-6">
-      <h2 className="font-serif text-2xl text-[#1E1B17]">Buat kode promo</h2>
+    <form onSubmit={submit} className="space-y-5 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-5 sm:p-6">
+      <h2 className="font-serif text-2xl text-[#1F1A14]">Buat kode promo</h2>
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
+        <label className="space-y-1.5 text-xs text-[#6B5F50]">
           Kode
           <input
             value={code}
@@ -96,26 +98,26 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
             className={`${fieldCls} font-mono uppercase tracking-wider`}
           />
         </label>
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
+        <label className="space-y-1.5 text-xs text-[#6B5F50]">
           Keterangan untuk pembeli (opsional)
           <input value={description} onChange={(e) => setDescription(e.target.value.slice(0, 120))} placeholder="Diskon 20% paket Mitra pertama" className={fieldCls} />
         </label>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
+        <label className="space-y-1.5 text-xs text-[#6B5F50]">
           Jenis potongan
-          <select value={mode} onChange={(e) => setMode(e.target.value as "PERCENT" | "AMOUNT")} className={fieldCls}>
+          <SelectField value={mode} onChange={(e) => setMode(e.target.value as "PERCENT" | "AMOUNT")}>
             <option value="PERCENT">Persen (%)</option>
             <option value="AMOUNT">Rupiah (Rp)</option>
-          </select>
+          </SelectField>
         </label>
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
+        <label className="space-y-1.5 text-xs text-[#6B5F50]">
           {mode === "PERCENT" ? "Besar diskon (%)" : "Potongan (Rp)"}
           <input value={value} onChange={(e) => setValue(e.target.value)} inputMode="numeric" placeholder={mode === "PERCENT" ? "20" : "50000"} required className={fieldCls} />
         </label>
         {mode === "PERCENT" && (
-          <label className="space-y-1.5 text-xs text-[#6B6358]">
+          <label className="space-y-1.5 text-xs text-[#6B5F50]">
             Maks potongan (Rp, opsional)
             <input value={maxDiscount} onChange={(e) => setMaxDiscount(e.target.value)} inputMode="numeric" placeholder="Tanpa batas" className={fieldCls} />
           </label>
@@ -123,7 +125,7 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-xs text-[#6B6358]">Berlaku untuk (kosongkan = semua)</legend>
+        <legend className="text-xs text-[#6B5F50]">Berlaku untuk (kosongkan = semua)</legend>
         <div className="flex flex-wrap gap-2">
           {KIND_OPTIONS.map(([id, label]) => {
             const on = kinds.includes(id);
@@ -133,7 +135,7 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
                 type="button"
                 aria-pressed={on}
                 onClick={() => setKinds((prev) => (on ? prev.filter((k) => k !== id) : [...prev, id]))}
-                className={`h-9 rounded-full border px-3.5 text-sm ${on ? "border-[#1E1B17] bg-[#1E1B17] text-[#F7F3EC]" : "border-[#DDD5C7] bg-white text-[#4A443B]"}`}
+                className={`h-9 rounded-full border px-3.5 text-sm ${on ? "border-[#1F1A14] bg-[#1F1A14] text-[#FCF8F1]" : "border-[#DDD5C7] bg-white text-[#4A443B]"}`}
               >
                 {label}
               </button>
@@ -143,22 +145,22 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
       </fieldset>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
+        <label className="space-y-1.5 text-xs text-[#6B5F50]">
           Total kuota pemakaian
           <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} inputMode="numeric" placeholder="Tanpa batas" className={fieldCls} />
         </label>
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
+        <label className="space-y-1.5 text-xs text-[#6B5F50]">
           Maks per akun
           <input value={perUser} onChange={(e) => setPerUser(e.target.value)} inputMode="numeric" className={fieldCls} />
         </label>
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
-          Berlaku sampai (opsional)
-          <input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} className={fieldCls} />
-        </label>
+        <div className="space-y-1.5 text-xs text-[#6B5F50]">
+          <span className="block">Berlaku sampai (opsional)</span>
+          <DatePickerField value={expiresAt} onChange={setExpiresAt} compact className={fieldCls} />
+        </div>
       </div>
 
       <div className="flex justify-end">
-        <button type="submit" disabled={busy || !code || !value} className="inline-flex h-11 items-center gap-1.5 rounded-full bg-[#1E1B17] px-5 text-sm font-medium text-[#F7F3EC] disabled:opacity-40">
+        <button type="submit" disabled={busy || !code || !value} className="inline-flex h-11 items-center gap-1.5 rounded-full bg-[#1F1A14] px-5 text-sm font-medium text-[#FCF8F1] disabled:opacity-40">
           <IconPlus size={16} /> {busy ? "Menyimpan..." : "Buat kode"}
         </button>
       </div>
@@ -194,11 +196,11 @@ export function PromoManager({ initialItems }: { initialItems: AdminPromo[] }) {
       <CreatePromoForm onCreated={(p) => setItems((prev) => [p, ...prev])} />
 
       <section className="space-y-3">
-        <h2 className="font-serif text-2xl text-[#1E1B17]">Semua kode</h2>
+        <h2 className="font-serif text-2xl text-[#1F1A14]">Semua kode</h2>
         {items.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-[#D6CBB8] p-6 text-center text-[15px] text-[#6B6358]">Belum ada kode promo.</p>
+          <p className="rounded-2xl border border-dashed border-[#D6CBB8] p-6 text-center text-[15px] text-[#6B5F50]">Belum ada kode promo.</p>
         ) : (
-          <ul className="divide-y divide-[#EDE6DA] overflow-hidden rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9]">
+          <ul className="divide-y divide-[#EDE6DA] overflow-hidden rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9]">
             {items.map((p) => {
               const expired = p.expiresAt ? new Date(p.expiresAt).getTime() < now : false;
               const exhausted = p.maxUses !== null && p.usedCount >= p.maxUses;
@@ -206,9 +208,9 @@ export function PromoManager({ initialItems }: { initialItems: AdminPromo[] }) {
                 <li key={p.id} className="flex flex-wrap items-center gap-4 p-4 sm:p-5">
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-base font-semibold tracking-wider text-[#1E1B17]">{p.code}</span>
+                      <span className="font-mono text-base font-semibold tracking-wider text-[#1F1A14]">{p.code}</span>
                       {(!p.isActive || expired || exhausted) && (
-                        <span className="rounded-full bg-[#EFE9DF] px-2 py-0.5 text-[11px] text-[#6B6358]">
+                        <span className="rounded-full bg-[#EFE9DF] px-2 py-0.5 text-[11px] text-[#6B5F50]">
                           {!p.isActive ? "Nonaktif" : expired ? "Kedaluwarsa" : "Kuota habis"}
                         </span>
                       )}
@@ -227,7 +229,7 @@ export function PromoManager({ initialItems }: { initialItems: AdminPromo[] }) {
                       aria-checked={p.isActive}
                       aria-label={`${p.isActive ? "Nonaktifkan" : "Aktifkan"} ${p.code}`}
                       onClick={() => void toggle(p)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${p.isActive ? "bg-[#1E1B17]" : "bg-[#CFC5B4]"}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${p.isActive ? "bg-[#1F1A14]" : "bg-[#D9CBAE]"}`}
                     >
                       <span className={`inline-block h-4.5 w-4.5 rounded-full bg-[#FFFDF9] transition-transform ${p.isActive ? "translate-x-5.5" : "translate-x-1"}`} />
                     </button>
@@ -236,7 +238,7 @@ export function PromoManager({ initialItems }: { initialItems: AdminPromo[] }) {
                         type="button"
                         onClick={() => void remove(p)}
                         aria-label={`Hapus ${p.code}`}
-                        className="flex h-9 w-9 items-center justify-center rounded-full text-[#6B6358] hover:bg-[#EFE8DC] hover:text-red-600"
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-[#6B5F50] hover:bg-[#F5EDDD] hover:text-red-600"
                       >
                         <IconTrash size={16} />
                       </button>

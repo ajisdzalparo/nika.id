@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 150">
+  <!-- Carved teak gateway top (gebyok): a scalloped lintel with lattice, leaf carving and two hanging corners -->
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8A6440"/>
+      <stop offset=".5" stop-color="#A67E55"/>
+      <stop offset="1" stop-color="#6E4B2E"/>
+    </linearGradient>
+    <linearGradient id="gilt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C9A45A"/>
+      <stop offset=".5" stop-color="#EBD39A"/>
+      <stop offset="1" stop-color="#B08A3E"/>
+    </linearGradient>
+    <pattern id="lattice" width="12" height="12" patternUnits="userSpaceOnUse">
+      <path d="M6 0 L12 6 L6 12 L0 6Z" fill="none" stroke="#5A3C24" stroke-width="1" opacity=".55"/>
+    </pattern>
+  </defs>
+  <!-- lintel with an arched opening -->
+  <path d="M0 0 H400 V96 C360 96 342 70 300 62 C262 56 236 30 200 30 C164 30 138 56 100 62 C58 70 40 96 0 96Z" fill="url(#wood)"/>
+  <path d="M0 0 H400 V96 C360 96 342 70 300 62 C262 56 236 30 200 30 C164 30 138 56 100 62 C58 70 40 96 0 96Z" fill="url(#lattice)"/>
+  <!-- gilt inner edge -->
+  <path d="M0 92 C40 92 58 66 100 58 C138 52 164 26 200 26 C236 26 262 52 300 58 C342 66 360 92 400 92" fill="none" stroke="url(#gilt)" stroke-width="3"/>
+  <path d="M0 100 C40 100 58 74 100 66 C138 60 164 34 200 34 C236 34 262 60 300 66 C342 74 360 100 400 100" fill="none" stroke="url(#gilt)" stroke-width="1.2" opacity=".8"/>
+  <!-- carved leaf scrolls along the top -->
+  <g fill="none" stroke="#3F2A18" stroke-width="1.4" opacity=".55" stroke-linecap="round">
+    <path d="M30 22c14-14 30-6 26 6s-20 6-14-4"/><path d="M90 18c14-14 30-6 26 6s-20 6-14-4"/>
+    <path d="M370 22c-14-14-30-6-26 6s20 6 14-4"/><path d="M310 18c-14-14-30-6-26 6s20 6 14-4"/>
+  </g>
+  <!-- crown medallion -->
+  <g transform="translate(200 18)">
+    <path d="M0 -14 L10 0 L0 14 L-10 0Z" fill="url(#gilt)"/>
+    <circle r="4" fill="#6E4B2E"/>
+    <path d="M-34 0 H-14 M14 0 H34" stroke="url(#gilt)" stroke-width="2"/>
+  </g>
+  <!-- hanging corner posts -->
+  <path d="M0 96 H26 V150 H0Z" fill="url(#wood)"/>
+  <path d="M374 96 H400 V150 H374Z" fill="url(#wood)"/>
+  <path d="M26 96 V150 M374 96 V150" stroke="url(#gilt)" stroke-width="2"/>
+  <g fill="url(#gilt)">
+    <path d="M13 112 l6 8 -6 8 -6 -8Z"/><path d="M387 112 l6 8 -6 8 -6 -8Z"/>
+  </g>
+</svg>

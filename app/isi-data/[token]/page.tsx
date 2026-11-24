@@ -32,7 +32,7 @@ export default async function ClientDataEntryPage({ params }: { params: Promise<
     <ClientForm
       token={token}
       invitationTitle={inv.title}
-      agencyName={inv.user.agencyName || inv.user.name || "UNDANGIN YUK"}
+      agencyName={inv.user.agencyName || inv.user.name || "SatuMoment"}
       agencyWhatsapp={inv.user.agencyWhatsapp}
       clientName={inv.clientName}
       initial={{

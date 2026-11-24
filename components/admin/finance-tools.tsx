@@ -15,6 +15,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DatePickerField } from "@/components/common/date-time-picker";
+import { SelectField } from "@/components/ui/select";
 
 const EXPENSE_CATEGORIES = ["Server & hosting", "API AI", "Payment gateway", "Iklan & marketing", "Gaji & freelancer", "Domain & software", "Pajak", "Lainnya"];
 const INCOME_CATEGORIES = ["Penjualan offline", "Agency / B2B", "Sponsor", "Lainnya"];
@@ -74,7 +76,7 @@ export function FinanceImportDialog() {
         </DialogHeader>
 
         <a href={TEMPLATE_URL} download className="flex items-center gap-3 rounded-xl border border-zinc-200 p-3 text-sm hover:bg-zinc-50">
-          <IconFileSpreadsheet size={22} className="text-[#8A6A2F]" />
+          <IconFileSpreadsheet size={22} className="text-[#8A6424]" />
           <span>
             <span className="font-medium">Unduh template Excel</span>
             <span className="block text-xs text-zinc-500">Berisi contoh dan petunjuk pengisian</span>
@@ -194,17 +196,17 @@ export function ManualEntryDialog() {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <label className="space-y-1.5 text-sm">
-              <span className="text-zinc-600">Tanggal</span>
-              <input type="date" required value={date} max={today} onChange={(e) => setDate(e.target.value)} className={field} />
-            </label>
+            <div className="space-y-1.5 text-sm">
+              <span className="block text-zinc-600">Tanggal</span>
+              <DatePickerField required value={date} max={today} onChange={setDate} compact className={field} />
+            </div>
             <label className="space-y-1.5 text-sm">
               <span className="text-zinc-600">Kategori</span>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className={field}>
+              <SelectField value={category} onChange={(e) => setCategory(e.target.value)}>
                 {cats.map((c) => (
                   <option key={c}>{c}</option>
                 ))}
-              </select>
+              </SelectField>
             </label>
           </div>
           <label className="block space-y-1.5 text-sm">
@@ -287,17 +289,17 @@ export function RecentEntries({ items }: { items: Recent[] }) {
       </ul>
 
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && busy === null && setDeleteId(null)}>
-        <AlertDialogContent className="border-[#E6DFD3] bg-[#FFFDF9] text-[#15130F] sm:rounded-2xl">
+        <AlertDialogContent className="border-[#EDE3CF] bg-[#FFFDF9] text-[#1A1510] sm:rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#15130F]">
+            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#1A1510]">
               Hapus catatan manual?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-[#5E574D]">
+            <AlertDialogDescription className="text-sm text-[#5E5446]">
               Catatan pemasukan atau pengeluaran manual ini akan dihapus permanen dari buku besar.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel disabled={busy !== null} className="rounded-full border-[#DFD7C8] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]">
+            <AlertDialogCancel disabled={busy !== null} className="rounded-full border-[#E9DDC6] bg-white text-[#40372B] hover:bg-[#FCF8F1]">
               Batal
             </AlertDialogCancel>
             <AlertDialogAction

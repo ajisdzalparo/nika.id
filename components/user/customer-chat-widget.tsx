@@ -253,21 +253,21 @@ export function CustomerChatWidget() {
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {open && (
-        <div className="flex h-[540px] max-h-[calc(100vh-5.5rem)] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[#DFD7C8] bg-[#FAF8F4] shadow-2xl sm:w-[410px]">
+        <div className="flex h-[540px] max-h-[calc(100vh-5.5rem)] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1] shadow-2xl sm:w-[410px]">
           {/* Header */}
-          <div className="flex items-center justify-between gap-2 bg-[#15130F] px-4 py-3.5 text-[#FAF8F4]">
+          <div className="flex items-center justify-between gap-2 bg-[#1A1510] px-4 py-3.5 text-[#FCF8F1]">
             <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[#C9A45C]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-[#D9B56A]">
                 {isAdminMode ? <IconHeadset size={16} /> : <IconMessageCircle size={16} />}
               </span>
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold leading-tight">
-                  {isAdminMode ? "Admin Live Support" : "Asisten UNDANGIN YUK"}
+                  {isAdminMode ? "Admin Live Support" : "Asisten SatuMoment"}
                 </p>
                 <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-zinc-400">
                   <span
                     className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                      isClosed ? "bg-zinc-500" : adminTyping ? "animate-pulse bg-[#E6CB8A]" : "bg-[#C9A45C]"
+                      isClosed ? "bg-zinc-500" : adminTyping ? "animate-pulse bg-[#E6CB8A]" : "bg-[#D9B56A]"
                     }`}
                   />
                   {isClosed
@@ -289,7 +289,7 @@ export function CustomerChatWidget() {
                   type="button"
                   disabled={sending}
                   onClick={() => sendAction({ action: isAdminMode ? "SWITCH_AI" : "CONNECT_ADMIN" })}
-                  className="whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-medium text-[#F4EAD6] transition hover:bg-white/20 disabled:opacity-50"
+                  className="whitespace-nowrap rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-medium text-[#F5E8CA] transition hover:bg-white/20 disabled:opacity-50"
                 >
                   {isAdminMode ? "Kembali ke AI" : "Hubungi Admin"}
                 </button>
@@ -307,7 +307,7 @@ export function CustomerChatWidget() {
 
           {/* Queue banner while waiting for admin */}
           {inQueue && (
-            <div className="flex items-center justify-between gap-2 border-b border-[#E3CFA0] bg-[#FBF4E3] px-4 py-2 text-[11px] text-[#6E5426]">
+            <div className="flex items-center justify-between gap-2 border-b border-[#E3CFA0] bg-[#FBF4E3] px-4 py-2 text-[11px] text-[#6E4F1C]">
               <span>Kamu berada di antrean #{thread?.queuePosition ?? 1}. Silakan tulis kendala atau kirim gambar dulu.</span>
             </div>
           )}
@@ -316,14 +316,14 @@ export function CustomerChatWidget() {
           <div className="flex-1 space-y-3.5 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
             {messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
-                <IconLoader2 className="animate-spin text-[#8A6A2F]" />
+                <IconLoader2 className="animate-spin text-[#8A6424]" />
               </div>
             ) : (
               messages.map((m) => {
                 if (m.sender === "SYSTEM") {
                   return (
                     <div key={m.id} className="py-1 text-center">
-                      <span className="inline-block rounded-full border border-[#E5DDD0] bg-[#EFE9DD] px-3 py-1 text-[11px] text-[#5E574D]">
+                      <span className="inline-block rounded-full border border-[#E5DDD0] bg-[#EFE9DD] px-3 py-1 text-[11px] text-[#5E5446]">
                         {m.content}
                       </span>
                     </div>
@@ -339,11 +339,11 @@ export function CustomerChatWidget() {
                         "Anda"
                       ) : isAdminMsg ? (
                         <>
-                          <IconHeadset size={11} className="text-[#8A6A2F]" /> Admin
+                          <IconHeadset size={11} className="text-[#8A6424]" /> Admin
                         </>
                       ) : (
                         <>
-                          <IconMessageCircle size={11} className="text-[#8A6A2F]" /> Asisten AI
+                          <IconMessageCircle size={11} className="text-[#8A6424]" /> Asisten AI
                         </>
                       )}
                       <span>· {formatTime(m.createdAt)}</span>
@@ -351,10 +351,10 @@ export function CustomerChatWidget() {
                     <div
                       className={`max-w-[88%] rounded-2xl px-4 py-3 shadow-2xs ${
                         isUser
-                          ? "rounded-br-sm bg-[#15130F] text-[#FAF8F4]"
+                          ? "rounded-br-sm bg-[#1A1510] text-[#FCF8F1]"
                           : isAdminMsg
-                            ? "rounded-bl-sm border border-[#DFC793] bg-[#FBF4E3] text-[#15130F]"
-                            : "rounded-bl-sm border border-[#E6DFD3] bg-white text-[#2E2A24]"
+                            ? "rounded-bl-sm border border-[#E3C77F] bg-[#FBF4E3] text-[#1A1510]"
+                            : "rounded-bl-sm border border-[#EDE3CF] bg-white text-[#2E2A24]"
                       }`}
                     >
                       <ChatMessageText content={m.content} isUserBubble={isUser} />
@@ -366,19 +366,19 @@ export function CustomerChatWidget() {
 
             {adminTyping && (
               <div className="flex flex-col items-start">
-                <span className="mb-1 inline-flex items-center gap-1 px-1 text-[10px] font-medium text-[#8A6A2F]">
+                <span className="mb-1 inline-flex items-center gap-1 px-1 text-[10px] font-medium text-[#8A6424]">
                   <IconHeadset size={11} /> Admin sedang mengetik
                 </span>
-                <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-[#DFC793] bg-[#FBF4E3] px-4 py-3">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6A2F] [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6A2F] [animation-delay:150ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6A2F] [animation-delay:300ms]" />
+                <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-[#E3C77F] bg-[#FBF4E3] px-4 py-3">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6424] [animation-delay:0ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6424] [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#8A6424] [animation-delay:300ms]" />
                 </div>
               </div>
             )}
 
             {sending && (
-              <div className="flex items-center gap-1.5 text-xs text-[#6B6358]">
+              <div className="flex items-center gap-1.5 text-xs text-[#6B5F50]">
                 <IconLoader2 size={13} className="animate-spin" />
                 {isAdminMode ? "Mengirim ke admin..." : "Asisten mengetik..."}
               </div>
@@ -388,13 +388,13 @@ export function CustomerChatWidget() {
 
           {/* Session Closed Banner OR Quick Starters */}
           {isClosed ? (
-            <div className="flex items-center justify-between gap-2 border-t border-[#E6DFD3] bg-[#F3EDE2] px-4 py-2.5">
-              <p className="text-xs text-[#5E574D]">Sesi live chat ditutup admin.</p>
+            <div className="flex items-center justify-between gap-2 border-t border-[#EDE3CF] bg-[#F3EDE2] px-4 py-2.5">
+              <p className="text-xs text-[#5E5446]">Sesi live chat ditutup admin.</p>
               <button
                 type="button"
                 disabled={sending}
                 onClick={() => sendAction({ action: "REOPEN" })}
-                className="rounded-full bg-[#15130F] px-3 py-1 text-[11px] font-medium text-[#FAF8F4] hover:bg-[#2A261F]"
+                className="rounded-full bg-[#1A1510] px-3 py-1 text-[11px] font-medium text-[#FCF8F1] hover:bg-[#2B241B]"
               >
                 Mulai Sesi Baru
               </button>
@@ -402,14 +402,14 @@ export function CustomerChatWidget() {
           ) : (
             !isAdminMode &&
             messages.length <= 2 && (
-              <div className="flex flex-wrap gap-1.5 border-t border-[#EFEAE0] bg-white/80 px-3.5 py-2.5">
+              <div className="flex flex-wrap gap-1.5 border-t border-[#F3EBDB] bg-white/80 px-3.5 py-2.5">
                 {STARTERS.map((q) => (
                   <button
                     key={q}
                     type="button"
                     disabled={sending}
                     onClick={() => sendAction({ action: "SEND", content: q })}
-                    className="rounded-full border border-[#DFD7C8] bg-white px-3 py-1 text-[11px] font-medium text-[#3F3A33] transition hover:border-[#8A6A2F] hover:text-[#15130F]"
+                    className="rounded-full border border-[#E9DDC6] bg-white px-3 py-1 text-[11px] font-medium text-[#40372B] transition hover:border-[#8A6424] hover:text-[#1A1510]"
                   >
                     {q}
                   </button>
@@ -420,17 +420,17 @@ export function CustomerChatWidget() {
 
           {/* Pending Image Attachment Preview */}
           {attachmentUrl && (
-            <div className="flex items-center justify-between gap-3 border-t border-[#EFEAE0] bg-[#FAF8F4] px-3.5 py-2">
+            <div className="flex items-center justify-between gap-3 border-t border-[#F3EBDB] bg-[#FCF8F1] px-3.5 py-2">
               <div className="flex items-center gap-2.5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={attachmentUrl} alt="Pratinjau lampiran" className="h-11 w-11 rounded-lg border border-[#E1D8C9] object-cover" />
-                <span className="text-xs font-medium text-[#5E574D]">Gambar siap dikirim</span>
+                <img src={attachmentUrl} alt="Pratinjau lampiran" className="h-11 w-11 rounded-lg border border-[#E9DDC6] object-cover" />
+                <span className="text-xs font-medium text-[#5E5446]">Gambar siap dikirim</span>
               </div>
               <button
                 type="button"
                 onClick={() => setAttachmentUrl(null)}
                 aria-label="Hapus lampiran"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-[#6B6358] hover:bg-[#EFEAE0] hover:text-[#15130F]"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-[#6B5F50] hover:bg-[#F3EBDB] hover:text-[#1A1510]"
               >
                 <IconX size={14} />
               </button>
@@ -438,7 +438,7 @@ export function CustomerChatWidget() {
           )}
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t border-[#E6DFD3] bg-white px-3 py-3">
+          <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t border-[#EDE3CF] bg-white px-3 py-3">
             <input
               ref={fileInputRef}
               type="file"
@@ -452,7 +452,7 @@ export function CustomerChatWidget() {
               onClick={() => fileInputRef.current?.click()}
               aria-label="Lampirkan gambar"
               title="Lampirkan gambar (JPG, PNG, WebP, GIF)"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E1D8C9] bg-[#FAF8F4] text-[#5E574D] transition hover:border-[#8A6A2F] hover:text-[#15130F] disabled:opacity-40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E9DDC6] bg-[#FCF8F1] text-[#5E5446] transition hover:border-[#8A6424] hover:text-[#1A1510] disabled:opacity-40"
             >
               {uploading ? <IconLoader2 size={16} className="animate-spin" /> : <IconPhotoPlus size={17} />}
             </button>
@@ -469,13 +469,13 @@ export function CustomerChatWidget() {
                     ? "Tulis pesan atau tempel gambar..."
                     : "Tanya seputar undangan atau bayar..."
               }
-              className="h-10 flex-1 rounded-full border border-[#E1D8C9] bg-[#FAF8F4] px-4 text-xs text-[#15130F] placeholder:text-[#8C8272] focus:border-[#8A6A2F] focus:outline-none"
+              className="h-10 flex-1 rounded-full border border-[#E9DDC6] bg-[#FCF8F1] px-4 text-xs text-[#1A1510] placeholder:text-[#8C8272] focus:border-[#8A6424] focus:outline-none"
             />
             <button
               type="submit"
               disabled={(!input.trim() && !attachmentUrl) || sending || uploading}
               aria-label="Kirim pesan"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#15130F] text-[#FAF8F4] transition hover:bg-[#2A261F] disabled:opacity-40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1A1510] text-[#FCF8F1] transition hover:bg-[#2B241B] disabled:opacity-40"
             >
               <IconSend size={15} />
             </button>
@@ -490,16 +490,16 @@ export function CustomerChatWidget() {
           setOpen((v) => !v);
           setUnreadChat(0);
         }}
-        className="relative flex h-12 items-center gap-2 rounded-full bg-[#15130F] px-4 text-sm font-medium text-[#FAF8F4] shadow-lg ring-1 ring-white/10 transition hover:bg-[#2A261F]"
+        className="relative flex h-12 items-center gap-2 rounded-full bg-[#1A1510] px-4 text-sm font-medium text-[#FCF8F1] shadow-lg ring-1 ring-white/10 transition hover:bg-[#2B241B]"
       >
         {isAdminMode && !isClosed ? (
-          <IconHeadset size={18} className="text-[#C9A45C]" />
+          <IconHeadset size={18} className="text-[#D9B56A]" />
         ) : (
-          <IconMessageCircle size={18} className="text-[#C9A45C]" />
+          <IconMessageCircle size={18} className="text-[#D9B56A]" />
         )}
         <span>{open ? "Tutup Chat" : "Chat Bantuan"}</span>
         {!open && unreadChat > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#C9A45C] px-1.5 text-[11px] font-semibold text-[#15130F]">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#D9B56A] px-1.5 text-[11px] font-semibold text-[#1A1510]">
             {unreadChat > 9 ? "9+" : unreadChat}
           </span>
         )}

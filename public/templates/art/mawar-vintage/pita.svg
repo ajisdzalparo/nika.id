@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140">
+  <!-- Silk ribbon bow with a small rose at the knot -->
+  <defs>
+    <linearGradient id="rb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E9C2BE"/><stop offset=".5" stop-color="#C98A8C"/><stop offset="1" stop-color="#A2626A"/></linearGradient>
+    <radialGradient id="bg" cx=".45" cy=".4" r=".75"><stop offset="0" stop-color="#B4505F"/><stop offset="1" stop-color="#5A1828"/></radialGradient>
+  </defs>
+  <path d="M100 60 C70 20 20 22 22 54 C24 84 70 82 100 64Z" fill="url(#rb)"/>
+  <path d="M100 60 C130 20 180 22 178 54 C176 84 130 82 100 64Z" fill="url(#rb)"/>
+  <path d="M96 66 C80 90 64 112 46 132 L62 134 C76 116 90 96 100 72Z" fill="url(#rb)"/>
+  <path d="M104 66 C120 90 136 112 154 132 L138 134 C124 116 110 96 100 72Z" fill="url(#rb)"/>
+  <path d="M40 44 C56 46 74 54 90 62 M160 44 C144 46 126 54 110 62" stroke="#FFFFFF66" stroke-width="1.4" fill="none"/>
+  <circle cx="100" cy="64" r="12" fill="url(#bg)"/>
+  <path d="M94 64 C94 58 106 58 106 64 C106 68 100 69 99 66" stroke="#F3B6C066" stroke-width="1.2" fill="none"/>
+</svg>

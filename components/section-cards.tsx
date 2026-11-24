@@ -24,15 +24,15 @@ export function SectionCards({ stats }: SectionCardsProps) {
 
   return (
     <div className="px-4 lg:px-6">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[#E1D8C9] bg-[#E1D8C9] @3xl/main:grid-cols-5">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[#E9DDC6] bg-[#E9DDC6] @3xl/main:grid-cols-5">
         {items.map((s, i) => (
           <Link
             key={s.label}
             href={s.href}
             className={`bg-[#FFFDF9] p-5 transition-colors hover:bg-[#FBF8F2] ${i === items.length - 1 ? "col-span-2 @3xl/main:col-span-1" : ""}`}
           >
-            <p className="text-[13px] text-[#6B6358]">{s.label}</p>
-            <p className="mt-2 font-serif text-4xl tabular-nums text-[#1E1B17]">{fmt.format(s.value)}</p>
+            <p className="text-[13px] text-[#6B5F50]">{s.label}</p>
+            <p className="mt-2 font-serif text-4xl tabular-nums text-[#1F1A14]">{fmt.format(s.value)}</p>
             <p className="mt-1 text-xs text-[#7D7468]">{s.note}</p>
           </Link>
         ))}

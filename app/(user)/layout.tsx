@@ -4,6 +4,7 @@ import { UserSidebar } from "@/components/user-sidebar";
 import { PortalUserProvider } from "@/components/common/portal-user-context";
 import { ActiveInvitationProvider, type SwitchableInvitation } from "@/components/user/active-invitation-context";
 import { CustomerChatWidget } from "@/components/user/customer-chat-widget";
+import { CustomerSurvey } from "@/components/user/customer-survey";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getSession } from "@/lib/auth-helpers";
 import { getActiveInvitation, listUserInvitations } from "@/lib/active-invitation";
@@ -27,15 +28,15 @@ export default async function UserLayout({ children }: { children: React.ReactNo
 
   if (maintenance) {
     return (
-      <div className={`${studioClass} flex min-h-screen items-center justify-center bg-[#FAF8F4] px-4`}>
-        <div className="max-w-md space-y-4 rounded-2xl border border-[#E6DFD3] bg-white p-8 text-center shadow-xs">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F4EAD6] text-[#8A6A2F]">
+      <div className={`${studioClass} flex min-h-screen items-center justify-center bg-[#FCF8F1] px-4`}>
+        <div className="max-w-md space-y-4 rounded-2xl border border-[#EDE3CF] bg-white p-8 text-center shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F5E8CA] text-[#8A6424]">
             <IconTools size={22} />
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A6A2F]">Pemeliharaan Sistem</p>
-          <h1 className="font-serif text-3xl font-medium text-[#15130F]">Sedang dalam pembaruan</h1>
-          <p className="text-sm leading-relaxed text-[#5E574D]">
-            Kami sedang melakukan pemeliharaan sistem sementara agar layanan UNDANGIN YUK semakin optimal. Silakan coba muat ulang beberapa saat lagi.
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A6424]">Pemeliharaan Sistem</p>
+          <h1 className="font-serif text-3xl font-medium text-[#1A1510]">Sedang dalam pembaruan</h1>
+          <p className="text-sm leading-relaxed text-[#5E5446]">
+            Kami sedang melakukan pemeliharaan sistem sementara agar layanan SatuMoment semakin optimal. Silakan coba muat ulang beberapa saat lagi.
           </p>
         </div>
       </div>
@@ -70,7 +71,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
       }}
     >
       <ActiveInvitationProvider active={activeItem} invitations={switchableList} aiCredits={aiCredits}>
-        <SidebarProvider style={shellTokens} className={`${studioClass} bg-[#F1ECE3]`}>
+        <SidebarProvider style={shellTokens} className={`${studioClass} bg-[#F4EDDF]`}>
           <UserSidebar
             variant="inset"
             portalUser={{
@@ -81,9 +82,10 @@ export default async function UserLayout({ children }: { children: React.ReactNo
             activePlan={activeItem.plan}
             aiDesignEnabled={aiDesignEnabled}
           />
-          <SidebarInset className="min-w-0 overflow-x-hidden bg-[#F7F3EC]">
+          <SidebarInset className="min-w-0 overflow-x-hidden bg-[#FCF8F1]">
             {children}
             <CustomerChatWidget />
+            <CustomerSurvey />
           </SidebarInset>
         </SidebarProvider>
       </ActiveInvitationProvider>

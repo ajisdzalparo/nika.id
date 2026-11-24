@@ -51,7 +51,7 @@ export default async function UsersPage(props: { searchParams: Promise<{ q?: str
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-serif text-4xl font-medium text-[#1E1B17]">Pengguna</h1>
+              <h1 className="font-serif text-4xl font-medium text-[#1F1A14]">Pengguna</h1>
               <p className="text-muted-foreground">Kelola semua pasangan yang terdaftar</p>
             </div>
           </div>

@@ -38,7 +38,7 @@ function VerifyEmailContent() {
   if (status === "verifying") {
     return (
       <div className="space-y-4">
-        <IconLoader2 size={28} className="animate-spin text-[#8A6A2F]" />
+        <IconLoader2 size={28} className="animate-spin text-[#8A6424]" />
         <h1 className="font-serif text-[2.6rem] font-medium leading-tight">Memverifikasi email…</h1>
         <p className="text-zinc-600">Mohon tunggu sebentar.</p>
       </div>

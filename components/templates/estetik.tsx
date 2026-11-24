@@ -430,7 +430,7 @@ export default function Estetik({ data }: { data: WeddingData }) {
             <h3 className="text-3xl font-light italic text-[#C4A484]">
               {groomName} & {brideName}
             </h3>
-            <div className="pt-12 text-[10px] tracking-[0.3em] uppercase opacity-50">Official Invitation by Undangin Yuk</div>
+            <div className="pt-12 text-[10px] tracking-[0.3em] uppercase opacity-50">Official Invitation by SatuMoment</div>
           </div>
         </footer>
       </main>

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ADMIN_PORTAL_COOKIE, USER_PORTAL_COOKIE, buildRedirectUrl } from "@/lib/portal-constants";
 
-const protectedRoutes = ["/dashboard", "/undangan", "/editor", "/pilih-template", "/desain-ai", "/kanvas", "/buku-tamu", "/manajemen-tamu", "/pengaturan", "/upgrade", "/dompet", "/mitra", "/masukan"];
-const adminRoutes = ["/admin", "/templates", "/users", "/moderasi", "/transaksi", "/pengaturan-admin"];
+const protectedRoutes = ["/dashboard", "/undangan", "/editor", "/pilih-template", "/desain-ai", "/kanvas", "/buku-tamu", "/manajemen-tamu", "/wa-blast", "/check-in", "/pengaturan", "/upgrade", "/dompet", "/mitra", "/masukan"];
+// Legacy admin paths only. "/templates" is the public catalogue; admin templates live under /admin/templates.
+const adminRoutes = ["/admin", "/users", "/moderasi", "/transaksi", "/pengaturan-admin"];
 const authRoutes = ["/login", "/register"];
 
 function withReferralCookie(res: NextResponse, refCode: string | null) {

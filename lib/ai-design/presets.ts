@@ -1,4 +1,5 @@
 import { DEFAULT_AI_THEME, type AiTheme } from "./schema";
+import { CATALOG_PRESETS } from "./presets-catalog";
 
 // Hand-tuned example themes: shown in the studio before the first generation (no quota used)
 // and available at /preview/ai-design?preset=<key>.
@@ -16,6 +17,7 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
       corners: "soft",
       frame: "dotted",
       metallic: true,
+      artKit: "deco-emas",
       layout: { cover: "photo-fullbleed", couple: "portrait-circle", events: "cards", gallery: "masonry" },
       copy: {
         coverEyebrow: "The Wedding of",
@@ -30,14 +32,15 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
     label: "Adat Jawa",
     theme: {
       name: "Kawung Sogan",
-      mood: "Tradisi Jawa yang anggun, cokelat sogan dan emas tua.",
-      palette: { background: "#F3EBDF", surface: "#F8F2E9", ink: "#3A2717", muted: "#7A6450", accent: "#8C6239", accentSoft: "#E6D6C1", onAccent: "#FFF8EE" },
+      mood: "Tradisi Jawa yang anggun, cokelat sogan dan motif parang emas tua.",
+      palette: { background: "#EFE2CE", surface: "#F7EFE1", ink: "#3A2717", muted: "#755E49", accent: "#7A4E24", accentSoft: "#E4D1B8", onAccent: "#FFF8EE" },
       typography: { display: "Marcellus", names: "Pinyon Script", body: "EB Garamond", displayItalic: false, labelStyle: "small-caps" },
       ornament: "batik-kawung",
       texture: "linen",
       corners: "arch",
       frame: "double",
       metallic: false,
+      artKit: "batik-parang",
       layout: { cover: "centered-frame", couple: "stacked-arch", events: "timeline", gallery: "grid" },
       copy: {
         coverEyebrow: "Pawiwahan",
@@ -60,6 +63,7 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
       corners: "soft",
       frame: "hairline",
       metallic: false,
+      artKit: "kebun-sage",
       layout: { cover: "split-photo", couple: "side-by-side", events: "ticket", gallery: "filmstrip" },
       copy: {
         coverEyebrow: "Kabar Bahagia",
@@ -77,13 +81,14 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
     theme: {
       name: "Minimalist White",
       mood: "Bersih dan tenang, tipografi yang bicara, tanpa hiasan berlebih.",
-      palette: { background: "#FAF9F6", surface: "#FFFFFF", ink: "#1D1C1A", muted: "#66635D", accent: "#4A4740", accentSoft: "#EEECE7", onAccent: "#FAF9F6" },
+      palette: { background: "#FFFFFF", surface: "#F9F8F5", ink: "#1D1C1A", muted: "#66635D", accent: "#3A3834", accentSoft: "#EEECE7", onAccent: "#FAF9F6" },
       typography: { display: "Tenor Sans", names: "Bodoni Moda", body: "Manrope", displayItalic: false, labelStyle: "uppercase-tracked" },
       ornament: "minimal-rule",
       texture: "none",
       corners: "sharp",
       frame: "hairline",
       metallic: false,
+      artKit: "none",
       layout: { cover: "typographic", couple: "editorial", events: "cards", gallery: "grid" },
       copy: {
         coverEyebrow: "Pernikahan",
@@ -95,18 +100,19 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
     },
   },
   "classic-premium": {
-    label: "Bunga vintage",
+    label: "Mawar romantis",
     theme: {
       name: "Floral Blossom",
-      mood: "Romantis bernuansa vintage, mawar pudar dan kertas tua yang hangat.",
-      palette: { background: "#F6EFE7", surface: "#FBF7F2", ink: "#3A2C28", muted: "#78665E", accent: "#9E6253", accentSoft: "#EEDCD2", onAccent: "#FFF9F4" },
+      mood: "Romantis dengan rona rose quartz lembut, foto sampul penuh layar dan sulur garis bunga halus.",
+      palette: { background: "#F4E2E6", surface: "#FCF3F5", ink: "#3A1F28", muted: "#795661", accent: "#9A3D52", accentSoft: "#EDD2D9", onAccent: "#FFF7F9" },
       typography: { display: "Cormorant Garamond", names: "Alex Brush", body: "Lora", displayItalic: true, labelStyle: "small-caps" },
-      ornament: "floral-line",
+      ornament: "flourish",
       texture: "paper",
-      corners: "arch",
+      corners: "soft",
       frame: "double",
       metallic: false,
-      layout: { cover: "arch-window", couple: "stacked-arch", events: "timeline", gallery: "masonry" },
+      artKit: "garis-halus",
+      layout: { cover: "photo-fullbleed", couple: "portrait-circle", events: "timeline", gallery: "masonry" },
       copy: {
         coverEyebrow: "Undangan Pernikahan",
         openButton: "Buka Undangan",
@@ -128,6 +134,7 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
       corners: "sharp",
       frame: "hairline",
       metallic: true,
+      artKit: "garis-halus",
       layout: { cover: "photo-fullbleed", couple: "editorial", events: "ticket", gallery: "filmstrip" },
       copy: {
         coverEyebrow: "Kami Menikah",
@@ -150,6 +157,7 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
       corners: "arch",
       frame: "double",
       metallic: true,
+      artKit: "deco-emas",
       layout: { cover: "centered-frame", couple: "portrait-circle", events: "cards", gallery: "grid" },
       copy: {
         coverEyebrow: "Walimatul Ursy",
@@ -161,18 +169,19 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
     },
   },
   "romantic-elegance": {
-    label: "Merah muda lembut",
+    label: "Merah muda bersih",
     theme: {
       name: "Romantic Elegance",
-      mood: "Lembut dan romantis, merah muda kusam dengan huruf yang anggun.",
-      palette: { background: "#F7F0EE", surface: "#FFFAF8", ink: "#3B2A2D", muted: "#7A6064", accent: "#965A63", accentSoft: "#EED9DA", onAccent: "#FFF8F7" },
+      mood: "Lembut, bersih dan romantis, merah muda kusam berbingkai lengkung tanpa ornamen ramai.",
+      palette: { background: "#F6E6EA", surface: "#FFFAF9", ink: "#3B262B", muted: "#7A5D64", accent: "#964B59", accentSoft: "#EED7DC", onAccent: "#FFF8F7" },
       typography: { display: "Gilda Display", names: "Parisienne", body: "Figtree", displayItalic: false, labelStyle: "uppercase-tracked" },
       ornament: "flourish",
       texture: "linen",
-      corners: "soft",
+      corners: "arch",
       frame: "hairline",
       metallic: false,
-      layout: { cover: "split-photo", couple: "side-by-side", events: "timeline", gallery: "masonry" },
+      artKit: "none",
+      layout: { cover: "arch-window", couple: "side-by-side", events: "timeline", gallery: "masonry" },
       copy: {
         coverEyebrow: "Undangan Pernikahan",
         openButton: "Buka Undangan",
@@ -182,6 +191,9 @@ export const AI_THEME_PRESETS: Record<string, { label: string; theme: AiTheme }>
       },
     },
   },
+
+  // ── Catalog batch 2: adat, Islami, luxury, minimalis and modern themes ──
+  ...CATALOG_PRESETS,
 };
 
 /** Catalog rows that used to be hand-coded templates and now render on the theme engine. */

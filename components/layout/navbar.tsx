@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/common/brand-logo";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -31,8 +32,7 @@ export function Navbar() {
       <div className="container mx-auto px-4 md:px-6">
         <nav className="flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="UNDANGIN YUK" className="h-8 w-auto object-contain" />
+            <BrandLogo className="h-8" />
           </Link>
 
           <div className="hidden md:flex items-center gap-8">

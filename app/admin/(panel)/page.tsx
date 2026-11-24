@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { IconArrowRight, IconReceipt } from "@tabler/icons-react";
+import { IconArrowRight, IconLayoutGrid, IconMessageHeart, IconReceipt, IconShieldCheck, IconUsers } from "@tabler/icons-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Panel, StatTile } from "@/components/common/studio-ui";
+
+const fmt = new Intl.NumberFormat("id-ID");
 import { SiteHeader } from "@/components/site-header";
-import { SectionCards } from "@/components/section-cards";
 import { ChartAreaInteractive, type VisitorTrafficPoint } from "@/components/chart-area-interactive";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -89,24 +92,42 @@ export default async function AdminDashboardPage() {
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
-              <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">Panel admin</p>
-              <h1 className="mt-1 font-serif text-4xl font-medium text-[#1E1B17]">Ringkasan</h1>
-              <p className="mt-1 text-[15px] text-[#6B6358]">Statistik dan pantauan sistem UNDANGIN YUK.</p>
+              <Panel tone="night" className="px-6 py-7 sm:px-8">
+                <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(55% 80% at 90% 30%, rgba(176,138,62,.22) 0%, transparent 70%)" }} />
+                <div className="relative flex flex-col justify-between gap-5 md:flex-row md:items-end">
+                  <div className="space-y-2">
+                    <span className="inline-block rounded-md bg-[linear-gradient(120deg,#B8903F,#E6CB86_50%,#C9A24E)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#1F1A14]">Panel admin</span>
+                    <h1 className="uy-name-reveal font-(family-name:--font-landing-display) text-5xl leading-tight">Ringkasan</h1>
+                    <p className="text-[15px] text-[#CDBF9F]">Statistik dan pantauan sistem SatuMoment.</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href="/admin/transaksi" className={buttonVariants({ variant: "gold", className: "h-11 px-5" })}>
+                      <IconReceipt size={17} /> Transaksi
+                    </Link>
+                    <Link
+                      href="/admin/templates"
+                      className={buttonVariants({ variant: "ghost", className: "h-11 rounded-full border border-white/20 px-5 text-[#F6EEDD] hover:bg-white/10 hover:text-white" })}
+                    >
+                      Kelola template
+                    </Link>
+                  </div>
+                </div>
+              </Panel>
             </div>
 
             {pendingProofCount > 0 && (
               <div className="px-4 lg:px-6">
                 <Link
                   href="/admin/transaksi"
-                  className="flex items-center justify-between gap-4 rounded-xl border border-amber-300 bg-amber-50/90 px-4 py-3 text-amber-950 transition hover:bg-amber-100/80"
+                  className="group flex items-center justify-between gap-4 rounded-2xl border border-[#E3C77F] bg-[#F6EEDF] px-4 py-3.5 text-[#1F1A14] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-20px_rgba(26,21,16,.4)] animate-in fade-in slide-in-from-bottom-2 duration-500"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-200/70 text-amber-900">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(120deg,#B8903F,#E6CB86_50%,#C9A24E)] text-[#1F1A14]">
                       <IconReceipt size={18} />
                     </span>
                     <div>
                       <p className="text-sm font-semibold">{pendingProofCount} pengajuan pembayaran menunggu verifikasi</p>
-                      <p className="text-xs text-amber-800">User sudah mengunggah bukti transfer. Klik untuk memeriksa dan mengaktifkan paket.</p>
+                      <p className="text-xs text-[#6B5F50]">User sudah mengunggah bukti transfer. Klik untuk memeriksa dan mengaktifkan paket.</p>
                     </div>
                   </div>
                   <IconArrowRight size={18} className="shrink-0" />
@@ -114,7 +135,13 @@ export default async function AdminDashboardPage() {
               </div>
             )}
 
-            <SectionCards stats={stats} />
+            <div className="grid grid-cols-2 gap-3 px-4 sm:gap-4 md:grid-cols-3 lg:grid-cols-5 lg:px-6">
+              <StatTile label="Pengguna" value={fmt.format(stats.totalUsers)} icon={IconUsers} href="/admin/users" delay={60} />
+              <StatTile label="Template aktif" value={fmt.format(stats.totalTemplates)} icon={IconLayoutGrid} href="/admin/templates" delay={110} />
+              <StatTile label="Ucapan tamu" value={fmt.format(stats.totalMessages)} icon={IconMessageHeart} href="/admin/moderasi" delay={160} />
+              <StatTile label="Transaksi" value={fmt.format(stats.totalTransactions)} icon={IconReceipt} href="/admin/transaksi" delay={210} />
+              <StatTile label="Admin" value={fmt.format(stats.totalAdmins)} icon={IconShieldCheck} delay={260} />
+            </div>
 
             <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @5xl/main:grid-cols-7">
               {/* The chart renders its own card (title + range picker), so no extra wrapper */}
@@ -124,7 +151,7 @@ export default async function AdminDashboardPage() {
 
               <Card className="min-w-0 @5xl/main:col-span-3">
                 <CardHeader>
-                  <CardTitle>Pendaftar terbaru</CardTitle>
+                  <CardTitle className="font-(family-name:--font-landing-display) text-2xl font-normal">Pendaftar terbaru</CardTitle>
                   <CardDescription>5 akun pasangan yang terakhir mendaftar</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -136,7 +163,7 @@ export default async function AdminDashboardPage() {
                         <li key={user.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                           <Avatar className="h-9 w-9 shrink-0">
                             <AvatarImage src={user.image || undefined} alt="" />
-                            <AvatarFallback className="bg-[#E6DECF] text-xs">{user.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                            <AvatarFallback className="bg-[#EEE2C9] text-xs">{user.name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{user.name}</p>

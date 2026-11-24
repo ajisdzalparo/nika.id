@@ -13,7 +13,7 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
     <>
       <SiteHeader />
       <div className="flex-1 px-4 pb-16 pt-8 lg:px-8">
-        <div className="mx-auto max-w-6xl space-y-6">
+        <div className="w-full space-y-6">
           <h2 className="font-serif text-5xl font-medium">{row.name}</h2>
           <CatalogEditor
             initial={{

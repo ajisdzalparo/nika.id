@@ -49,7 +49,7 @@ export default async function TransaksiPage() {
       <div className="flex flex-1 flex-col">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
           <div className="flex flex-col gap-1">
-            <h1 className="font-serif text-4xl font-medium text-[#1E1B17]">Transaksi</h1>
+            <h1 className="font-serif text-4xl font-medium text-[#1F1A14]">Transaksi</h1>
             <p className="text-muted-foreground">Verifikasi pembayaran dan pantau pendapatan</p>
           </div>
 

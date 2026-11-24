@@ -430,7 +430,7 @@ export default function ModernDark({ data }: { data: WeddingData }) {
             <h1 className="text-3xl md:text-7xl font-black uppercase italic">
               {groomName} & {brideName}
             </h1>
-            <div className="pt-20 opacity-20 text-[8px] uppercase tracking-[1em] font-bold">Powered by Undangin Yuk</div>
+            <div className="pt-20 opacity-20 text-[8px] uppercase tracking-[1em] font-bold">Powered by SatuMoment</div>
           </div>
         </footer>
       </main>

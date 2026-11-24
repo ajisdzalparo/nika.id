@@ -1,12 +1,20 @@
 ---
 name: invitation-design
-description: Design rules for undangin yuk UI — the AI theme engine (components/templates/ai-design), invitation templates, the dashboard and the marketing pages. Use before creating or changing any page, component, template, or the AI design prompt, so the result looks crafted instead of generic AI output.
+description: Design rules for SatuMoment UI — the AI theme engine (components/templates/ai-design), invitation templates, the dashboard and the marketing pages. Use before creating or changing any page, component, template, or the AI design prompt, so the result looks crafted instead of generic AI output.
 ---
 
 # Invitation design rules
 
-undangin yuk sells taste. A wedding invitation is shown to hundreds of guests; if it looks like a
+SatuMoment sells taste. A wedding invitation is shown to hundreds of guests; if it looks like a
 generic AI landing page, the product fails. Follow these rules for every UI change.
+
+## Reuse before you build (mandatory)
+
+Before creating any UI element, search for an existing component and use it: `components/ui/`
+(Select/`SelectField`, Dialog, Tabs, Button, …), `components/common/` (`PhoneInput`, pickers,
+uploaders) and `components/landing/primitives.tsx`. Never use a raw `<select>`. If a shared component
+looks wrong, fix it in its own file so every page changes together. Only build something new when
+nothing fits, and make it reusable. See `CLAUDE.md`.
 
 ## The look we avoid ("slop")
 

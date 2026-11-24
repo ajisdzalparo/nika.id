@@ -73,7 +73,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
     title: inv.title,
     slug: inv.slug,
     clientName: inv.clientName,
-    agencyName: inv.user.agencyName || inv.user.name || "UNDANGIN YUK",
+    agencyName: inv.user.agencyName || inv.user.name || "SatuMoment",
     agencyWhatsapp: inv.user.agencyWhatsapp,
     weddingDate: inv.weddingDate ? inv.weddingDate.toISOString() : null,
     data: {

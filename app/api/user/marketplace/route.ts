@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { normalizeTheme } from "@/lib/ai-design/color";
-import { slugify } from "@/lib/catalog";
+import { PLAGIARISM_THRESHOLD } from "@/lib/ai-design/originality";
+import { checkTemplatePlagiarism, loadComparisonCatalog } from "@/lib/ai-design/plagiarism-ai";
+import { ensureCatalogSeeded, slugify } from "@/lib/catalog";
 import { CATALOG_CATEGORIES } from "@/lib/catalog-shared";
 import { DEFAULT_MARKETPLACE_FEE_PCT, MARKETPLACE_MAX_PRICE, MARKETPLACE_MIN_PRICE } from "@/lib/limits";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+
+/** Open submissions a creator may have waiting for review at the same time */
+const MAX_PENDING_SUBMISSIONS = 3;
 
 const SubmitMarketplaceSchema = z.object({
   name: z.string().trim().min(3, "Nama template minimal 3 karakter").max(60),
@@ -75,8 +80,35 @@ export async function POST(request: Request) {
       );
     }
 
+    await ensureCatalogSeeded();
     const rawTheme = normalizeTheme(parsed.data.theme);
     const theme = { ...rawTheme, customHtml: undefined, sectionOrder: undefined, hiddenSections: undefined };
+
+    // Anti-spam: a few open submissions at a time
+    const pending = await prisma.catalogTemplate.count({ where: { creatorId: session.user.id, reviewStatus: "PENDING_REVIEW" } });
+    if (pending >= MAX_PENDING_SUBMISSIONS) {
+      return NextResponse.json(
+        { error: "TOO_MANY_PENDING", message: `Anda masih punya ${pending} template yang menunggu review. Tunggu hasil review dulu sebelum mengajukan lagi.` },
+        { status: 429 },
+      );
+    }
+
+    // Only original work can be sold: compare against ALL non-rejected templates (including creator's own) + built-in presets
+    const existing = await loadComparisonCatalog({ includeBuiltInPresets: true });
+    const report = await checkTemplatePlagiarism({ name: parsed.data.name, theme }, existing, { useAi: true });
+
+    if (report.verdict === "PLAGIAT" || report.score >= Math.round(PLAGIARISM_THRESHOLD * 100)) {
+      const matchedName = report.topMatch?.name ?? "template yang sudah ada";
+      return NextResponse.json(
+        {
+          error: "NOT_ORIGINAL",
+          message: `Desain terindikasi plagiasi (${report.score}% mirip dengan template "${matchedName}"). Tidak cukup hanya mengganti font atau sedikit warna — buat komposisi ilustrasi, layout sampul, dan palet yang benar-benar orisinal.`,
+          report,
+        },
+        { status: 422 },
+      );
+    }
+
     const baseSlug = slugify(parsed.data.name);
     const slug = `${baseSlug}-${Date.now().toString(36).slice(-5)}`;
 
@@ -98,15 +130,20 @@ export async function POST(request: Request) {
       },
     });
 
+    const similarityAlert =
+      report.verdict === "MIRIP" && report.topMatch
+        ? ` ⚠ Peringatan kemiripan ${report.score}% dengan "${report.topMatch.name}" — wajib cek perbandingan manual di Admin.`
+        : "";
+
     await createNotification({
       audience: "ADMIN",
       type: "TEMPLATE",
       title: `Pengajuan template marketplace · ${created.name}`,
-      message: `${session.user.name || session.user.email} mengajukan template seharga Rp ${created.price.toLocaleString("id-ID")} untuk direview.`,
+      message: `${session.user.name || session.user.email} mengajukan template seharga Rp ${created.price.toLocaleString("id-ID")} untuk direview.${similarityAlert}`,
       href: "/admin/templates",
     });
 
-    return NextResponse.json({ template: created }, { status: 201 });
+    return NextResponse.json({ template: created, originalityReport: report }, { status: 201 });
   } catch (error) {
     return apiErrorResponse(error, "Gagal mengajukan template ke marketplace");
   }

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { IconStarFilled } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { FEEDBACK_CATEGORIES, FEEDBACK_FEATURES, FEEDBACK_STATUSES, labelOf } from "@/lib/feedback-shared";
+import { SelectField } from "@/components/ui/select";
 
 export interface AdminFeedbackItem {
   id: string;
@@ -27,7 +28,7 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
       onClick={onClick}
       aria-pressed={active}
       className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm ${
-        active ? "border-[#1E1B17] bg-[#1E1B17] text-[#F7F3EC]" : "border-[#E1D8C9] bg-[#FFFDF9] text-[#4A443B] hover:bg-[#F3EEE5]"
+        active ? "border-[#1F1A14] bg-[#1F1A14] text-[#FCF8F1]" : "border-[#E9DDC6] bg-[#FFFDF9] text-[#4A443B] hover:bg-[#F6EEDF]"
       }`}
     >
       {children}
@@ -62,12 +63,12 @@ function FeedbackCard({ item, onSaved }: { item: AdminFeedbackItem; onSaved: (ne
   };
 
   return (
-    <li className="space-y-4 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5">
+    <li className="space-y-4 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-[#1E1B17]">
+          <p className="truncate text-sm font-medium text-[#1F1A14]">
             {item.user.name || item.user.email}
-            {item.user.accountType === "AGENCY" && <span className="ml-2 rounded-full bg-[#F4EAD6] px-2 py-0.5 text-[11px] text-[#6E5426]">Mitra</span>}
+            {item.user.accountType === "AGENCY" && <span className="ml-2 rounded-full bg-[#F5E8CA] px-2 py-0.5 text-[11px] text-[#6E4F1C]">Mitra</span>}
           </p>
           <p className="truncate text-xs text-[#7D7468]">
             {item.user.email} · {dateFmt.format(new Date(item.createdAt))}
@@ -75,48 +76,48 @@ function FeedbackCard({ item, onSaved }: { item: AdminFeedbackItem; onSaved: (ne
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded-full border border-[#E1D8C9] px-2.5 py-1 text-[#4A443B]">{labelOf(FEEDBACK_CATEGORIES, item.category)}</span>
-          <span className="rounded-full border border-[#E1D8C9] px-2.5 py-1 text-[#4A443B]">{labelOf(FEEDBACK_FEATURES, item.feature)}</span>
+          <span className="rounded-full border border-[#E9DDC6] px-2.5 py-1 text-[#4A443B]">{labelOf(FEEDBACK_CATEGORIES, item.category)}</span>
+          <span className="rounded-full border border-[#E9DDC6] px-2.5 py-1 text-[#4A443B]">{labelOf(FEEDBACK_FEATURES, item.feature)}</span>
           {item.rating && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#F4EAD6] px-2.5 py-1 text-[#6E5426]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#F5E8CA] px-2.5 py-1 text-[#6E4F1C]">
               <IconStarFilled size={12} /> {item.rating}/5
             </span>
           )}
         </div>
       </div>
 
-      <p className="whitespace-pre-line text-[15px] leading-relaxed text-[#1E1B17]">{item.message}</p>
+      <p className="whitespace-pre-line text-[15px] leading-relaxed text-[#1F1A14]">{item.message}</p>
 
-      <div className="grid gap-3 border-t border-[#EFEAE0] pt-4 md:grid-cols-[200px_minmax(0,1fr)_auto] md:items-start">
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
+      <div className="grid gap-3 border-t border-[#F3EBDB] pt-4 md:grid-cols-[200px_minmax(0,1fr)_auto] md:items-start">
+        <label className="space-y-1.5 text-xs text-[#6B5F50]">
           Status
-          <select
+          <SelectField
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="block h-10 w-full rounded-xl border border-[#DDD5C7] bg-white px-3 text-sm text-[#1E1B17] outline-none focus:border-[#8A6A2F]"
+            className="w-full"
           >
             {FEEDBACK_STATUSES.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
               </option>
             ))}
-          </select>
+          </SelectField>
         </label>
-        <label className="space-y-1.5 text-xs text-[#6B6358]">
+        <label className="space-y-1.5 text-xs text-[#6B5F50]">
           Balasan untuk pengguna (opsional)
           <textarea
             value={reply}
             onChange={(e) => setReply(e.target.value.slice(0, 2000))}
             rows={2}
             placeholder="Terima kasih, ini sudah kami catat untuk pembaruan berikutnya…"
-            className="block w-full rounded-xl border border-[#DDD5C7] bg-white px-3 py-2 text-sm text-[#1E1B17] outline-none placeholder:text-[#A59B8C] focus:border-[#8A6A2F]"
+            className="block w-full rounded-xl border border-[#DDD5C7] bg-white px-3 py-2 text-sm text-[#1F1A14] outline-none placeholder:text-[#A59B8C] focus:border-[#8A6424]"
           />
         </label>
         <button
           type="button"
           onClick={() => void save()}
           disabled={!dirty || busy}
-          className="h-10 rounded-full bg-[#1E1B17] px-5 text-sm font-medium text-[#F7F3EC] disabled:opacity-40 md:mt-[22px]"
+          className="h-10 rounded-full bg-[#1F1A14] px-5 text-sm font-medium text-[#FCF8F1] disabled:opacity-40 md:mt-[22px]"
         >
           {busy ? "Menyimpan..." : "Simpan"}
         </button>
@@ -153,11 +154,11 @@ export function FeedbackInbox({ initialItems }: { initialItems: AdminFeedbackIte
   return (
     <div className="space-y-6">
       {ratings.length > 0 && (
-        <section className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[#E1D8C9] bg-[#E1D8C9] md:grid-cols-4">
+        <section className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[#E9DDC6] bg-[#E9DDC6] md:grid-cols-4">
           {ratings.map((r) => (
             <div key={r.id} className="bg-[#FFFDF9] p-4">
-              <p className="truncate text-[13px] text-[#6B6358]">{r.label}</p>
-              <p className="mt-1 font-serif text-3xl tabular-nums text-[#1E1B17]">
+              <p className="truncate text-[13px] text-[#6B5F50]">{r.label}</p>
+              <p className="mt-1 font-serif text-3xl tabular-nums text-[#1F1A14]">
                 {(r.sum / r.n).toLocaleString("id-ID", { maximumFractionDigits: 1 })}
                 <span className="ml-1 font-sans text-xs text-[#7D7468]">/5 · {r.n} nilai</span>
               </p>
@@ -167,7 +168,7 @@ export function FeedbackInbox({ initialItems }: { initialItems: AdminFeedbackIte
       )}
 
       <div className="space-y-3">
-        <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:px-0" aria-label="Status">
+        <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" aria-label="Status">
           <FilterChip active={status === "ALL"} onClick={() => setStatus("ALL")}>
             Semua <span className="tabular-nums opacity-70">{items.length}</span>
           </FilterChip>
@@ -177,12 +178,12 @@ export function FeedbackInbox({ initialItems }: { initialItems: AdminFeedbackIte
             </FilterChip>
           ))}
         </nav>
-        <label className="flex items-center gap-2 text-sm text-[#6B6358]">
+        <label className="flex items-center gap-2 text-sm text-[#6B5F50]">
           Fitur
-          <select
+          <SelectField size="sm"
             value={feature}
             onChange={(e) => setFeature(e.target.value)}
-            className="h-9 rounded-full border border-[#DDD5C7] bg-[#FFFDF9] px-3 text-sm text-[#1E1B17] outline-none focus:border-[#8A6A2F]"
+           
           >
             <option value="ALL">Semua fitur</option>
             {FEEDBACK_FEATURES.map((f) => (
@@ -190,12 +191,12 @@ export function FeedbackInbox({ initialItems }: { initialItems: AdminFeedbackIte
                 {f.label}
               </option>
             ))}
-          </select>
+          </SelectField>
         </label>
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-[#D6CBB8] p-8 text-center text-[15px] text-[#6B6358]">Tidak ada masukan di filter ini.</p>
+        <p className="rounded-2xl border border-dashed border-[#D6CBB8] p-8 text-center text-[15px] text-[#6B5F50]">Tidak ada masukan di filter ini.</p>
       ) : (
         <ul className="space-y-4">
           {visible.map((it) => (

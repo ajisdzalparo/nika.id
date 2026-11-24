@@ -302,7 +302,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
             {/* QRIS manual */}
             <div className="space-y-3 border-t pt-5">
               <div className="flex items-center gap-2">
-                <IconQrcode size={18} className="text-[#8A6A2F]" />
+                <IconQrcode size={18} className="text-[#8A6424]" />
                 <div>
                   <h4 className="font-semibold">QRIS manual</h4>
                   <p className="text-xs text-muted-foreground">Unggah gambar QRIS toko (dari bank atau e-wallet merchant). User memindai, membayar sesuai nominal, lalu mengunggah bukti.</p>
@@ -316,7 +316,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
             <div className="space-y-4 border-t pt-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <IconBuildingBank size={18} className="text-[#8A6A2F]" />
+                  <IconBuildingBank size={18} className="text-[#8A6424]" />
                   <div>
                     <h4 className="font-semibold">Rekening Transfer Manual</h4>
                     <p className="text-xs text-muted-foreground">Rekening tujuan yang tampil saat user memilih metode Transfer Manual</p>
@@ -355,7 +355,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
                         id={`bank-holder-${idx}`}
                         value={bank.holder}
                         onChange={(e) => updateBankField(idx, "holder", e.target.value)}
-                        placeholder="PT Undangin Yuk"
+                        placeholder="PT SatuMoment"
                       />
                     </div>
                     <Button
@@ -377,7 +377,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
             <div className="space-y-4 border-t pt-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <IconQrcode size={18} className="text-[#8A6A2F]" />
+                  <IconQrcode size={18} className="text-[#8A6424]" />
                   <div>
                     <h4 className="font-semibold">Payment Gateway (Midtrans Snap)</h4>
                     <p className="text-xs text-muted-foreground">Kosongkan bila hanya ingin menerima Transfer Manual</p>

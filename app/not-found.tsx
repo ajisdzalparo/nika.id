@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { IconArrowLeft, IconCompass } from "@tabler/icons-react";
+import { BrandLogo } from "@/components/common/brand-logo";
 
 export default function NotFoundPage() {
   return (
@@ -18,12 +19,7 @@ export default function NotFoundPage() {
 
         <div className="relative space-y-6">
           <Link href="/" className="mx-auto inline-flex items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo.png"
-              alt="UNDANGIN YUK"
-              className="h-9 w-auto object-contain"
-            />
+            <BrandLogo className="h-9" />
           </Link>
 
           <div className="space-y-2">
@@ -57,7 +53,7 @@ export default function NotFoundPage() {
               className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#D4C6B3] bg-[#FAF6F0] px-6 text-sm font-medium text-[#1E1B17] transition-colors hover:border-[#9A7B4F] hover:bg-[#EFE7DA]"
             >
               <IconCompass size={16} />
-              Lihat Koleksi Desain
+              Lihat Template
             </Link>
           </div>
         </div>

@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
+import { PhoneInput } from "@/components/common/phone-input";
+import { CheckInQr, downloadStandardQr } from "@/components/common/qr-code";
+import { saveGuestIdentity } from "@/components/public/guest-identity-memory";
 import { IconBrandInstagram, IconCalendarPlus, IconCheck, IconCopy, IconMapPin, IconSend } from "@tabler/icons-react";
 import type { AiTheme } from "@/lib/ai-design/schema";
 import type { WeddingData, WeddingEvent } from "@/types/wedding";
 import { useCountdown } from "@/hooks/use-countdown";
-import { Corners, Divider, foilTextStyle } from "./ornaments";
+import { Corners, Divider, foilTextStyle, AmbientParticles, StaticSectionLayers } from "./ornaments";
 import { invitationSlugFromPath, submitRsvp, type Attendance, type Wish } from "@/lib/rsvp";
 import { cardShape, displayItalic, isScript, labelClass, photoShape } from "./theme";
 
@@ -93,7 +96,7 @@ export function Label({ theme, children, className = "", tone = "accent" }: { th
 
 function Heading({ theme, children, className = "" }: { theme: AiTheme; children: ReactNode; className?: string }) {
   return (
-    <h2 className={`text-[2.1rem] leading-tight sm:text-5xl ${displayItalic(theme) ? "italic" : ""} ${className}`} style={{ fontFamily: "var(--font-display)" }}>
+    <h2 className={`uy-title-reveal text-[2.1rem] leading-tight sm:text-5xl ${displayItalic(theme) ? "italic" : ""} ${className}`} style={{ fontFamily: "var(--font-display)" }}>
       {children}
     </h2>
   );
@@ -103,7 +106,7 @@ function Names({ theme, children, className = "" }: { theme: AiTheme; children: 
   const script = isScript(theme.typography.names);
   return (
     <span
-      className={`block ${script ? "leading-[1.15] pb-1" : "leading-none tracking-tight"} ${className}`}
+      className={`block ${script ? "leading-[1.15] pb-1" : "leading-none tracking-tight"} ${theme.metallic ? "uy-foil-move" : "uy-name-reveal"} ${className}`}
       style={{ fontFamily: "var(--font-names)", ...foilTextStyle(theme) }}
     >
       {children}
@@ -122,7 +125,7 @@ function Photo({ src, alt, className, fallback }: { src?: string; alt: string; c
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} className={`${className} object-cover object-[50%_20%]`} loading="lazy" />;
+  return <img src={src} alt={alt} className={`uy-photo-reveal ${className} object-cover object-[50%_20%]`} loading="lazy" />;
 }
 
 function Section({ id, children, className = "" }: { id?: string; children: ReactNode; className?: string }) {
@@ -135,23 +138,62 @@ function Section({ id, children, className = "" }: { id?: string; children: Reac
 
 // ─── Desktop Sticky Stage (shown on lg+ when opened & not embedded) ──────
 
+/** Cover, gallery and portraits (unique, up to five) for the desktop stage slideshow. */
+function stagePhotos(data: WeddingData) {
+  const all = [coverPhoto(data), ...(data.gallery ?? []), data.bride.photo, data.groom.photo].filter((p): p is string => Boolean(p));
+  return Array.from(new Set(all)).slice(0, 5);
+}
+
+const STAGE_SLIDE_MS = 7000;
+
+function StageSlideshow({ photos }: { photos: string[] }) {
+  // The outgoing photo keeps its motion while it fades, the incoming one starts a fresh push-in
+  const [slide, setSlide] = useState({ active: 0, prev: -1 });
+  useEffect(() => {
+    if (photos.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = setInterval(() => setSlide((s) => ({ active: (s.active + 1) % photos.length, prev: s.active })), STAGE_SLIDE_MS);
+    return () => clearInterval(id);
+  }, [photos.length]);
+  return (
+    <>
+      {photos.map((src, i) => {
+        const on = i === slide.active;
+        const leaving = i === slide.prev;
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={src}
+            src={src}
+            alt=""
+            className={`absolute inset-0 h-full w-full object-cover object-[50%_25%] transition-opacity duration-[1600ms] ease-in-out ${on || leaving ? "uy-kenburns-strong" : ""} ${on ? "opacity-100" : "opacity-0"}`}
+            style={{ animationDirection: i % 2 ? "reverse" : "normal" }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 export function DesktopStage({ theme, data }: { theme: AiTheme; data: WeddingData }) {
   const photo = coverPhoto(data);
+  const photos = stagePhotos(data);
   const date = mainDate(data);
   const script = isScript(theme.typography.names);
 
   return (
     <aside
-      className="relative hidden overflow-hidden border-r lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between lg:p-10 xl:p-12"
+      className="relative hidden overflow-hidden border-r lg:sticky lg:top-0 lg:flex lg:h-(--uy-stage-h,100svh) lg:flex-col lg:justify-between lg:p-10 xl:p-12"
       style={{ borderColor: "color-mix(in srgb, var(--ink) 10%, transparent)", background: "var(--surface)" }}
     >
       {photo ? (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
+          <StageSlideshow photos={photos} />
           <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.18) 42%, rgba(0,0,0,0.78) 100%)" }} />
           <Corners theme={theme} size="w-24 h-24" opacity="opacity-85" />
-          <div className="relative z-10">
+          {/* The cover's illustrations and particles move on this half of the screen too */}
+          <StaticSectionLayers theme={theme} section="cover" data={data} />
+          {theme.particles && <AmbientParticles kind={theme.particles} theme={theme} variant={1} />}
+          <div className={`relative z-10 ${theme.layers?.some((l) => l.section === "cover" && l.y < 15) ? "pt-16 xl:pt-20" : ""}`}>
             <Label theme={theme} className="text-white/85!">
               {theme.copy.coverEyebrow}
             </Label>
@@ -190,12 +232,29 @@ export function DesktopStage({ theme, data }: { theme: AiTheme; data: WeddingDat
 
 // ─── Cover ───────────────────────────────────────────────────────────────
 
+function isLightHex(hex: string) {
+  const h = (hex || "").replace("#", "").trim();
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return true;
+  const n = parseInt(full, 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.45;
+}
+
 export function Cover({ theme, data, opened, onOpen, screen, embedded = false, staticCover = false }: { theme: AiTheme; data: WeddingData; opened: boolean; onOpen: () => void; screen: string; embedded?: boolean; staticCover?: boolean }) {
   const photo = coverPhoto(data);
   const layout = !photo && (theme.layout.cover === "photo-fullbleed" || theme.layout.cover === "split-photo") ? "centered-frame" : theme.layout.cover;
   const date = mainDate(data);
   const script = isScript(theme.typography.names);
-  const namesSize = script ? "text-[3.6rem] sm:text-7xl" : "text-[2.9rem] sm:text-6xl uppercase";
+  const namesSize = script
+    ? embedded
+      ? "text-[3.2rem]"
+      : "text-[3.6rem] sm:text-7xl"
+    : embedded
+      ? "text-[2.5rem] uppercase"
+      : "text-[2.9rem] sm:text-6xl uppercase";
 
   const guest = data.guestName && (
     <div className="space-y-1.5">
@@ -248,20 +307,28 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false, s
   );
 
   if (layout === "photo-fullbleed") {
+    const lightBg = isLightHex(theme.palette.background);
+    const photoOverlayGradient = lightBg
+      ? "linear-gradient(180deg, rgba(0,0,0,.08) 0%, rgba(0,0,0,.04) 24%, color-mix(in srgb, var(--bg) 82%, transparent) 52%, var(--bg) 76%)"
+      : "linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.35) 45%, var(--bg) 100%)";
+
     if (!embedded && !opened) {
       return (
         <section className={`relative min-h-svh overflow-hidden lg:grid lg:grid-cols-[1.08fr_1fr]`}>
           {/* Photo stage: full-bleed on mobile, clean portrait half on desktop so faces are never cropped */}
           <div className="relative flex min-h-svh flex-col items-center justify-end overflow-hidden px-6 pb-16 text-center lg:min-h-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
-            <div className="absolute inset-0 lg:hidden" style={{ background: "linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.35) 45%, var(--bg) 100%)" }} />
+            <img src={photo} alt="" className="uy-kenburns absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
+            <div className="absolute inset-0 lg:hidden" style={{ background: photoOverlayGradient }} />
             <div className="absolute inset-0 hidden lg:block" style={{ background: "linear-gradient(180deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.45) 100%)" }} />
             <div className="lg:hidden">
               <Corners theme={theme} size="w-28 h-28" opacity="opacity-90" />
             </div>
-            <div className="relative z-10 space-y-6 text-white lg:hidden" style={{ ["--muted" as string]: "rgba(255,255,255,.82)" }}>
-              <Label theme={theme} className="text-white/85!">
+            <div
+              className={`relative z-10 space-y-6 lg:hidden ${lightBg ? "" : "text-white"}`}
+              style={lightBg ? undefined : { ["--muted" as string]: "rgba(255,255,255,.82)" }}
+            >
+              <Label theme={theme} className={lightBg ? "" : "text-white/85!"}>
                 {theme.copy.coverEyebrow}
               </Label>
               {nameBlock}
@@ -286,13 +353,16 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false, s
     }
 
     return (
-      <section className={`relative flex ${screen} flex-col items-center justify-end overflow-hidden px-6 pb-16 text-center`}>
+      <section className={`relative flex ${screen} flex-col items-center justify-end overflow-hidden px-6 text-center ${staticCover ? "pb-12" : "pb-16"}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.35) 45%, var(--bg) 100%)" }} />
+        <img src={photo} alt="" className="uy-kenburns absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
+        <div className="absolute inset-0" style={{ background: photoOverlayGradient }} />
         <Corners theme={theme} size="w-28 h-28" opacity="opacity-90" />
-        <div className="relative z-10 space-y-6 text-white" style={{ ["--muted" as string]: "rgba(255,255,255,.82)" }}>
-          <Label theme={theme} className="text-white/85!">
+        <div
+          className={`relative z-10 ${lightBg ? "" : "text-white"} ${staticCover ? "space-y-4" : "space-y-6"}`}
+          style={lightBg ? undefined : { ["--muted" as string]: "rgba(255,255,255,.82)" }}
+        >
+          <Label theme={theme} className={lightBg ? "" : "text-white/85!"}>
             {theme.copy.coverEyebrow}
           </Label>
           {nameBlock}
@@ -306,12 +376,12 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false, s
 
   if (layout === "split-photo") {
     return (
-      <section className={`relative grid ${screen} grid-rows-[1.15fr_1fr] ${!embedded ? "lg:grid-cols-2 lg:grid-rows-1" : ""}`}>
+      <section className={`relative grid ${screen} ${staticCover ? "grid-rows-[0.95fr_1fr]" : "grid-rows-[1.1fr_1fr]"} ${!embedded ? "lg:grid-cols-2 lg:grid-rows-1" : ""}`}>
         <div className="relative overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
+          <img src={photo} alt="" className="uy-kenburns absolute inset-0 h-full w-full object-cover object-[50%_20%]" />
         </div>
-        <div className="relative flex flex-col items-center justify-center gap-5 px-6 py-10 text-center lg:px-12">
+        <div className={`relative flex flex-col items-center justify-center px-6 text-center lg:px-12 ${staticCover ? "gap-2.5 py-4" : "gap-5 py-10"}`}>
           <Corners theme={theme} size="w-20 h-20" opacity="opacity-70" />
           <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
           {nameBlock}
@@ -325,10 +395,10 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false, s
 
   if (layout === "arch-window") {
     return (
-      <section className={`relative flex ${screen} flex-col items-center justify-center gap-7 px-6 py-14 text-center`}>
+      <section className={`relative flex ${screen} flex-col items-center justify-center px-6 text-center ${staticCover ? "gap-4 py-10" : "gap-7 py-14"}`}>
         <div className="relative">
           <div className="absolute -inset-2.5 rounded-t-full rounded-b-[22px]" style={frameStyle({ ...theme, frame: theme.frame === "none" ? "hairline" : theme.frame })} />
-          <Photo src={photo} alt="" fallback={data.groom.nickname} className="relative h-72 w-52 rounded-t-full rounded-b-[18px]" />
+          <Photo src={photo} alt="" fallback={data.groom.nickname} className={`relative rounded-t-full rounded-b-[18px] ${staticCover ? "h-56 w-44" : "h-72 w-52"}`} />
         </div>
         <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
         {nameBlock}
@@ -340,11 +410,18 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false, s
   }
 
   if (layout === "typographic") {
+    const typoSize = script
+      ? embedded
+        ? "text-6xl"
+        : "text-7xl"
+      : embedded
+        ? "text-[2.9rem] uppercase"
+        : "text-[3.4rem] uppercase sm:text-7xl";
     return (
-      <section className={`relative flex ${screen} flex-col justify-center gap-8 px-8 py-16 ${!embedded ? "mx-auto max-w-2xl" : ""}`}>
+      <section className={`relative flex ${screen} flex-col justify-center px-8 ${staticCover ? "gap-5 py-12" : "gap-8 py-16"} ${!embedded ? "mx-auto max-w-2xl" : ""}`}>
         <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
         <div className="space-y-2">
-          <Names theme={theme} className={script ? "text-7xl" : "text-[3.4rem] uppercase sm:text-7xl"}>
+          <Names theme={theme} className={typoSize}>
             {data.groom.nickname}
           </Names>
           <div className="flex items-center gap-4">
@@ -353,7 +430,7 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false, s
               &amp;
             </span>
           </div>
-          <Names theme={theme} className={`text-right ${script ? "text-7xl" : "text-[3.4rem] uppercase sm:text-7xl"}`}>
+          <Names theme={theme} className={`text-right ${typoSize}`}>
             {data.bride.nickname}
           </Names>
         </div>
@@ -368,8 +445,8 @@ export function Cover({ theme, data, opened, onOpen, screen, embedded = false, s
 
   // centered-frame
   return (
-    <section className={`relative flex ${screen} items-center justify-center p-4 ${!embedded ? "lg:p-8" : ""}`}>
-      <div className={`relative flex h-full min-h-[inherit] w-full flex-col items-center justify-center gap-7 px-6 py-16 text-center ${!embedded ? "lg:max-w-2xl" : ""}`} style={frameStyle({ ...theme, frame: theme.frame === "none" ? "hairline" : theme.frame })}>
+    <section className={`relative flex ${screen} items-stretch justify-center p-4 ${!embedded ? "lg:p-8" : ""}`}>
+      <div className={`relative flex flex-1 w-full flex-col items-center justify-center px-6 text-center ${staticCover ? "gap-5 py-10" : "gap-7 py-16"} ${!embedded ? "lg:max-w-2xl" : ""}`} style={frameStyle({ ...theme, frame: theme.frame === "none" ? "hairline" : theme.frame })}>
         <Corners theme={theme} />
         <Label theme={theme}>{theme.copy.coverEyebrow}</Label>
         {nameBlock}
@@ -865,6 +942,16 @@ export function Rsvp({ theme, data, preview }: { theme: AiTheme; data: WeddingDa
   const [name, setName] = useState(data.guestName && data.guestName !== "Tamu Undangan" ? data.guestName : "");
   const [attendance, setAttendance] = useState<Attendance>("HADIR");
   const [message, setMessage] = useState("");
+  const [phone, setPhone] = useState("");
+  const [guests, setGuests] = useState(1);
+  const [companions, setCompanions] = useState("");
+  const [customAnswer, setCustomAnswer] = useState("");
+  const rsvpOptions = data.rsvp ?? {};
+  const maxGuests = Math.min(20, Math.max(1, rsvpOptions.maxGuests ?? 5));
+  const askPhone = rsvpOptions.askPhone !== false;
+  const question = rsvpOptions.question?.label?.trim() && rsvpOptions.question.options?.filter((o) => o.trim()).length ? rsvpOptions.question : null;
+  const coming = attendance !== "TIDAK HADIR";
+  const [checkInToken, setCheckInToken] = useState<string | null>(null);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [wishes, setWishes] = useState<Wish[]>(data.wishes ?? []);
   const [nowMs, setNowMs] = useState<number | null>(null);
@@ -880,12 +967,32 @@ export function Rsvp({ theme, data, preview }: { theme: AiTheme; data: WeddingDa
     if (preview) {
       // In the studio preview, show the wish locally without saving it
       if (message.trim()) setWishes((w) => [{ guestName: name, message, createdAt: new Date().toISOString() }, ...w]);
+      // Studio preview: show what the guest would get, with a sample code
+      if (rsvpOptions.qrCheckIn && coming) setCheckInToken("CONTOH12QR34");
       setState("sent");
       return;
     }
     setState("sending");
     try {
-      await submitRsvp({ slug: invitationSlugFromPath(), name, attendance, message });
+      const currentSlug = invitationSlugFromPath();
+      const saved = await submitRsvp({
+        slug: currentSlug,
+        name,
+        attendance,
+        message,
+        phone: askPhone ? phone : undefined,
+        guests: coming ? guests : 1,
+        companions: coming && guests > 1 ? companions : undefined,
+        customAnswer: question ? customAnswer : undefined,
+      });
+      if (currentSlug) {
+        saveGuestIdentity(currentSlug, {
+          name: name.trim(),
+          recipientType: "PERSONAL",
+          phone: askPhone && phone ? phone : undefined,
+        });
+      }
+      setCheckInToken(saved.checkInToken);
       if (message.trim()) setWishes((w) => [{ guestName: name, message, createdAt: new Date().toISOString() }, ...w]);
       setState("sent");
       setMessage("");
@@ -914,22 +1021,52 @@ export function Rsvp({ theme, data, preview }: { theme: AiTheme; data: WeddingDa
             <p className="text-sm" style={{ color: "var(--muted)" }}>
               Konfirmasi dan doa Anda sudah kami terima.
             </p>
+            {checkInToken && (
+              <div className="mx-auto mt-5 max-w-xs space-y-3 rounded-2xl p-4" style={{ background: "color-mix(in srgb, var(--accent) 8%, transparent)" }}>
+                <p className="text-sm font-medium">QR kehadiran Anda</p>
+                <CheckInQr token={checkInToken} size={180} className="mx-auto" />
+                <p className="font-mono text-xs tracking-wider" style={{ color: "var(--muted)" }}>
+                  {checkInToken}
+                </p>
+                <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+                  Simpan atau screenshot QR ini, lalu tunjukkan kepada penerima tamu saat datang.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => downloadStandardQr(checkInToken, name || "tamu")}
+                  className={`min-h-10 w-full text-sm font-medium ${theme.corners === "sharp" ? "rounded-none" : "rounded-full"}`}
+                  style={{ background: "var(--accent)", color: "var(--on-accent)" }}
+                >
+                  Simpan QR
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <form onSubmit={submit} className={`space-y-4 p-6 ${cardShape(theme)}`} style={{ background: "var(--surface)", ...frameStyle(theme) }}>
             <input className={field} style={fieldStyle} placeholder="Nama Anda" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} />
-            <div className="grid grid-cols-2 gap-2">
+            {askPhone && (
+              <PhoneInput
+                value={phone}
+                onChange={setPhone}
+                placeholder="Nomor WhatsApp"
+                className={`h-auto min-h-12 border-[color-mix(in_srgb,var(--ink)_18%,transparent)] bg-transparent text-[15px] shadow-none ${radius} [&_[data-slot=select-trigger]]:text-inherit [&_input]:py-3`}
+              />
+            )}
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Konfirmasi kehadiran">
               {(
                 [
                   ["HADIR", "Hadir"],
+                  ["MUNGKIN", "Mungkin"],
                   ["TIDAK HADIR", "Berhalangan"],
                 ] as const
               ).map(([v, l]) => (
                 <button
                   type="button"
                   key={v}
+                  role="radio"
                   onClick={() => setAttendance(v)}
-                  aria-pressed={attendance === v}
+                  aria-checked={attendance === v}
                   className={`min-h-11 text-sm transition ${radius}`}
                   style={attendance === v ? { background: "var(--accent)", color: "var(--on-accent)" } : fieldStyle}
                 >
@@ -937,6 +1074,71 @@ export function Rsvp({ theme, data, preview }: { theme: AiTheme; data: WeddingDa
                 </button>
               ))}
             </div>
+            {coming && (
+              <div className={`flex items-center justify-between gap-3 px-4 py-2 ${radius}`} style={fieldStyle}>
+                <span className="text-[15px]">Jumlah tamu</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label="Kurangi jumlah tamu"
+                    disabled={guests <= 1}
+                    onClick={() => setGuests((g) => Math.max(1, g - 1))}
+                    className="flex size-10 items-center justify-center rounded-full text-lg disabled:opacity-30"
+                    style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)" }}
+                  >
+                    −
+                  </button>
+                  <span className="w-8 text-center text-lg tabular-nums" aria-live="polite">
+                    {guests}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Tambah jumlah tamu"
+                    disabled={guests >= maxGuests}
+                    onClick={() => setGuests((g) => Math.min(maxGuests, g + 1))}
+                    className="flex size-10 items-center justify-center rounded-full text-lg disabled:opacity-30"
+                    style={{ background: "color-mix(in srgb, var(--accent) 12%, transparent)" }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
+            {coming && guests > 1 && (
+              <input
+                className={field}
+                style={fieldStyle}
+                placeholder={guests === 2 ? "Nama pendamping" : `Nama ${guests - 1} pendamping, pisahkan dengan koma`}
+                value={companions}
+                onChange={(e) => setCompanions(e.target.value)}
+                maxLength={300}
+                aria-label="Nama pendamping"
+              />
+            )}
+            {question && (
+              <div className="space-y-2">
+                <p className="text-sm" style={{ color: "var(--muted)" }}>
+                  {question.label}
+                </p>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={question.label}>
+                  {question.options
+                    .filter((o) => o.trim())
+                    .map((o) => (
+                      <button
+                        type="button"
+                        key={o}
+                        role="radio"
+                        aria-checked={customAnswer === o}
+                        onClick={() => setCustomAnswer(o)}
+                        className={`min-h-10 px-4 text-sm transition ${theme.corners === "sharp" ? "rounded-none" : "rounded-full"}`}
+                        style={customAnswer === o ? { background: "var(--accent)", color: "var(--on-accent)" } : fieldStyle}
+                      >
+                        {o}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
             <textarea className={`${field} min-h-28 resize-none`} style={fieldStyle} placeholder="Tulis ucapan dan doa (opsional)" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={500} />
             <button
               type="submit"
@@ -1039,7 +1241,7 @@ export function Closing({ theme, data }: { theme: AiTheme; data: WeddingData }) 
           </>
         ) : (
           <>
-            Dibuat dengan <Link href="/" className="underline underline-offset-4">UNDANGIN YUK</Link>
+            Dibuat dengan <Link href="/" className="underline underline-offset-4">SatuMoment</Link>
           </>
         )}
       </p>

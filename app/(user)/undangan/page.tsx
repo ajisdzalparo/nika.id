@@ -52,7 +52,7 @@ export default async function UndanganListPage() {
     <>
       <SiteHeader user={session.user} />
       <div className="flex-1 px-4 pb-16 pt-8 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="w-full">
           <InvitationListClient
             initialInvitations={serialized}
             initialActiveId={active.id}

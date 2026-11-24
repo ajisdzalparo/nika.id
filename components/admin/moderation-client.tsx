@@ -20,6 +20,7 @@ export interface GuestMessage {
     invitationSlug: string | null;
     name: string | null;
   };
+  invitation?: { slug: string | null } | null;
 }
 
 interface ModerationClientProps {
@@ -95,11 +96,13 @@ export function ModerationClient({ initialMessages }: ModerationClientProps) {
                 <TableCell>
                   <div className="flex flex-col gap-0.5">
                     <span className="font-medium">{msg.guestName}</span>
-                    <span className="text-xs text-muted-foreground font-mono">/{msg.user.invitationSlug || "(no slug)"}</span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {msg.invitation?.slug || msg.user.invitationSlug ? `/${msg.invitation?.slug || msg.user.invitationSlug}` : "Undangan tidak diketahui"}
+                    </span>
                   </div>
                 </TableCell>
-                <TableCell className="max-w-[300px]">
-                  <p className="text-sm italic text-muted-foreground break-all font-serif leading-relaxed">&ldquo;{msg.message}&rdquo;</p>
+                <TableCell className="min-w-[220px] max-w-[320px] whitespace-normal">
+                  <p className="text-sm italic text-muted-foreground wrap-break-word font-serif leading-relaxed">&ldquo;{msg.message}&rdquo;</p>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -118,17 +121,31 @@ export function ModerationClient({ initialMessages }: ModerationClientProps) {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-1 items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                  {/* Always visible: hover-only actions are unreachable on touch screens */}
+                  <div className="flex items-center justify-end gap-1.5">
                     {msg.status === "PENDING" && (
-                      <Button variant="ghost" size="icon-sm" onClick={() => handleApprove(msg.id)} disabled={loading === msg.id} title="Setujui Ucapan">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleApprove(msg.id)}
+                        disabled={loading === msg.id}
+                        aria-label={`Setujui ucapan dari ${msg.guestName}`}
+                        className="h-8 gap-1 rounded-full text-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4" /> Setujui
                       </Button>
                     )}
 
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon-sm" className="text-destructive hover:bg-destructive/10" disabled={loading === msg.id} title="Hapus Ucapan">
-                          <Trash2 className="h-4 w-4" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 gap-1 rounded-full text-destructive hover:bg-destructive/10"
+                          disabled={loading === msg.id}
+                          aria-label={`Hapus ucapan dari ${msg.guestName}`}
+                        >
+                          <Trash2 className="h-4 w-4" /> Hapus
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>

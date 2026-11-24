@@ -6,8 +6,9 @@ import type { WeddingData } from "@/types/wedding";
 import { DEFAULT_AI_THEME, REORDERABLE_SECTIONS, type AiTheme, type ReorderableSectionId } from "@/lib/ai-design/schema";
 import { MusicToggle } from "@/components/common/music-toggle";
 import { fontHref, themeFonts, themeStyle } from "./theme";
-import { CanvasSectionFrame, EdgeSprigs, type CanvasEditorBridge } from "./ornaments";
+import { AmbientParticles, CanvasSectionFrame, EdgeSprigs, type CanvasEditorBridge } from "./ornaments";
 import { SandboxedHtmlFrame } from "./sandboxed-html-frame";
+import { withArtKit } from "@/lib/ai-design/art-kits";
 import { Closing, Countdown, Couple, Cover, DesktopStage, Events, Gallery, Gift, Opening, Rsvp, Story, Video } from "./sections";
 
 interface Props {
@@ -22,6 +23,8 @@ interface Props {
   forceOpened?: boolean;
   /** Interactive canvas bridge for dragging & selecting layers in Canvas Studio. */
   canvasEditor?: CanvasEditorBridge;
+  /** Sample data (template previews): RSVP and wishes show locally and are never sent. */
+  sampleMode?: boolean;
 }
 
 function BottomNav({ theme, data, scrollRoot }: { theme: AiTheme; data: WeddingData; scrollRoot: () => HTMLElement | null }) {
@@ -57,12 +60,14 @@ export default function AiDesignTemplate({
   staticCover = false,
   forceOpened = false,
   canvasEditor,
+  sampleMode = false,
 }: Props) {
-  const theme = themeProp ?? data.aiTheme ?? DEFAULT_AI_THEME;
+  // Themes without hand-placed layers get their art kit composed in (frame, bouquets, vines, emblem)
+  const theme = withArtKit(themeProp ?? data.aiTheme ?? DEFAULT_AI_THEME);
   const [openedState, setOpenedState] = useState(false);
   const opened = forceOpened || openedState;
   const rootRef = useRef<HTMLDivElement>(null);
-  const screen = embedded ? "min-h-[700px]" : "min-h-svh";
+  const screen = embedded ? "min-h-(--uy-cover-h,700px)" : "min-h-svh";
 
   if (theme.customHtml?.trim()) {
     return (
@@ -74,7 +79,8 @@ export default function AiDesignTemplate({
           html={theme.customHtml}
           data={data}
           title={theme.name}
-          className={`${embedded ? "h-[720px]" : "h-[100svh]"} block max-h-full w-full border-0 bg-white`}
+          hideScrollbar={embedded}
+          className={`${embedded ? "h-(--uy-cover-h,720px)" : "h-[100svh]"} block max-h-full w-full border-0 bg-white`}
         />
       </div>
     );
@@ -143,7 +149,7 @@ export default function AiDesignTemplate({
       case "rsvp":
         return (
           <CanvasSectionFrame key="rsvp" section="rsvp" theme={theme} data={data} canvasEditor={canvasEditor}>
-            <Rsvp theme={theme} data={data} preview={embedded} />
+            <Rsvp theme={theme} data={data} preview={embedded || sampleMode} />
           </CanvasSectionFrame>
         );
     }
@@ -186,6 +192,14 @@ export default function AiDesignTemplate({
         <div className="lg:grid lg:grid-cols-[42%_58%] xl:grid-cols-[44%_56%]">
           <DesktopStage theme={theme} data={data} />
           <div className="relative min-w-0">
+            {/* Desktop: petals and butterflies keep moving over the invitation column as well */}
+            {theme.particles && theme.particles !== "none" && (
+              <div aria-hidden="true" className="pointer-events-none sticky top-0 z-30 hidden h-0 lg:block">
+                <div className="relative h-(--uy-stage-h,100svh) overflow-hidden">
+                  <AmbientParticles kind={theme.particles} theme={theme} variant={2} />
+                </div>
+              </div>
+            )}
             <div className="lg:hidden">{renderCover()}</div>
             {renderMainBody()}
           </div>

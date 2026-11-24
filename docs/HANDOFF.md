@@ -5,11 +5,77 @@ Salin seluruh file ini ke AI lain sebagai konteks awal. Ditulis 20 Nov 2026. Sem
 
 > **Model bisnis & roadmap yang disepakati** (dua jalur jualan: perorangan B2C dan agency B2B, pricing, kredit AI, referral, marketplace, urutan pengerjaan): lihat [`docs/ROADMAP-BISNIS.md`](ROADMAP-BISNIS.md).
 
+## ▶ STATUS TERBARU (25 Nov 2026) — baca ini dulu
+
+Commit terakhir: `195fac4` (branch `dev`). **Semua yang di bawah ini BELUM di-commit** (~130 file berubah/baru). Jangan commit/push tanpa izin user.
+
+### Aturan kerja dari user (wajib)
+- **Pakai komponen yang sudah ada, jangan bikin ulang.** Lihat `CLAUDE.md` (root) dan skill `.claude/skills/invitation-design`. Ringkas: `components/ui/*` (Select → pakai `SelectField`, tidak boleh `<select>` mentah), `components/common/*` (`PhoneInput`, `qr-code`, `studio-ui`), `components/landing/primitives.tsx`.
+- **Di Server Component jangan `<Button asChild><Link/></Button>`** (Radix Slot bikin hydration mismatch useId). Pakai `<Link className={buttonVariants({ variant: "gold" })}>`.
+- Bahasa ke user: Indonesia santai ("gw/lu"). Kredensial tes localhost ada di sesi sebelumnya — jangan ditulis ulang di chat.
+- Desain: champagne + espresso + emas `#8A6424`, judul **Bodoni Moda**, teks **Plus Jakarta Sans** (dipasang di `lib/studio.ts`, variabel di `<body>` lewat `app/layout.tsx`). Tombol utama = `Button variant="gold"` (foil + kilau `.uy-sheen`).
+
+### Setelah pull / sebelum tes
+Dev server mengunci engine Prisma → `bunx prisma generate` bisa `EPERM`. **Matikan dev server → `bunx prisma generate` → nyalakan lagi.** Migrasi baru sudah diterapkan di DB lokal: `20261124120000_customer_survey`, `20261124130000_rsvp_details`, `20261124140000_rsvp_checkin`, `20261124143637_guest_details`, `20261124172013_guest_tracking`. Dependensi baru: `qrcode`, `jsqr`, `@types/qrcode` (sudah di `package.json` & `bun.lock`).
+
+### Yang sudah selesai sejak `195fac4`
+1. **Landing & brand**: palet gold, font Bodoni/Jakarta, hero kipas 3 HP berputar, animasi (`app/globals.css`: `uy-sheen`, `uy-word`, `uy-lattice`, `uy-kenburns`, partikel, kupu-kupu). Menu "Koleksi" → **Template** (`/desain`): grid semua template + filter/cari/urut (chip membungkus di ≥sm).
+2. **Template engine premium** (`lib/ai-design/`):
+   - `art-kits.ts`: 7 kit ilustrasi original (`taman-kayon`, `kebun-sage`, `mawar-vintage`, `kamboja-tropis` = SVG di `public/templates/art/<kit>/`; `deco-emas`, `arabesque`, `garis-halus` = garis `currentColor` tertint aksen). `composeArtKit()` menata bingkai/buket/sulur/lambang per section, `withArtKit()` dipanggil saat render (`components/templates/ai-design/index.tsx`) bila tema belum punya layer. Field `artKit` & `particles` di skema.
+   - `presets-catalog.ts`: 17 tema baru + Taman Kayon; `PRESET_ART_KITS` (kit per template). Seeding sekali pakai flag `catalog_presets_batch2_v1` / `batch3_v1` (`lib/catalog.ts`).
+   - **Bug Zod 4 diperbaiki**: `sectionStyles` pakai `z.partialRecord` (sebelumnya semua layer Kanvas terbuang diam-diam).
+   - Animasi: nama reveal/foil bergerak, judul reveal saat scroll, Ken Burns, partikel kelopak/debu emas/daun + kupu-kupu (`AmbientParticles` di `ornaments.tsx`), panel kiri desktop = slideshow foto + layer sampul (`DesktopStage`, `StaticSectionLayers`), tinggi panel ikut `--uy-stage-h`.
+   - AI generate (user & admin Mesin Tema) wajib pilih kit (`generate.ts` + `prompt.ts`); prompt HTML admin (`ADMIN_AI_HTML_CONTEXT_PROMPT` di `html-sanitize.ts`) berisi daftar ilustrasi + aturan komposisi & animasi premium. HTML template: hanya `html` yang scroll (`body overflow-x: clip`).
+3. **Kanvas Desain**: tab **Ilustrasi** (pasang paket ke semua section, partikel, pustaka elemen seret/klik, latar per section). Desain dari preset/katalog **tidak bisa dijual** (blok di UI + cek kemiripan server `lib/ai-design/originality.ts` di `app/api/user/marketplace` + maks 3 pengajuan pending).
+4. **Select**: `components/ui/select.tsx` digayakan ulang + `SelectField` (drop-in `<option>`, render interaktif setelah hydrate). Semua `<select>` mentah sudah diganti.
+5. **Admin**: editor template — pratinjau mockup HP + mini-desktop klik → layar penuh; Kategori pakai Select.
+6. **Dashboard** (`components/common/studio-ui.tsx`: `PageHeader`, `Panel`, `PanelTitle`, `StatTile`; `Button` varian `gold`/`ink`; `Card` digayakan): Beranda user (hero foto + hitung mundur live `LiveCountdown`, kartu RSVP, strip statistik), Ringkasan admin, sidebar user/admin bergaya emas.
+7. **Survei pelanggan** (`SurveyResponse`, `lib/survey.ts`, `app/api/user/survey`, `components/user/customer-survey.tsx` dipasang di Beranda; ringkasan NPS di `/admin/masukan`). Aturan tidak mengganggu: umur akun ≥3 hari atau sudah pakai produk, muncul setelah 12 detik, sekali per sesi, "Nanti saja" = 14 hari, berhenti setelah 3x ditunda, ulang tiap 120 hari.
+8. **RSVP lengkap**: kolom `phone`, `companions`, `customAnswer` (+ `note`, `checkInToken`, `checkedInAt`). Form tamu (`Rsvp` di `sections.tsx`): nomor WA (`PhoneInput`), Hadir/Mungkin/Berhalangan, jumlah tamu −/+, nama pendamping, pertanyaan tambahan. Pengaturan di Editor → Fitur → **Formulir RSVP** (`data.rsvp`: `maxGuests`, `askPhone`, `question`, `qrCheckIn`). API `app/api/public/submit` memvalidasi & mengembalikan `{ id, checkInToken }`.
+
+9. **RSVP management + Check-in Tamu (Self Check-in QR Cetak + Mode Panitia)** — selesai & teruji:
+   - **QR Cetak Meja Tamu (tab utama `/check-in`)**: `UrlQr`, `downloadVenueQrPoster` (1200×1800 siap cetak), `downloadPlainUrlQr` di `components/common/qr-code.tsx`; halaman publik `app/hadir/[slug]/page.tsx` + `components/public/guest-self-checkin.tsx` + `POST /api/public/checkin`. Tamu undangan personal (`?to=...`) diingat lewat `GuestIdentityMemory` sehingga saat scan QR meja cukup **1 ketuk konfirmasi** tanpa tulis nama lagi; tamu grup (`&grup=1` / `GROUP`) tetap menulis nama pribadinya.
+   - **Mode Panitia (tab kedua `/check-in`)**: kamera `getUserMedia` + `jsQR` tiap 250ms, jeda 2,5 detik, input kode manual, riwayat scan sesi.
+   - **Ekspor CSV** `app/api/user/rsvp/export/route.ts`: ditambah kolom `No. WA`, `Pendamping`, `Jawaban Tambahan`, `Catatan`, `Check-in`.
+   - Proteksi rute `/check-in` & `/wa-blast` di `middleware.ts`.
+10. **Daftar Tamu lengkap + Lacak Status Buka Web + WA Blast (Segera Hadir)**:
+   - Migrasi `20261124143637_guest_details` & `20261124172013_guest_tracking` (`sentAt`, `openedAt`, `lastOpenedAt`, `openCount`).
+   - Endpoint `POST /api/public/guest-open` dipicu dari browser nyata (anti-bot link preview WA) untuk mencatat otomatis status **Sudah dibuka** (+ jumlah buka & waktu) di `/manajemen-tamu` & `/buku-tamu`; klik Kirim WA / Salin Link menandai **Terkirim**.
+   - Halaman **WA Blast** (`app/(user)/wa-blast/page.tsx`, `components/user/wa-blast-studio.tsx`, badge `Segera` di sidebar): daftar tunggu, template pesan, dan alur 2 langkah kirim manual.
+11. **Polish UI menyeluruh**:
+    - Semua halaman dashboard admin & dashboard user full-width (`w-full`); landing page & `/desain` tetap `max-w-6xl`.
+    - `CoverThumb` (`components/templates/ai-design/cover-thumb.tsx`) auto-scale penuh via `ResizeObserver` + `transform: scale`, kartu template `/pilih-template`, `/desain`, & `/admin/templates` diperbarui.
+    - Komponen kustom `DatePickerField` & `TimePickerField` (`components/common/date-time-picker.tsx`) menggantikan semua `<input type="date">` & `<input type="time">`.
+    - Pratinjau desktop Kanvas Studio layar penuh, tab "Upload Sendiri" bergaya galeri Canva, layout Formulir RSVP di Editor, dan `buttonVariants` otomatis merge via `cn(...)`.
+12. **Anti-Duplikat Katalog + Cek Plagiasi AI (Pre-Sell Kreator & Kurasi Manual Admin)**:
+    - **10 paket ilustrasi original (`lib/ai-design/art-kits.ts` & `schema.ts`)**: ditambah 3 kit SVG tertint baru (`batik-parang`, `boho-pampas`, `editorial-monogram`) agar 27 template bawaan benar-benar unik (menghilangkan duplikasi `sekar-arum` vs `classic-premium`, `kamboja-bali` vs `terakota-boho` vs `senja-tropis`, `kawung-sogan` vs `siger-sunda`, `taman-pastel` vs `lavender-pagi` vs `kayu-rustic`, `standard` vs `kabar-lama` vs `sage-linen`). Sinkronisasi sekali jalan lewat flag `catalog_dedupe_distinct_v2` (`lib/catalog.ts`, khusus `creatorId: null`).
+    - **Mesin deteksi orisinalitas visual + AI (`lib/ai-design/originality.ts` & `lib/ai-design/plagiarism-ai.ts`)**: pembobotan dominan pada identitas visual (`artKit` efektif, layout sampul, warna latar dengan penalti beda hue HSL, ornamen/bingkai, serta layer kustom non-kit) sehingga **mengganti font saja atau menggeser warna aksen tipis tetap terdeteksi `PLAGIAT` (≥86%)**. Integrasi `openRouterChat` (`OPENROUTER_API_KEY` / `OPENROUTER_CHAT_MODEL`) dengan fallback otomatis ke analisis visual struktural bila API key masih placeholder/belum diisi.
+    - **Cek orisinalitas sebelum jual di Marketplace**: endpoint `POST /api/user/marketplace/check-originality` + proteksi keras di `POST /api/user/marketplace` (membandingkan terhadap seluruh template non-ditolak termasuk milik kreator sendiri). Komponen bersama `components/user/marketplace-sell-dialog.tsx` (dipakai di `canvas-studio.tsx` & `kanvas-projects-hub.tsx`) menjalankan cek AI otomatis sebelum submit, menampilkan pratinjau berdampingan jika `MIRIP`/`PLAGIAT`, dan memblokir pengajuan plagiasi.
+    - **Perbandingan plagiasi manual di Admin (`/admin/templates`)**: badge peringatan kemiripan langsung pada kartu, tab filter **Indikasi Mirip**, tombol **Cek Plagiasi AI & Bandingkan**, endpoint `POST /api/admin/catalog/[id]/similarity`, serta dialog perbandingan **side-by-side** (mockup HP + tabel spesifikasi yang menyorot atribut identik + switcher top-3 pembanding + tombol langsung **Tolak sebagai Plagiasi** atau **Tetap Setujui**).
+    - **Typecheck + lint** (`tsc --noEmit`, `eslint app components lib`): bersih per 25 Nov 2026.
+
+### ⏳ TINGGAL UJI BROWSER (setelah login lokal)
+- **Uji di browser (375px & desktop)**:
+  1. `/manajemen-tamu`: tambah/ubah tamu lengkap (VIP, No. WA, label Blast/kustom, catatan) & uji kirim WA.
+  2. `/wa-blast`: cek tab Template (pratinjau, tambah draf), tab Kirim WA Blast (stepper 1→2, kirim manual, modal Segera Hadir, daftar tunggu).
+  3. QR check-in end-to-end: aktifkan QR check-in di editor → RSVP di undangan publik → QR muncul → di `/buku-tamu` unduh QR standar & kartu + cek ekspor CSV → pindai/ketik kode di `/check-in` → status "Sudah check-in". Hapus data uji setelahnya.
+  4. Marketplace & Kurasi Admin: di `/kanvas` klik **Jual** pada desain mirip preset (pastikan dialog cek AI memblokir & menampilkan perbandingan side-by-side); di `/admin/templates` klik **Cek AI** / **Cek Plagiasi AI & Bandingkan** untuk melihat modal perbandingan berdampingan & alur tolak plagiasi.
+  5. Isi `OPENROUTER_API_KEY` asli di `.env` jika ingin menguji penilaian naratif AI langsung (saat ini masih placeholder `ISI_OPENROUTER_API_KEY` sehingga otomatis memakai fallback analisis visual struktural).
+
+### Ide yang sudah dibahas, belum dibangun
+- **Integrasi WA Blast resmi (backend)** dengan status terkirim/dibaca + billing kuota add-on (WhatsApp Cloud API / gateway Fonnte/Wablas) — UI add-on Coming Soon & daftar tunggu sudah siap di `/wa-blast`.
+- **Redesign Kanvas Desain** (kanvas di tengah, panel layer & properti di kanan) + fitur **"kutip lalu ubah dengan AI"** (pilih elemen/section → prompt → AI hanya mengubah bagian itu, endpoint patch baru).
+- **Aset lukisan cat air** (raster) untuk kit premium: engine sudah siap, tinggal ganti file gambar (AI gambar berbayar atau paket berlisensi).
+- Rombak halaman dashboard lain (Daftar Undangan, Editor, Dompet, Mitra, admin lain) memakai `PageHeader`/`Panel` (Daftar Tamu sudah selesai).
+- Referensi desain dari user: viding.co (theme preview 162/167/205) — **jangan salin aset/HTML mereka**, hanya pola.
+
+---
+
 ## Produk
 SaaS undangan pernikahan digital (Indonesia) dengan nama brand **UNDANGIN YUK**. User mendaftar (email/password atau Google), membuat undangan dengan **Desain AI** atau **memakai template katalog**, mengisi data, lalu membagikan link `/<invitationSlug>?to=<nama tamu>` lewat WhatsApp. Ada RSVP + ucapan tamu, amplop digital, musik (YouTube atau upload audio ke S3/MinIO), galeri, countdown. Monetisasi: paket per acara (`HEMAT` Rp49rb / `PREMIUM` Rp79rb / `EKSKLUSIF` Rp99rb + add-on `+100 tamu` Rp15rb di `lib/limits.ts`, `FREE` hanya untuk mode pratinjau sebelum bayar).
 
 ## Stack
-Next.js 16 (App Router, Turbopack) · React 19 · Tailwind v4 · shadcn/ui · Prisma 6 + PostgreSQL · better-auth (email + Google OAuth, plugin admin) · MinIO (S3) untuk upload · Midtrans (pembayaran) · nodemailer + Gmail SMTP (email verifikasi) · `@anthropic-ai/sdk` (Claude Opus 5.5, structured output) · Bun sebagai package manager.
+Next.js 16 (App Router, Turbopack) · React 19 · Tailwind v4 · shadcn/ui · Prisma 6 + PostgreSQL · better-auth (email + Google OAuth, plugin admin) · MinIO (S3) untuk upload · Midtrans (pembayaran) · nodemailer + Gmail SMTP (email verifikasi) · OpenRouter (`lib/openrouter.ts`, `OPENROUTER_API_KEY`, default Claude Sonnet/Haiku) · Bun sebagai package manager.
 
 ## Menjalankan lokal
 ```
@@ -17,7 +83,7 @@ docker compose up -d postgres minio      # Postgres :5433, MinIO :9000 (console 
 bun run db:migrate && bunx prisma generate   # JANGAN db push lagi (lihat "Database migration")
 bun run dev                              # http://localhost:3000
 ```
-`.env` wajib: `DATABASE_URL` (postgresql://nikaid:nikaid_password@localhost:5433/nikaid), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`, `GOOGLE_CLIENT_ID/SECRET`, `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED="true"`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_FROM_NAME`, `MINIO_*` (lihat `.env.example`), `ANTHROPIC_API_KEY` (belum diisi → generate AI belum pernah dites end-to-end).
+`.env` wajib: `DATABASE_URL` (postgresql://nikaid:nikaid_password@localhost:5433/nikaid), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL`, `GOOGLE_CLIENT_ID/SECRET`, `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED="true"`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `EMAIL_FROM_NAME`, `MINIO_*` (lihat `.env.example`), `OPENROUTER_API_KEY` (`OPENROUTER_DESIGN_MODEL`, `OPENROUTER_CHAT_MODEL` — saat ini lokal masih placeholder `ISI_OPENROUTER_API_KEY`; cek plagiasi otomatis fallback ke mesin struktural).
 
 **Jebakan Windows:** `prisma generate` gagal `EPERM` saat dev server jalan (file engine terkunci). File `index.js/.d.ts` tetap tertulis; cukup restart dev server. Turbopack kadang menyimpan modul server lama di memori → kalau perubahan tidak terbaca, ubah isi file sumbernya sedikit atau restart.
 **Admin:** role disimpan di `User.role` (`"admin"`). Ubah via `docker exec nikaid-postgres psql -U nikaid -d nikaid -c "UPDATE \"User\" SET role='admin' WHERE email='...';"` lalu login ulang.

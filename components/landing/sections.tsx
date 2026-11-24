@@ -55,22 +55,24 @@ export function AiDemo() {
   const theme = AI_THEME_PRESETS[current.key].theme;
 
   return (
-    <section id="desain-ai" className="relative scroll-mt-16 overflow-hidden py-24 md:py-32" style={{ background: L.night, color: "#F3EBDD" }}>
-      <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20">
+    <section id="desain-ai" className="relative scroll-mt-16 overflow-hidden py-24 md:py-32" style={{ background: L.night, color: L.nightText }}>
+      <div aria-hidden className="uy-lattice-light pointer-events-none absolute inset-0" />
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(50% 60% at 85% 45%, rgba(176,138,62,.22) 0%, transparent 70%)" }} />
+      <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-20">
         <div className="space-y-10">
           <Reveal className="space-y-5">
             <Eyebrow light>Studio Desain AI</Eyebrow>
-            <Display className="text-[2.6rem] sm:text-5xl lg:text-6xl">
+            <Display className="text-[2.2rem] sm:text-[2.9rem] lg:text-[3.4rem]">
               Tulis suasananya. <em className="italic" style={{ color: L.accentBright }}>Desainnya menyusul.</em>
             </Display>
-            <p className="max-w-lg text-[17px] leading-relaxed text-[#B8AD9A]">
+            <p className="max-w-lg text-[17px] leading-relaxed text-[#CDBF9F]">
               Tidak perlu memilah ratusan template. Ceritakan konsep pernikahan kalian, dan AI menyusun tema lengkap yang bisa langsung dipakai, diganti, atau dibandingkan.
             </p>
           </Reveal>
 
           <Reveal delay={80}>
-            <div className="rounded-2xl border p-5" style={{ borderColor: "#2E2A23", background: "#1B1915" }}>
-              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-[#8C8272]">Konsep kalian</p>
+            <div className="rounded-2xl border p-5" style={{ borderColor: "#3A3122", background: "#26201A" }}>
+              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-[#A89470]">Konsep kalian</p>
               <p className="min-h-[3.5rem] text-lg leading-relaxed">
                 {typed}
                 <span className="ml-0.5 inline-block h-5 w-px translate-y-1 animate-pulse" style={{ background: L.accentBright }} />
@@ -82,7 +84,7 @@ export function AiDemo() {
                   key={p.key}
                   onClick={() => choose(i)}
                   className="h-10 rounded-full border px-4 text-sm transition-colors"
-                  style={i === active ? { background: "#F3EBDD", color: L.night, borderColor: "#F3EBDD" } : { borderColor: "#3A352C", color: "#CFC5B4" }}
+                  style={i === active ? { background: "#F6EEDD", color: L.night, borderColor: "#F6EEDD" } : { borderColor: "#4A3F2E", color: "#E2D2B0" }}
                 >
                   {AI_THEME_PRESETS[p.key].label}
                 </button>
@@ -91,9 +93,9 @@ export function AiDemo() {
           </Reveal>
 
           <Reveal delay={140}>
-            <ul className="grid gap-4 text-[15px] text-[#CFC5B4] sm:grid-cols-3">
+            <ul className="grid gap-4 text-[15px] text-[#E2D2B0] sm:grid-cols-3">
               {["Palet dan tipografi dipadukan seperti desainer", "Ornamen menyesuaikan adat dan suasana", "Ganti desain kapan saja tanpa mengisi ulang data"].map((t) => (
-                <li key={t} className="flex gap-3 border-t pt-4" style={{ borderColor: "#2E2A23" }}>
+                <li key={t} className="flex gap-3 border-t pt-4" style={{ borderColor: "#3A3122" }}>
                   <IconCheck size={18} className="mt-0.5 shrink-0" style={{ color: L.accentBright }} />
                   {t}
                 </li>
@@ -106,7 +108,7 @@ export function AiDemo() {
           <div key={current.key} className="animate-in fade-in zoom-in-95 duration-500">
             <Phone theme={theme} zoom={0.8} interactive />
           </div>
-          <p className="text-xs text-[#8C8272]">Tema: {theme.name} · ketuk “Buka Undangan” untuk melihat isinya</p>
+          <p className="text-xs text-[#A89470]">Tema: {theme.name} · ketuk “Buka Undangan” untuk melihat isinya</p>
         </Reveal>
       </div>
     </section>
@@ -218,11 +220,11 @@ export function Collection({ items }: { items: CatalogItem[] }) {
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <Reveal className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="max-w-xl space-y-4">
-            <Eyebrow>Koleksi desain</Eyebrow>
-            <Display className="text-[2.5rem] sm:text-5xl">Atau mulai dari desain yang sudah jadi.</Display>
+            <Eyebrow>Template</Eyebrow>
+            <Display className="text-[2.15rem] sm:text-[2.9rem]">Atau mulai dari desain yang sudah jadi.</Display>
             <div className="flex flex-wrap items-center gap-5">
               <Link href="/desain" className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-medium transition-transform hover:translate-x-0.5" style={{ color: L.accent }}>
-                Lihat semua koleksi <IconArrowRight size={16} />
+                Lihat semua template <IconArrowRight size={16} />
               </Link>
             </div>
           </div>
@@ -232,7 +234,7 @@ export function Collection({ items }: { items: CatalogItem[] }) {
                 key={c}
                 onClick={() => chooseCategory(c)}
                 className="h-10 rounded-full border px-4 text-sm transition-all duration-300"
-                style={c === cat ? { background: L.ink, color: L.bg, borderColor: L.ink } : { borderColor: L.line, color: L.muted }}
+                style={c === cat ? { background: L.accent, color: "#fff", borderColor: L.accent } : { borderColor: L.line, color: L.muted, background: L.surface }}
               >
                 {c}
               </button>
@@ -255,15 +257,15 @@ export function Collection({ items }: { items: CatalogItem[] }) {
         >
           {cat === "Semua" && (
             <a href="#desain-ai" className="group w-[250px] shrink-0 snap-start sm:w-[280px]">
-              <div className="relative flex aspect-[3/4.2] flex-col justify-between overflow-hidden rounded-[26px] p-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_24px_48px_-20px_rgba(21,19,15,0.45)]" style={{ background: L.night, color: "#F3EBDD" }}>
+              <div className="relative flex aspect-[3/4.2] flex-col justify-between overflow-hidden rounded-[26px] p-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_24px_48px_-20px_rgba(26,21,16,0.45)]" style={{ background: L.night, color: "#F6EEDD" }}>
                 <Eyebrow light>Desain AI</Eyebrow>
                 <div className="space-y-5">
                   <div className="flex -space-x-2">
-                    {Object.values(AI_THEME_PRESETS).map(({ theme }) => (
-                      <span key={theme.name} className="h-9 w-9 rounded-full ring-2 ring-[#15130F] transition-transform duration-500 group-hover:scale-105" style={{ background: `linear-gradient(135deg, ${theme.palette.background} 50%, ${theme.palette.accent} 50%)` }} />
+                    {Object.values(AI_THEME_PRESETS).slice(0, 9).map(({ theme }) => (
+                      <span key={theme.name} className="h-9 w-9 rounded-full ring-2 ring-[#1A1510] transition-transform duration-500 group-hover:scale-105" style={{ background: `linear-gradient(135deg, ${theme.palette.background} 50%, ${theme.palette.accent} 50%)` }} />
                     ))}
                   </div>
-                  <p className="font-(family-name:--font-landing-display) text-3xl leading-tight">Desain unik yang hanya dimiliki kalian.</p>
+                  <p className="font-(family-name:--font-landing-display) text-[1.65rem] leading-tight">Desain unik yang hanya dimiliki kalian.</p>
                   <span className="inline-flex items-center gap-2 text-sm transition-transform duration-300 group-hover:translate-x-1" style={{ color: L.accentBright }}>
                     Coba sekarang <IconArrowRight size={16} />
                   </span>
@@ -281,14 +283,14 @@ export function Collection({ items }: { items: CatalogItem[] }) {
           )}
           {shown.map((t) => (
             <Link key={t.slug} href={`/preview/t/${t.slug}`} className="group w-[250px] shrink-0 snap-start sm:w-[280px]">
-              <div className="relative aspect-[3/4.2] overflow-hidden rounded-[26px] border transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_24px_48px_-20px_rgba(30,27,23,0.22)]" style={{ borderColor: L.line, background: L.surface }}>
+              <div className="relative aspect-[3/4.2] overflow-hidden rounded-[26px] border transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1.5 group-hover:shadow-[0_24px_48px_-20px_rgba(26,21,16,0.22)]" style={{ borderColor: L.line, background: L.surface }}>
                 {t.kind === "ENGINE" && t.theme ? (
                   <CoverThumb theme={t.theme} zoom={0.7} className="h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]" />
                 ) : (
                   <SafeImg src={t.thumbnail} alt={t.name} className="absolute inset-0 h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]" />
                 )}
                 <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-end opacity-0 transition-all duration-300 group-hover:opacity-100">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#1E1B17]/90 px-3 py-1.5 text-xs font-medium text-[#F7F3EC] backdrop-blur-sm">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#1F1A14]/90 px-3 py-1.5 text-xs font-medium text-[#FCF8F1] backdrop-blur-sm">
                     Pratinjau <IconArrowRight size={13} />
                   </span>
                 </div>
@@ -323,7 +325,7 @@ export function Collection({ items }: { items: CatalogItem[] }) {
                 >
                   <span
                     className={`block h-1.5 rounded-full transition-all duration-300 ${
-                      idx === activeSlide ? "w-8 bg-[#1E1B17]" : "w-2 bg-[#CFC5B4] hover:bg-[#A59B8C]"
+                      idx === activeSlide ? "w-8 bg-[#8A6424]" : "w-2 bg-[#E2D2B0] hover:bg-[#C2A875]"
                     }`}
                   />
                 </button>
@@ -358,16 +360,18 @@ export function Collection({ items }: { items: CatalogItem[] }) {
 
 export function Steps({ content = DEFAULT_LANDING_CONTENT.steps }: { content?: LandingContent["steps"] }) {
   return (
-    <section className="border-y py-24 md:py-28" style={{ borderColor: L.line, background: L.surface }}>
+    <section className="py-24 md:py-28" style={{ background: L.blush }}>
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <Reveal className="mb-14 space-y-4">
           <Eyebrow>{content.eyebrow}</Eyebrow>
-          <Display className="max-w-2xl text-[2.5rem] sm:text-5xl">{content.heading}</Display>
+          <Display className="max-w-2xl text-[2.15rem] sm:text-[2.9rem]">{content.heading}</Display>
         </Reveal>
         <ol className="grid gap-10 md:grid-cols-3 md:gap-12">
           {content.items.map((step, i) => (
             <Reveal key={`${step.title}-${i}`} delay={i * 90}>
-              <li className="space-y-4 border-t pt-6" style={{ borderColor: L.ink }}>
+              <li className="relative space-y-4 pt-6">
+                {/* The top rule draws itself left to right as the step comes into view */}
+                <span aria-hidden className="absolute inset-x-0 top-0 h-px origin-left scale-x-0 transition-transform delay-200 duration-[1100ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[shown=true]/reveal:scale-x-100 motion-reduce:scale-x-100" style={{ background: L.accent }} />
                 <span className="font-(family-name:--font-landing-display) text-6xl italic lining-nums leading-none" style={{ color: L.accent }}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
@@ -397,21 +401,21 @@ export function Features({ content = DEFAULT_LANDING_CONTENT.features }: { conte
         <Reveal className="space-y-8">
           <div className="space-y-4">
             <Eyebrow>{content.eyebrow}</Eyebrow>
-            <Display className="text-[2.5rem] sm:text-5xl">{content.heading}</Display>
+            <Display className="text-[2.15rem] sm:text-[2.9rem]">{content.heading}</Display>
             <p className="max-w-md text-[17px] leading-relaxed" style={{ color: L.muted }}>
               {content.description}
             </p>
           </div>
           {/* WhatsApp message mock */}
-          <div className="max-w-sm rounded-2xl p-4" style={{ background: "#E7DFD2" }}>
+          <div className="max-w-sm rounded-2xl p-4" style={{ background: L.blush }}>
             <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#DCF3C8] p-3 text-[14px] leading-relaxed text-[#1E2A1A] shadow-sm">
               <p>Kepada Yth. Bapak Andi Wijaya,</p>
               <p className="mt-2">Tanpa mengurangi rasa hormat, kami mengundang Bapak untuk hadir di pernikahan kami.</p>
-              <p className="mt-2 break-all text-[#1C6EA4] underline">undanginyuk.id/adit-sarah?to=Bapak+Andi</p>
+              <p className="mt-2 break-all text-[#1C6EA4] underline">satumoment.id/adit-sarah?to=Bapak+Andi</p>
               <p className="mt-1 text-right text-[11px] text-[#6B7A63]">09.41 ✓✓</p>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: L.muted }}>
-              <IconBrandWhatsapp size={16} /> Terkirim dari daftar tamu UNDANGIN YUK
+              <IconBrandWhatsapp size={16} /> Terkirim dari daftar tamu SatuMoment
             </div>
           </div>
         </Reveal>
@@ -422,7 +426,9 @@ export function Features({ content = DEFAULT_LANDING_CONTENT.features }: { conte
             return (
               <Reveal key={`${item.title}-${i}`} delay={(i % 2) * 70}>
                 <div className="flex gap-4 border-t py-6" style={{ borderColor: L.line }}>
-                  <Icon size={22} stroke={1.5} className="mt-0.5 shrink-0" style={{ color: L.accent }} />
+                  <span className="flex h-11 w-11 shrink-0 -rotate-12 items-center justify-center rounded-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[shown=true]/reveal:rotate-0 motion-reduce:rotate-0" style={{ background: L.accentSoft, color: L.accent }}>
+                    <Icon size={21} stroke={1.6} />
+                  </span>
                   <div className="space-y-1.5">
                     <h3 className="font-medium" style={{ color: L.ink }}>
                       {item.title}
@@ -467,11 +473,11 @@ export function Pricing() {
   const keys = PAID_PLANS;
   const featured = "EKSKLUSIF";
   return (
-    <section id="harga" className="scroll-mt-16 border-t py-24 md:py-32" style={{ borderColor: L.line, background: L.surface }}>
+    <section id="harga" className="scroll-mt-16 py-24 md:py-32" style={{ background: L.blush }}>
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <Reveal className="mx-auto mb-14 max-w-2xl space-y-4 text-center">
           <Eyebrow>Harga</Eyebrow>
-          <Display className="text-[2.5rem] sm:text-5xl">Sekali bayar untuk satu acara.</Display>
+          <Display className="text-[2.15rem] sm:text-[2.9rem]">Sekali bayar untuk satu acara.</Display>
           <p className="text-[17px]" style={{ color: L.muted }}>
             Coba dan pratinjau undangan gratis sebelum bayar. Upgrade kapan saja cukup bayar selisih, atau tambah kuota +{GUEST_ADDON_SIZE} tamu {rupiah(GUEST_ADDON_PRICE)}.
           </p>
@@ -483,19 +489,19 @@ export function Pricing() {
             return (
               <Reveal key={k} delay={i * 80}>
                 <div
-                  className="flex h-full flex-col rounded-2xl border p-7"
-                  style={hot ? { background: L.night, color: "#F3EBDD", borderColor: L.night } : { background: L.bg, borderColor: L.line, color: L.ink }}
+                  className={`flex h-full flex-col rounded-2xl border p-7 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 ${hot ? "shadow-[0_30px_60px_-28px_rgba(26,21,16,.6)]" : "hover:shadow-[0_20px_40px_-24px_rgba(26,21,16,.25)]"}`}
+                  style={hot ? { background: L.night, color: L.nightText, borderColor: L.night } : { background: L.surface, borderColor: L.line, color: L.ink }}
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="font-(family-name:--font-landing-display) text-2xl">{p.name}</h3>
                     {hot && (
-                      <span className="rounded-full px-3 py-1 text-[11px] font-medium" style={{ background: L.accentBright, color: L.night }}>
+                      <span className="rounded-full px-3 py-1 text-[11px] font-semibold text-white" style={{ background: L.accent }}>
                         Paling lengkap
                       </span>
                     )}
                   </div>
                   <p className="mt-6 font-(family-name:--font-landing-display) text-5xl lining-nums">{rupiah(p.price)}</p>
-                  <p className="mt-1 text-sm" style={{ color: hot ? "#B8AD9A" : L.muted }}>
+                  <p className="mt-1 text-sm" style={{ color: hot ? "#CDBF9F" : L.muted }}>
                     per acara
                   </p>
                   <ul className="mt-8 flex-1 space-y-3 text-[15px]">
@@ -508,8 +514,8 @@ export function Pricing() {
                   </ul>
                   <Link
                     href="/register"
-                    className="mt-8 flex h-12 items-center justify-center rounded-full text-[15px] font-medium transition-opacity hover:opacity-90"
-                    style={hot ? { background: "#F3EBDD", color: L.night } : { border: `1px solid ${L.ink}`, color: L.ink }}
+                    className={`mt-8 flex h-12 items-center justify-center rounded-full text-[15px] font-medium transition-all duration-300 hover:opacity-90 ${hot ? "uy-sheen font-semibold" : "hover:bg-[#F3E6C8]"}`}
+                    style={hot ? { background: L.foil, color: L.ink } : { border: `1px solid ${L.accent}`, color: L.accent }}
                   >
                     Pilih {p.name}
                   </Link>
@@ -580,7 +586,7 @@ export function PartnerVendors({ partners }: { partners: PartnerVendor[] }) {
             <Eyebrow>Mitra &amp; Vendor</Eyebrow>
             <Display className="text-[2.1rem] sm:text-4xl">Wedding Organizer &amp; vendor rekanan.</Display>
             <p className="max-w-xl text-[15px]" style={{ color: L.muted }}>
-              Vendor yang terdaftar di program Mitra UNDANGIN YUK otomatis tampil di sini untuk menjangkau lebih banyak calon pengantin.
+              Vendor yang terdaftar di program Mitra SatuMoment otomatis tampil di sini untuk menjangkau lebih banyak calon pengantin.
             </p>
           </div>
           <Link
@@ -654,7 +660,7 @@ export function Faq({ content = DEFAULT_LANDING_CONTENT.faq }: { content?: Landi
       <div className="mx-auto grid max-w-6xl gap-12 px-4 md:px-6 lg:grid-cols-[0.8fr_1.2fr]">
         <Reveal className="space-y-4">
           <Eyebrow>{content.eyebrow}</Eyebrow>
-          <Display className="text-[2.5rem] sm:text-5xl">{content.heading}</Display>
+          <Display className="text-[2.15rem] sm:text-[2.9rem]">{content.heading}</Display>
         </Reveal>
         <div>
           {content.items.map((qa, i) => (
@@ -679,10 +685,12 @@ export function Faq({ content = DEFAULT_LANDING_CONTENT.faq }: { content?: Landi
 export function FinalCta({ content = DEFAULT_LANDING_CONTENT.finalCta }: { content?: LandingContent["finalCta"] }) {
   return (
     <section className="px-4 pb-24 md:px-6">
-      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[28px] px-6 py-20 text-center md:py-28" style={{ background: L.night, color: "#F3EBDD" }}>
-        <Reveal className="mx-auto max-w-2xl space-y-8">
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[28px] px-6 py-20 text-center md:py-28" style={{ background: L.night, color: L.nightText }}>
+        <div aria-hidden className="uy-lattice-light pointer-events-none absolute inset-0" />
+        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 70% at 50% 110%, rgba(176,138,62,.3) 0%, transparent 70%)" }} />
+        <Reveal className="relative mx-auto max-w-2xl space-y-8">
           <Rule light className="mx-auto" />
-          <Display className="text-[2.6rem] sm:text-6xl">
+          <Display className="text-[2.2rem] sm:text-[3.3rem]">
             {content.headingPrefix}
             {content.headingHighlight ? (
               <em className="italic" style={{ color: L.accentBright }}>
@@ -691,8 +699,8 @@ export function FinalCta({ content = DEFAULT_LANDING_CONTENT.finalCta }: { conte
             ) : null}
             {content.headingSuffix}
           </Display>
-          <p className="text-[17px] text-[#B8AD9A]">{content.description}</p>
-          <Link href="/register" className="mx-auto flex h-13 w-fit items-center gap-2 rounded-full px-8 text-[15px] font-medium transition-opacity hover:opacity-90" style={{ background: "#F3EBDD", color: L.night }}>
+          <p className="text-[17px] text-[#CDBF9F]">{content.description}</p>
+          <Link href="/register" className="uy-sheen mx-auto flex h-13 w-fit items-center gap-2 rounded-full px-8 text-[15px] font-semibold transition-all duration-300 hover:-translate-y-0.5" style={{ background: L.foil, color: L.ink }}>
             {content.buttonLabel} <IconArrowRight size={18} />
           </Link>
         </Reveal>
@@ -713,7 +721,7 @@ export function LandingFooter({ content = DEFAULT_LANDING_CONTENT.footer }: { co
         </div>
         <div className="grid grid-cols-2 gap-10 text-sm sm:grid-cols-3">
           {[
-            ["Produk", [["Desain AI", "/#desain-ai"], ["Koleksi", "/desain"], ["Harga", "/#harga"]]],
+            ["Produk", [["Desain AI", "/#desain-ai"], ["Template", "/desain"], ["Harga", "/#harga"]]],
             ["Akun", [["Masuk", "/login"], ["Daftar", "/register"]]],
             ["Bantuan", [["FAQ", "/#faq"]]],
           ].map(([title, links]) => (
@@ -747,9 +755,9 @@ export function StickyCta() {
   }, []);
   return (
     <div className={`fixed inset-x-0 bottom-0 z-40 p-3 transition-transform duration-300 md:hidden ${show ? "translate-y-0" : "translate-y-full"}`}>
-      <Link href="/register" className="flex h-13 items-center justify-between rounded-full pl-6 pr-2 text-[15px] font-medium shadow-lg" style={{ background: L.ink, color: L.bg }}>
+      <Link href="/register" className="uy-sheen flex h-13 items-center justify-between rounded-full pl-6 pr-2 text-[15px] font-semibold shadow-[0_14px_30px_-12px_rgba(176,138,62,.8)]" style={{ background: L.foil, color: L.ink }}>
         Buat undangan kalian
-        <span className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: L.accentBright, color: L.night }}>
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1F1A14] text-[#F6EEDD]">
           <IconArrowRight size={18} />
         </span>
       </Link>

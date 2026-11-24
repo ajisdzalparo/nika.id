@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { IconArrowDownRight, IconArrowUpRight, IconDownload } from "@tabler/icons-react";
 import { SiteHeader } from "@/components/site-header";
+import { DatePickerField } from "@/components/common/date-time-picker";
 import { WithdrawalsAdmin } from "@/components/admin/withdrawals-admin";
 import { FinanceBreakdown, FinanceCharts } from "@/components/admin/finance-charts";
 import { FinanceImportDialog, ManualEntryDialog, RecentEntries } from "@/components/admin/finance-tools";
@@ -105,11 +106,11 @@ export default async function KeuanganPage({ searchParams }: { searchParams: Pro
     <>
       <SiteHeader />
       <div className="flex-1 px-4 pb-16 pt-8 lg:px-8">
-        <div className="mx-auto max-w-6xl space-y-8">
+        <div className="w-full space-y-8">
           <header className="space-y-5">
             <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
               <div className="space-y-2">
-                <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">Keuangan</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">Keuangan</p>
                 <h2 className="font-serif text-4xl font-medium sm:text-5xl">Laporan keuangan</h2>
                 <p className="text-zinc-600">
                   {fmtDay(fromStr)} – {fmtDay(lastDay)}
@@ -127,7 +128,7 @@ export default async function KeuanganPage({ searchParams }: { searchParams: Pro
               </div>
             </div>
             <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
-              <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:px-0" aria-label="Periode">
+              <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0" aria-label="Periode">
                 {(Object.keys(PERIODS) as (keyof typeof PERIODS)[]).map((p) => (
                   <Link
                     key={p}
@@ -140,9 +141,23 @@ export default async function KeuanganPage({ searchParams }: { searchParams: Pro
               </nav>
               <form action="/admin/keuangan" className="flex flex-wrap items-center gap-2 text-sm">
                 <input type="hidden" name="periode" value="kustom" />
-                <input type="date" name="dari" required defaultValue={fromStr} aria-label="Dari tanggal" className="h-9 rounded-full border border-zinc-300 bg-white px-3" />
+                <DatePickerField
+                  name="dari"
+                  required
+                  defaultValue={fromStr}
+                  compact
+                  aria-label="Dari tanggal"
+                  className="h-9 w-auto min-w-36 rounded-full border-[#DDD5C7] bg-white px-3 text-xs"
+                />
                 <span className="text-zinc-500">s/d</span>
-                <input type="date" name="sampai" required defaultValue={lastDay} aria-label="Sampai tanggal" className="h-9 rounded-full border border-zinc-300 bg-white px-3" />
+                <DatePickerField
+                  name="sampai"
+                  required
+                  defaultValue={lastDay}
+                  compact
+                  aria-label="Sampai tanggal"
+                  className="h-9 w-auto min-w-36 rounded-full border-[#DDD5C7] bg-white px-3 text-xs"
+                />
                 <button className={`h-9 rounded-full border px-4 ${period === "kustom" ? "border-zinc-900 bg-zinc-900 text-zinc-50" : "border-zinc-300 hover:bg-zinc-100"}`}>Terapkan</button>
               </form>
             </div>

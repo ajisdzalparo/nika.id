@@ -52,9 +52,14 @@ export const LAYER_ANIMATIONS = [
   "zoom-in",
   "slide-left",
   "slide-right",
+  "drift",
 ] as const;
 
 export type LayerAnimation = (typeof LAYER_ANIMATIONS)[number];
+
+/** Ambient particles falling over the cover and closing. */
+export const PARTICLES = ["none", "petals", "gold-dust", "leaves"] as const;
+export type ParticleKind = (typeof PARTICLES)[number];
 
 export const SECTION_ENTRANCES = ["fade-up", "zoom-in", "slide-left", "slide-right", "none"] as const;
 export type SectionEntrance = (typeof SECTION_ENTRANCES)[number];
@@ -72,6 +77,21 @@ export const ORNAMENTS = [
 ] as const;
 
 export const TEXTURES = ["none", "paper", "linen", "grain"] as const;
+
+/** Illustration sets composed across the invitation (see lib/ai-design/art-kits.ts). */
+export const ART_KITS = [
+  "taman-kayon",
+  "kebun-sage",
+  "mawar-vintage",
+  "kamboja-tropis",
+  "deco-emas",
+  "arabesque",
+  "garis-halus",
+  "batik-parang",
+  "boho-pampas",
+  "editorial-monogram",
+  "none",
+] as const;
 
 export const COVER_LAYOUTS = ["photo-fullbleed", "centered-frame", "arch-window", "split-photo", "typographic"] as const;
 export const COUPLE_LAYOUTS = ["portrait-circle", "side-by-side", "stacked-arch", "editorial"] as const;
@@ -104,6 +124,12 @@ export const AiThemeSchema = z.object({
   corners: z.enum(["sharp", "soft", "arch"]).describe("Shape language for frames and photos"),
   frame: z.enum(["none", "hairline", "double", "dotted"]).describe("Border style of cards and quote boxes"),
   metallic: z.boolean().describe("Render accent ornaments and the couple names as metallic foil (gold/silver/rose-gold accents only)"),
+  artKit: z
+    .enum(ART_KITS)
+    .optional()
+    .describe(
+      "Illustration set layered over the whole invitation: taman-kayon (Javanese garden & peonies), kebun-sage (garden, sage, eucalyptus), mawar-vintage (romantic roses), kamboja-tropis (Bali frangipani & palm), deco-emas (luxury gold art deco, dark themes), arabesque (Islamic), garis-halus (fine botanical linework), batik-parang (Javanese/songket woven heritage motif), boho-pampas (bohemian desert arch & dried pampas), editorial-monogram (classic double-rule monogram framing). Pick one; 'none' only for ultra-minimal/photo-first themes.",
+    ),
   layout: z.object({
     cover: z.enum(COVER_LAYOUTS),
     couple: z.enum(COUPLE_LAYOUTS),
@@ -209,8 +235,11 @@ export const CanvasConfigSchema = z.object({
   sectionOrder: z.array(z.enum(REORDERABLE_SECTIONS)).optional(),
   hiddenSections: z.array(z.enum(REORDERABLE_SECTIONS)).optional(),
   layers: z.array(CanvasLayerSchema).max(60).optional(),
-  sectionStyles: z.record(z.enum(CANVAS_SECTION_IDS), SectionStyleSchema).optional(),
+  // partialRecord: a theme styles only some sections. (In Zod 4 z.record with enum keys demands every
+  // key, which made any partial sectionStyles fail and silently dropped all layers and canvas settings.)
+  sectionStyles: z.partialRecord(z.enum(CANVAS_SECTION_IDS), SectionStyleSchema).optional(),
   customHtml: z.string().max(150_000).optional(),
+  particles: z.enum(PARTICLES).optional(),
 });
 
 export type ThemeAssets = z.infer<typeof ThemeAssetsSchema>;
@@ -221,6 +250,7 @@ export type AiTheme = z.infer<typeof AiThemeSchema> & {
   layers?: CanvasLayer[];
   sectionStyles?: Partial<Record<CanvasSectionId, SectionStyle>>;
   customHtml?: string;
+  particles?: ParticleKind;
 };
 
 export const DEFAULT_AI_THEME: AiTheme = {
@@ -247,6 +277,7 @@ export const DEFAULT_AI_THEME: AiTheme = {
   corners: "arch",
   frame: "hairline",
   metallic: false,
+  artKit: "mawar-vintage",
   layout: { cover: "arch-window", couple: "stacked-arch", events: "cards", gallery: "masonry" },
   copy: {
     coverEyebrow: "The Wedding of",

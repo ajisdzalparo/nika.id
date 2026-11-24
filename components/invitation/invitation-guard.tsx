@@ -19,7 +19,7 @@ export function InvitationGuard({ invitation, isOwnerPreview = false, children }
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC] px-4">
         <div className="max-w-md rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-8 text-center">
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">UNDANGIN YUK</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">SatuMoment</p>
           <h1 className="mt-3 font-serif text-3xl font-medium text-[#1E1B17]">Undangan Tidak Dibagikan</h1>
           <p className="mt-2 text-sm leading-relaxed text-[#6B6358]">
             Pemilik undangan menonaktifkan akses publik untuk tautan ini.
@@ -34,7 +34,7 @@ export function InvitationGuard({ invitation, isOwnerPreview = false, children }
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC] px-4">
         <div className="max-w-md rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-8 text-center">
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">UNDANGIN YUK</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">SatuMoment</p>
           <h1 className="mt-3 font-serif text-3xl font-medium text-[#1E1B17]">Undangan Belum Diterbitkan</h1>
           <p className="mt-2 text-sm leading-relaxed text-[#6B6358]">
             Pemilik undangan sedang menyusun desain undangan ini. Jika Anda pemiliknya, silakan masuk ke dashboard untuk pratinjau dan mengaktifkan paket.
@@ -52,7 +52,7 @@ export function InvitationGuard({ invitation, isOwnerPreview = false, children }
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC] px-4">
         <div className="max-w-md rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-8 text-center">
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">UNDANGIN YUK</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">SatuMoment</p>
           <h1 className="mt-3 font-serif text-3xl font-medium text-[#1E1B17]">Undangan Kedaluwarsa</h1>
           <p className="mt-2 text-sm leading-relaxed text-[#6B6358]">Masa aktif undangan ini telah berakhir.</p>
         </div>
@@ -65,7 +65,7 @@ export function InvitationGuard({ invitation, isOwnerPreview = false, children }
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#F7F3EC] px-4">
         <div className="max-w-md rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-8 text-center">
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">UNDANGIN YUK</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">SatuMoment</p>
           <h1 className="mt-3 font-serif text-3xl font-medium text-[#1E1B17]">Undangan Sedang Disiapkan</h1>
           <p className="mt-2 text-sm leading-relaxed text-[#6B6358]">Mempelai sedang merangkai momen indah untuk Anda. Silakan cek kembali beberapa saat lagi.</p>
         </div>

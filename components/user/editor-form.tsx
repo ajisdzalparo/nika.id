@@ -184,7 +184,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
               onClick={() => setActiveSection(section.id)}
               className={cn(
                 "flex h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-all",
-                active ? "border-[#1E1B17] bg-[#1E1B17] text-[#F7F3EC]" : "border-[#E1D8C9] bg-[#FFFDF9] text-[#6B6358]",
+                active ? "border-[#1F1A14] bg-[#1F1A14] text-[#FCF8F1]" : "border-[#E9DDC6] bg-[#FFFDF9] text-[#6B5F50]",
               )}
             >
               <section.icon size={16} strokeWidth={1.7} />
@@ -196,7 +196,7 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
 
       {/* Desktop Sidebar Navigation */}
       <aside className="hidden xl:block xl:w-64 shrink-0 xl:sticky xl:top-24 self-start space-y-4">
-        <div className="rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-3">
+        <div className="rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-3">
           <h2 className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8C8272]">Navigasi</h2>
           <nav className="flex flex-col gap-1.5">
             {SECTIONS.map((section, idx) => {
@@ -208,13 +208,13 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
                   onClick={() => setActiveSection(section.id)}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-medium transition-all",
-                    active ? "bg-[#1E1B17] text-[#F7F3EC] shadow-xs" : "text-[#6B6358] hover:bg-[#F7F3EC] hover:text-[#1E1B17]",
+                    active ? "bg-[#1F1A14] text-[#FCF8F1] shadow-xs" : "text-[#6B5F50] hover:bg-[#FCF8F1] hover:text-[#1F1A14]",
                   )}
                 >
                   <span
                     className={cn(
                       "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
-                      active ? "bg-white/15 text-[#C9A45C]" : "bg-[#EFE8DC] text-[#8A6A2F]",
+                      active ? "bg-white/15 text-[#D9B56A]" : "bg-[#F5EDDD] text-[#8A6424]",
                     )}
                   >
                     <section.icon size={17} strokeWidth={1.7} />
@@ -227,10 +227,10 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
           </nav>
         </div>
 
-        <div className="rounded-2xl bg-[#15130F] p-5 text-[#F3EBDD]">
-          <h3 className="font-serif text-2xl font-medium text-[#C9A45C]">Sudah selesai?</h3>
+        <div className="rounded-2xl bg-[#1A1510] p-5 text-[#F6EEDD]">
+          <h3 className="font-serif text-2xl font-medium text-[#D9B56A]">Sudah selesai?</h3>
           <p className="mt-1 mb-4 text-sm leading-relaxed text-[#B8AD9A]">Simpan perubahan untuk memperbarui undangan.</p>
-          <Button onClick={onSave} disabled={loading} className="h-11 w-full rounded-full bg-[#F3EBDD] text-[#15130F] hover:bg-white">
+          <Button onClick={onSave} disabled={loading} className="h-11 w-full rounded-full bg-[#F6EEDD] text-[#1A1510] hover:bg-white">
             {loading ? <IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> : <IconDeviceFloppy className="mr-2 h-4 w-4" />}
             {loading ? "Menyimpan..." : "Simpan Perubahan"}
           </Button>
@@ -239,21 +239,21 @@ export function EditorForm({ initialData, templateConfig }: EditorFormProps) {
 
       {/* Main Content Area */}
       <main className="@container flex-1 min-w-0">
-        <div className="rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-7">
-          <div className="mb-7 flex flex-col justify-between gap-4 border-b border-[#E1D8C9] pb-5 sm:flex-row sm:items-end">
+        <div className="rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-5 sm:p-7">
+          <div className="mb-7 flex flex-col justify-between gap-4 border-b border-[#E9DDC6] pb-5 sm:flex-row sm:items-end">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#8A6A2F]">
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#8A6424]">
                 Bagian {String(SECTIONS.findIndex((s) => s.id === activeSection) + 1).padStart(2, "0")}
               </p>
-              <h1 className="mt-1 font-serif text-3xl font-medium text-[#1E1B17]">{SECTIONS.find((s) => s.id === activeSection)?.label}</h1>
-              <p className="mt-1 text-sm text-[#6B6358]">
+              <h1 className="mt-1 font-serif text-3xl font-medium text-[#1F1A14]">{SECTIONS.find((s) => s.id === activeSection)?.label}</h1>
+              <p className="mt-1 text-sm text-[#6B5F50]">
                 {activeSection === "mempelai" && "Lengkapi nama panggilan, nama lengkap, dan orang tua kedua mempelai."}
                 {activeSection === "acara" && "Atur jadwal, lokasi peta, serta live streaming acara pernikahan."}
                 {activeSection === "galeri" && "Tambahkan video prewedding dan foto galeri pilihan Anda."}
                 {activeSection === "fitur" && "Atur musik latar (YouTube atau S3), amplop digital, turut mengundang, dan kisah cinta."}
               </p>
             </div>
-            <Button onClick={onSave} disabled={loading} className="h-11 shrink-0 rounded-full bg-[#1E1B17] px-6 text-[#F7F3EC] hover:bg-[#2E2A24] xl:hidden">
+            <Button onClick={onSave} disabled={loading} className="h-11 shrink-0 rounded-full bg-[#1F1A14] px-6 text-[#FCF8F1] hover:bg-[#2E2A24] xl:hidden">
               {loading ? <IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> : <IconDeviceFloppy className="mr-2 h-4 w-4" />}
               {loading ? "Menyimpan..." : "Simpan"}
             </Button>

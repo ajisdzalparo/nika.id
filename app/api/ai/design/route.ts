@@ -107,14 +107,26 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message === "Unauthorized") return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
     if (error instanceof AiDesignError) {
       const status = error.code === "NOT_CONFIGURED" ? 503 : error.code === "RATE_LIMITED" ? 429 : error.code === "REFUSED" ? 422 : error.code === "BAD_REFERENCE" ? 400 : 502;
-      console.error("AI design error:", error.code, error.message);
+      console.error("AI design error:", error.code, error.upstreamStatus ?? "", error.message);
+      // Problems on our side of the AI provider (key, balance, model name) are not worth a user retry
+      const serviceIssue =
+        error.upstreamStatus === 401 || error.upstreamStatus === 403
+          ? "AI_KEY_INVALID"
+          : error.upstreamStatus === 402
+            ? "AI_BALANCE_EMPTY"
+            : error.upstreamStatus === 400 || error.upstreamStatus === 404
+              ? "AI_MODEL_UNAVAILABLE"
+              : null;
       const clientMessage =
-        error.code === "NOT_CONFIGURED"
-          ? "Layanan Desain AI belum tersedia saat ini. Silakan hubungi admin."
+        error.code === "NOT_CONFIGURED" || serviceIssue
+          ? "Layanan Desain AI sedang tidak tersedia. Admin sudah bisa melihat penyebabnya; kredit kamu tidak terpakai."
           : error.code === "UPSTREAM" || error.code === "INVALID_OUTPUT"
             ? "AI sedang bermasalah, coba lagi."
             : error.message;
-      return NextResponse.json({ error: error.code, message: clientMessage }, { status });
+      return NextResponse.json(
+        { error: error.code, message: clientMessage, ...(serviceIssue ? { reason: serviceIssue, upstreamStatus: error.upstreamStatus } : {}) },
+        { status: serviceIssue ? 503 : status },
+      );
     }
     console.error("AI design error:", error);
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message: "Terjadi kesalahan, coba lagi." }, { status: 500 });

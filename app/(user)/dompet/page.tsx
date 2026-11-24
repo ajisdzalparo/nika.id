@@ -55,12 +55,12 @@ const TYPE_LABEL: Record<string, string> = {
   ADJUSTMENT: "Penyesuaian",
 };
 const STATUS: Record<Withdrawal["status"], { label: string; cls: string }> = {
-  PENDING: { label: "Diproses", cls: "bg-[#F4EAD6] text-[#6E5426]" },
+  PENDING: { label: "Diproses", cls: "bg-[#F5E8CA] text-[#6E4F1C]" },
   PAID: { label: "Sudah ditransfer", cls: "bg-emerald-50 text-emerald-700" },
   REJECTED: { label: "Ditolak", cls: "bg-red-50 text-red-700" },
 };
 
-const field = "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3.5 text-[15px] outline-none focus:border-zinc-400 focus:ring-2 focus:ring-[#8A6A2F]/20";
+const field = "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3.5 text-[15px] outline-none focus:border-zinc-400 focus:ring-2 focus:ring-[#8A6424]/20";
 
 export default function DompetPage() {
   const [data, setData] = useState<{ balance: { available: number; pending: number }; entries: Entry[]; withdrawals: Withdrawal[]; minWithdrawal: number } | null>(null);
@@ -143,9 +143,9 @@ export default function DompetPage() {
     <>
       <SiteHeader />
       <div className="flex-1 px-4 pb-16 pt-8 lg:px-8">
-        <div className="mx-auto max-w-5xl space-y-8">
+        <div className="w-full space-y-8">
           <header className="space-y-2">
-            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">Dompet</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">Dompet</p>
             <h2 className="font-serif text-5xl font-medium">Saldo & penarikan</h2>
             <p className="max-w-2xl text-zinc-600">Pemasukan dari komisi referral dan penjualan template masuk ke sini, lalu bisa ditarik ke rekening atau e-wallet.</p>
           </header>
@@ -159,7 +159,7 @@ export default function DompetPage() {
               <section className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl bg-zinc-950 p-6 text-zinc-50">
                   <p className="flex items-center gap-2 text-sm text-zinc-400">
-                    <IconWallet size={17} className="text-[#C9A45C]" /> Bisa ditarik
+                    <IconWallet size={17} className="text-[#D9B56A]" /> Bisa ditarik
                   </p>
                   <p className="mt-3 font-serif text-5xl lining-nums">{rupiah(data.balance.available)}</p>
                 </div>
@@ -172,42 +172,42 @@ export default function DompetPage() {
 
               {/* Program Referral */}
               {referral && (
-                <section id="referral" className="rounded-2xl border border-[#DFD2BC] bg-[#FFFDF9] p-5 sm:p-6">
+                <section id="referral" className="rounded-2xl border border-[#E6D5B2] bg-[#FFFDF9] p-5 sm:p-6">
                   <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-center">
                     <div className="space-y-2">
-                      <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A6A2F]">
+                      <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8A6424]">
                         <IconShare size={14} /> Program Referral
                       </p>
-                      <h3 className="font-serif text-2xl font-medium text-[#15130F] sm:text-3xl">
+                      <h3 className="font-serif text-2xl font-medium text-[#1A1510] sm:text-3xl">
                         Bagikan link, teman hemat 10%, kamu dapat komisi 15%
                       </h3>
-                      <p className="max-w-xl text-sm text-[#5E574D]">
+                      <p className="max-w-xl text-sm text-[#5E5446]">
                         Setiap teman yang mendaftar atau checkout dengan kodemu mendapat diskon 10% (maks Rp15.000), dan 15% dari transaksi mereka (maks Rp100.000 per transaksi, di luar top-up Kredit AI) masuk ke Dompet ini.
                       </p>
 
-                      <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-[#5E574D]">
+                      <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-[#5E5446]">
                         <span>
-                          <strong className="font-serif text-lg tabular-nums text-[#15130F]">{referral.signups}</strong> teman daftar
+                          <strong className="font-serif text-lg tabular-nums text-[#1A1510]">{referral.signups}</strong> teman daftar
                         </span>
                         <span>·</span>
                         <span>
-                          <strong className="font-serif text-lg tabular-nums text-[#15130F]">{referral.conversions}</strong> transaksi berhasil
+                          <strong className="font-serif text-lg tabular-nums text-[#1A1510]">{referral.conversions}</strong> transaksi berhasil
                         </span>
                         <span>·</span>
                         <span>
-                          Total komisi <strong className="font-serif text-lg tabular-nums text-[#8A6A2F]">{rupiah(referral.totalCommission)}</strong>
+                          Total komisi <strong className="font-serif text-lg tabular-nums text-[#8A6424]">{rupiah(referral.totalCommission)}</strong>
                         </span>
                       </div>
                     </div>
 
-                    <div className="w-full space-y-3 rounded-xl border border-[#E6DFD3] bg-white p-4 xl:w-[390px] xl:shrink-0">
+                    <div className="w-full space-y-3 rounded-xl border border-[#EDE3CF] bg-white p-4 xl:w-[390px] xl:shrink-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-medium text-[#6B6358]">Kode Referral Kamu</span>
+                        <span className="text-xs font-medium text-[#6B5F50]">Kode Referral Kamu</span>
                         {!editingCode && (
                           <button
                             type="button"
                             onClick={() => setEditingCode(true)}
-                            className="-mr-2 inline-flex min-h-9 items-center gap-1 rounded-full px-2 text-xs font-medium text-[#8A6A2F] hover:bg-[#F3EEE5]"
+                            className="-mr-2 inline-flex min-h-9 items-center gap-1 rounded-full px-2 text-xs font-medium text-[#8A6424] hover:bg-[#F6EEDF]"
                           >
                             <IconPencil size={13} /> Ubah kode
                           </button>
@@ -219,7 +219,7 @@ export default function DompetPage() {
                           <input
                             value={draftCode}
                             onChange={(e) => setDraftCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16))}
-                            className="h-11 w-full min-w-0 rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3.5 font-mono text-base font-semibold uppercase tracking-widest text-[#15130F] outline-none focus:border-[#8A6A2F]"
+                            className="h-11 w-full min-w-0 rounded-xl border border-[#E9DDC6] bg-[#FCF8F1] px-3.5 font-mono text-base font-semibold uppercase tracking-widest text-[#1A1510] outline-none focus:border-[#8A6424]"
                             placeholder="MISAL2026"
                             aria-label="Kode referral baru"
                             minLength={4}
@@ -235,14 +235,14 @@ export default function DompetPage() {
                                   setEditingCode(false);
                                   setDraftCode(referral.code);
                                 }}
-                                className="h-10 rounded-full px-3.5 text-xs font-medium text-[#6B6358] hover:bg-[#F3EEE5]"
+                                className="h-10 rounded-full px-3.5 text-xs font-medium text-[#6B5F50] hover:bg-[#F6EEDF]"
                               >
                                 Batal
                               </button>
                               <button
                                 type="submit"
                                 disabled={savingCode || draftCode.length < 4}
-                                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#15130F] px-4 text-xs font-medium text-[#FAF8F4] disabled:opacity-40"
+                                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#1A1510] px-4 text-xs font-medium text-[#FCF8F1] disabled:opacity-40"
                               >
                                 {savingCode ? <IconLoader2 size={14} className="animate-spin" /> : <IconCheck size={14} />}
                                 Simpan
@@ -251,15 +251,15 @@ export default function DompetPage() {
                           </div>
                         </form>
                       ) : (
-                        <div className="flex items-center justify-between gap-2 rounded-xl border border-[#EFEAE0] bg-[#FAF8F4] px-3.5 py-2.5">
-                          <span className="font-mono text-base font-bold tracking-widest text-[#15130F]">{referral.code}</span>
+                        <div className="flex items-center justify-between gap-2 rounded-xl border border-[#F3EBDB] bg-[#FCF8F1] px-3.5 py-2.5">
+                          <span className="font-mono text-base font-bold tracking-widest text-[#1A1510]">{referral.code}</span>
                           <button
                             type="button"
                             onClick={() => {
                               navigator.clipboard?.writeText(referral.code);
                               toast.success("Kode referral disalin");
                             }}
-                            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border border-[#DFD7C8] bg-white px-3 text-xs font-medium text-[#15130F] hover:bg-[#F3EEE5]"
+                            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border border-[#E9DDC6] bg-white px-3 text-xs font-medium text-[#1A1510] hover:bg-[#F6EEDF]"
                           >
                             <IconCopy size={13} /> Salin Kode
                           </button>
@@ -273,15 +273,15 @@ export default function DompetPage() {
                             navigator.clipboard?.writeText(referralLink);
                             toast.success("Link referral disalin!");
                           }}
-                          className="inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#15130F] px-4 text-xs font-medium text-[#FAF8F4] hover:bg-[#2A261F]"
+                          className="inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#1A1510] px-4 text-xs font-medium text-[#FCF8F1] hover:bg-[#2B241B]"
                         >
                           <IconCopy size={14} /> Salin Link
                         </button>
                         <a
-                          href={`https://wa.me/?text=${encodeURIComponent(`Lagi cari undangan pernikahan digital yang elegan? Coba UNDANGIN YUK — buka ${referralLink} atau pakai kode ${referral.code} biar langsung dapat diskon 10%!`)}`}
+                          href={`https://wa.me/?text=${encodeURIComponent(`Lagi cari undangan pernikahan digital yang elegan? Coba SatuMoment — buka ${referralLink} atau pakai kode ${referral.code} biar langsung dapat diskon 10%!`)}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[#DFD7C8] bg-white px-4 text-xs font-medium text-[#15130F] hover:bg-[#F3EEE5]"
+                          className="inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[#E9DDC6] bg-white px-4 text-xs font-medium text-[#1A1510] hover:bg-[#F6EEDF]"
                         >
                           <IconBrandWhatsapp size={15} className="text-[#1F9D55]" /> Bagikan WA
                         </a>
@@ -306,7 +306,7 @@ export default function DompetPage() {
                               </p>
                               {w.adminNote && <p className="mt-1 text-sm text-zinc-600">Catatan admin: {w.adminNote}</p>}
                               {w.proofUrl && (
-                                <a href={w.proofUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm text-[#8A6A2F] underline underline-offset-4">
+                                <a href={w.proofUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm text-[#8A6424] underline underline-offset-4">
                                   Lihat bukti transfer
                                 </a>
                               )}
@@ -372,13 +372,13 @@ export default function DompetPage() {
                         </button>
                       ))}
                     </div>
-                    <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B6358]">{form.method === "BANK" ? "Bank" : "E-wallet"}</span>
+                    <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B5F50]">{form.method === "BANK" ? "Bank" : "E-wallet"}</span>
                       <input className={field} placeholder={form.method === "BANK" ? "Contoh: BCA" : "Contoh: GoPay"} value={form.provider} onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))} required />
                     </label>
-                    <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B6358]">{form.method === "BANK" ? "Nomor rekening" : "Nomor HP e-wallet"}</span>
+                    <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B5F50]">{form.method === "BANK" ? "Nomor rekening" : "Nomor HP e-wallet"}</span>
                       <input className={field} inputMode="numeric" value={form.accountNumber} onChange={(e) => setForm((f) => ({ ...f, accountNumber: e.target.value }))} required />
                     </label>
-                    <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B6358]">Nama pemilik</span>
+                    <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B5F50]">Nama pemilik</span>
                       <input className={field} placeholder="Sesuai buku tabungan / akun" value={form.accountName} onChange={(e) => setForm((f) => ({ ...f, accountName: e.target.value }))} required />
                     </label>
                     <input

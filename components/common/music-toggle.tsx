@@ -97,8 +97,8 @@ export function MusicToggle({ url, type, autoPlay = false }: MusicToggleProps) {
         className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full border shadow-[0_8px_24px_-10px_rgba(0,0,0,0.35)] backdrop-blur transition-colors duration-300"
         style={{
           background: "color-mix(in srgb, var(--surface, #FFFDF9) 92%, transparent)",
-          borderColor: "color-mix(in srgb, var(--accent, #8A6A2F) 35%, transparent)",
-          color: playing ? "var(--accent, #8A6A2F)" : "var(--muted, #8C8272)",
+          borderColor: "color-mix(in srgb, var(--accent, #8A6424) 35%, transparent)",
+          color: playing ? "var(--accent, #8A6424)" : "var(--muted, #8C8272)",
         }}
         aria-label={playing ? "Jeda musik" : "Putar musik"}
         aria-pressed={playing}

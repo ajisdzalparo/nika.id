@@ -1,4 +1,5 @@
 "use client";
+import { BrandLogo } from "@/components/common/brand-logo";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -7,7 +8,7 @@ import { L } from "./primitives";
 
 const links = [
   { label: "Desain AI", href: "/#desain-ai" },
-  { label: "Koleksi", href: "/desain" },
+  { label: "Template", href: "/desain" },
   { label: "Fitur", href: "/#fitur" },
   { label: "Harga", href: "/#harga" },
   { label: "FAQ", href: "/#faq" },
@@ -15,12 +16,7 @@ const links = [
 
 export function Wordmark({ light = false }: { light?: boolean }) {
   return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-    <img
-      src={light ? "/logo-light.png" : "/logo.png"}
-      alt="UNDANGIN YUK"
-      className="h-8 w-auto object-contain sm:h-9"
-    />
+    <BrandLogo tone={light ? "light" : "default"} className="h-8 sm:h-9" />
   );
 }
 
@@ -38,10 +34,10 @@ export function LandingNavbar() {
   return (
     <header
       className="fixed inset-x-0 top-0 z-50 transition-[background-color,border-color] duration-300"
-      style={{ background: scrolled || open ? "rgba(247,243,236,.92)" : "transparent", borderBottom: `1px solid ${scrolled || open ? L.line : "transparent"}`, backdropFilter: scrolled ? "blur(10px)" : undefined }}
+      style={{ background: scrolled || open ? "rgba(252,248,241,.9)" : "transparent", borderBottom: `1px solid ${scrolled || open ? L.line : "transparent"}`, backdropFilter: scrolled ? "blur(10px)" : undefined }}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
-        <Link href="/" aria-label="UNDANGIN YUK beranda">
+        <Link href="/" aria-label="SatuMoment beranda">
           <Wordmark />
         </Link>
 
@@ -57,7 +53,7 @@ export function LandingNavbar() {
           <Link href="/login" className="flex h-10 items-center px-4 text-sm font-medium" style={{ color: L.ink }}>
             Masuk
           </Link>
-          <Link href="/register" className="flex h-10 items-center rounded-full px-5 text-sm font-medium transition-opacity hover:opacity-90" style={{ background: L.ink, color: L.bg }}>
+          <Link href="/register" className="uy-sheen flex h-10 items-center rounded-full px-5 text-sm font-semibold transition-all hover:-translate-y-px" style={{ background: L.foil, color: L.ink }}>
             Buat undangan
           </Link>
         </div>
@@ -78,7 +74,7 @@ export function LandingNavbar() {
             <Link href="/login" className="flex h-12 items-center justify-center rounded-full border text-sm font-medium" style={{ borderColor: L.line, color: L.ink }}>
               Masuk
             </Link>
-            <Link href="/register" className="flex h-12 items-center justify-center rounded-full text-sm font-medium" style={{ background: L.ink, color: L.bg }}>
+            <Link href="/register" className="flex h-12 items-center justify-center rounded-full text-sm font-semibold" style={{ background: L.foil, color: L.ink }}>
               Buat undangan
             </Link>
           </div>

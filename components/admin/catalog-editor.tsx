@@ -4,10 +4,10 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { IconArrowLeft, IconCheck, IconCode, IconCopy, IconDeviceDesktop, IconDeviceMobile, IconLoader2, IconPalette, IconShieldCheck, IconUpload, IconX } from "@tabler/icons-react";
+import { IconArrowLeft, IconCheck, IconCode, IconCopy, IconDeviceDesktop, IconDeviceMobile, IconLoader2, IconMaximize, IconPalette, IconShieldCheck, IconUpload, IconX } from "@tabler/icons-react";
 import AiDesignTemplate from "@/components/templates/ai-design";
 import { templateRegistry } from "@/components/templates/registry";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   ADMIN_AI_HTML_CONTEXT_PROMPT,
   CUSTOM_HTML_PLACEHOLDERS,
@@ -34,6 +34,7 @@ import { CATALOG_CATEGORIES, type TemplateDefaultMusic } from "@/lib/catalog-sha
 import { ImageUploadField } from "./image-upload-field";
 import { ReferenceUploader } from "@/components/common/reference-uploader";
 import { MusicSourcePicker } from "@/components/common/music-source-picker";
+import { SelectField } from "@/components/ui/select";
 
 export interface CatalogDraft {
   id?: string;
@@ -80,7 +81,7 @@ const slugify = (s: string) =>
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
 
-const input = "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3.5 text-[15px] outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-[#8A6A2F]/20";
+const input = "h-11 w-full rounded-xl border border-zinc-200 bg-white px-3.5 text-[15px] outline-none transition focus:border-zinc-400 focus:ring-2 focus:ring-[#8A6424]/20";
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
@@ -94,13 +95,14 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function Select<T extends string>({ value, options, onChange }: { value: T; options: readonly T[]; onChange: (v: T) => void }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value as T)} className={input}>
+    <SelectField value={value} onChange={(e) => onChange(e.target.value as T)} className="px-3.5 text-[15px] data-[size=default]:h-11">
+
       {options.map((o) => (
         <option key={o} value={o}>
           {o}
         </option>
       ))}
-    </select>
+    </SelectField>
   );
 }
 
@@ -115,6 +117,11 @@ function Panel({ title, children, aside }: { title: string; children: ReactNode;
     </section>
   );
 }
+
+/** Phone mockup screen size (px) and the scale of the 1280px mini desktop preview. */
+const PHONE_W = 316;
+const PHONE_H = 640;
+const DESKTOP_THUMB_SCALE = 420 / 1280;
 
 export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
   const router = useRouter();
@@ -275,12 +282,12 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
           </Field>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Kategori">
-              <input className={input} list="catalog-categories" value={d.category} onChange={(e) => set("category", e.target.value)} />
-              <datalist id="catalog-categories">
-                {CATALOG_CATEGORIES.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
+              {/* Fixed list so the public filter chips stay tidy; an older custom category stays selectable */}
+              <Select
+                value={d.category}
+                options={(CATALOG_CATEGORIES as readonly string[]).includes(d.category) || !d.category ? CATALOG_CATEGORIES : [...CATALOG_CATEGORIES, d.category]}
+                onChange={(v) => set("category", v)}
+              />
             </Field>
             <Field label="Paket">
               <Select value={d.tier} options={["Gratis", "Premium"] as const} onChange={(v) => set("tier", v)} />
@@ -301,7 +308,7 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               ] as const
             ).map(([k, l]) => (
               <label key={k} className="flex min-h-11 items-center gap-2 text-sm text-zinc-700">
-                <input type="checkbox" checked={d[k]} onChange={(e) => set(k, e.target.checked)} className="h-4 w-4 accent-[#1E1B17]" />
+                <input type="checkbox" checked={d[k]} onChange={(e) => set(k, e.target.checked)} className="h-4 w-4 accent-[#1F1A14]" />
                 {l}
               </label>
             ))}
@@ -386,8 +393,8 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
             <div className="space-y-5">
               {/* Toolbar: what this is + how to load code */}
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <p className="flex max-w-md items-start gap-2 text-xs leading-relaxed text-[#6B6358]">
-                  <IconShieldCheck size={16} className="mt-px shrink-0 text-[#8A6A2F]" />
+                <p className="flex max-w-md items-start gap-2 text-xs leading-relaxed text-[#6B5F50]">
+                  <IconShieldCheck size={16} className="mt-px shrink-0 text-[#8A6424]" />
                   <span>
                     Khusus admin. Script, event inline (<code className="font-mono">on*</code>) dan URL <code className="font-mono">javascript:</code> otomatis
                     dibersihkan, lalu dirender di iframe sandbox.
@@ -397,11 +404,11 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
                   <button
                     type="button"
                     onClick={() => setTheme({ customHtml: SAMPLE_WEDDING_HTML_STARTER })}
-                    className="h-9 rounded-full border border-[#DDD5C7] bg-white px-3.5 text-xs font-medium text-[#3F3A33] hover:bg-[#F3EEE5]"
+                    className="h-9 rounded-full border border-[#DDD5C7] bg-white px-3.5 text-xs font-medium text-[#40372B] hover:bg-[#F6EEDF]"
                   >
                     Muat contoh
                   </button>
-                  <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-[#15130F] px-4 text-xs font-medium text-[#FAF8F4] hover:bg-[#2A261F]">
+                  <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-[#1A1510] px-4 text-xs font-medium text-[#FCF8F1] hover:bg-[#2B241B]">
                     <IconUpload size={14} /> Upload .html
                     <input
                       type="file"
@@ -417,25 +424,25 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               </div>
 
               {/* Secondary: prompt for an external AI */}
-              <div className="rounded-xl border border-[#E6DFD3] bg-[#FAF8F4]">
+              <div className="rounded-xl border border-[#EDE3CF] bg-[#FCF8F1]">
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#1E1B17]">Buat dengan AI lain</p>
-                    <p className="text-xs text-[#6B6358]">Prompt berisi aturan 11 bagian dan placeholder, agar HTML dari ChatGPT, Claude atau Gemini langsung cocok.</p>
+                    <p className="text-sm font-medium text-[#1F1A14]">Buat dengan AI lain</p>
+                    <p className="text-xs text-[#6B5F50]">Prompt berisi aturan 11 bagian dan placeholder, agar HTML dari ChatGPT, Claude atau Gemini langsung cocok.</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     <button
                       type="button"
                       onClick={() => setShowContextPrompt((v) => !v)}
                       aria-expanded={showContextPrompt}
-                      className="h-9 rounded-full px-3 text-xs font-medium text-[#8A6A2F] hover:bg-[#F3EEE5]"
+                      className="h-9 rounded-full px-3 text-xs font-medium text-[#8A6424] hover:bg-[#F6EEDF]"
                     >
                       {showContextPrompt ? "Tutup" : "Lihat"}
                     </button>
                     <button
                       type="button"
                       onClick={() => void copyContextPrompt()}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#DDD5C7] bg-white px-3.5 text-xs font-medium text-[#1E1B17] hover:bg-[#F3EEE5]"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#DDD5C7] bg-white px-3.5 text-xs font-medium text-[#1F1A14] hover:bg-[#F6EEDF]"
                     >
                       {copiedContext ? <IconCheck size={14} /> : <IconCopy size={14} />}
                       {copiedContext ? "Tersalin" : "Salin prompt"}
@@ -443,7 +450,7 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
                   </div>
                 </div>
                 {showContextPrompt && (
-                  <pre className="max-h-56 overflow-auto whitespace-pre-wrap border-t border-[#E6DFD3] px-4 py-3 font-mono text-[11px] leading-relaxed text-[#3F3A33]">
+                  <pre className="max-h-56 overflow-auto whitespace-pre-wrap border-t border-[#EDE3CF] px-4 py-3 font-mono text-[11px] leading-relaxed text-[#40372B]">
                     {ADMIN_AI_HTML_CONTEXT_PROMPT}
                   </pre>
                 )}
@@ -453,10 +460,10 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               <div className="space-y-2.5">
                 <p className="flex flex-wrap items-center gap-2 text-sm">
                   <span className={`h-2 w-2 rounded-full ${structureAudit.isValid ? "bg-[#4E7A55]" : "bg-[#B4483E]"}`} aria-hidden />
-                  <span className="font-medium text-[#1E1B17]">
+                  <span className="font-medium text-[#1F1A14]">
                     {structureAudit.isValid ? "Struktur lengkap" : "Struktur belum sesuai"}
                   </span>
-                  <span className="text-[#6B6358]">
+                  <span className="text-[#6B5F50]">
                     {structureAudit.presentSections.length} dari 11 bagian {structureAudit.isValid ? "terdeteksi" : "terdeteksi, tiap bagian wajib ada tepat satu"}
                   </span>
                 </p>
@@ -467,7 +474,7 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
                       <li
                         key={sec.id}
                         className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-[11px] ${
-                          ok ? "border-[#E1D8C9] bg-white text-[#4A443B]" : "border-[#E3B7B1] bg-[#FBEFED] text-[#9A3A31]"
+                          ok ? "border-[#E9DDC6] bg-white text-[#4A443B]" : "border-[#E3B7B1] bg-[#FBEFED] text-[#9A3A31]"
                         }`}
                       >
                         {ok ? <IconCheck size={12} className="text-[#4E7A55]" /> : <IconX size={12} />}
@@ -489,7 +496,7 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               </div>
 
               {htmlAudit.strippedWarnings.length > 0 && (
-                <div className="rounded-xl border border-[#E7D4A8] bg-[#FBF5E6] px-4 py-3 text-xs text-[#6E5426]">
+                <div className="rounded-xl border border-[#E7D4A8] bg-[#FBF5E6] px-4 py-3 text-xs text-[#6E4F1C]">
                   <p className="font-medium">Bagian yang dibersihkan demi keamanan:</p>
                   <ul className="mt-1 list-disc pl-4">
                     {htmlAudit.strippedWarnings.map((w) => (
@@ -500,29 +507,29 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               )}
 
               {/* Code editor with an attached header: insert data at the cursor, character count */}
-              <div className="overflow-hidden rounded-xl border border-[#2A261F] bg-[#15130F]">
+              <div className="overflow-hidden rounded-xl border border-[#2B241B] bg-[#1A1510]">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
                   <label htmlFor="custom-html-code" className="inline-flex items-center gap-1.5 text-xs font-medium text-[#E8E1D4]">
                     <IconCode size={14} /> HTML &amp; CSS
                   </label>
                   <div className="flex items-center gap-3">
-                    <select
+                    <SelectField
                       aria-label="Sisipkan data undangan"
                       value=""
                       onChange={(e) => {
                         if (e.target.value) insertPlaceholder(e.target.value);
                       }}
-                      className="h-8 rounded-lg border border-white/15 bg-white/5 px-2 text-xs text-[#E8E1D4] outline-none focus:border-[#C9A45C]"
+                      size="sm" className="w-auto border-white/15 bg-white/5 text-[#E8E1D4] hover:border-[#D9B56A]/60 focus-visible:border-[#D9B56A] data-[state=open]:border-[#D9B56A] data-[placeholder]:text-[#E8E1D4]"
                     >
-                      <option value="" className="text-[#1E1B17]">
+                      <option value="" className="text-[#1F1A14]">
                         Sisipkan data…
                       </option>
                       {CUSTOM_HTML_PLACEHOLDERS.map((ph) => (
-                        <option key={ph.token} value={ph.token} className="text-[#1E1B17]">
+                        <option key={ph.token} value={ph.token} className="text-[#1F1A14]">
                           {ph.label} · {ph.token}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                     <span className="text-[11px] tabular-nums text-[#A59B8C]">
                       {(theme.customHtml?.length ?? 0).toLocaleString("id-ID")} / 150.000
                     </span>
@@ -535,14 +542,14 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
                   value={theme.customHtml ?? ""}
                   onChange={(e) => setTheme({ customHtml: e.target.value })}
                   placeholder="Tempel kode HTML + <style> di sini, atau upload file .html…"
-                  className="block min-h-[380px] w-full resize-y bg-transparent p-4 font-mono text-xs leading-relaxed text-[#F1ECE3] outline-none placeholder:text-[#6B6358]"
+                  className="block min-h-[380px] w-full resize-y bg-transparent p-4 font-mono text-xs leading-relaxed text-[#F4EDDF] outline-none placeholder:text-[#6B5F50]"
                 />
               </div>
             </div>
           ) : d.kind === "CODE" ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Komponen" hint="Template yang sudah ditulis developer di components/templates. Template baru dari admin dibuat lewat Mesin tema.">
-                <select value={d.componentSlug ?? ""} onChange={(e) => set("componentSlug", e.target.value || null)} className={input}>
+                <SelectField value={d.componentSlug ?? ""} onChange={(e) => set("componentSlug", e.target.value || null)}>
                   <option value="" disabled>
                     Pilih komponen…
                   </option>
@@ -553,7 +560,7 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
                         {t.name} ({k})
                       </option>
                     ))}
-                </select>
+                </SelectField>
               </Field>
               <div className="space-y-1.5">
                 <span className="text-sm font-medium text-zinc-800">Gambar thumbnail</span>
@@ -612,10 +619,10 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
                 </Field>
                 <div className="flex flex-col justify-end gap-2 pb-1">
                   <label className="flex items-center gap-2 text-sm text-zinc-700">
-                    <input type="checkbox" checked={theme.metallic} onChange={(e) => setTheme({ metallic: e.target.checked })} className="h-4 w-4 accent-[#1E1B17]" /> Efek foil metalik
+                    <input type="checkbox" checked={theme.metallic} onChange={(e) => setTheme({ metallic: e.target.checked })} className="h-4 w-4 accent-[#1F1A14]" /> Efek foil metalik
                   </label>
                   <label className="flex items-center gap-2 text-sm text-zinc-700">
-                    <input type="checkbox" checked={theme.typography.displayItalic} onChange={(e) => setTheme({ typography: { ...theme.typography, displayItalic: e.target.checked } })} className="h-4 w-4 accent-[#1E1B17]" /> Judul miring
+                    <input type="checkbox" checked={theme.typography.displayItalic} onChange={(e) => setTheme({ typography: { ...theme.typography, displayItalic: e.target.checked } })} className="h-4 w-4 accent-[#1F1A14]" /> Judul miring
                   </label>
                 </div>
               </div>
@@ -694,76 +701,128 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
         </div>
       </div>
 
-      {/* Live preview with Mobile / PC switcher */}
+      {/* Live preview: phone mockup, or a mini desktop that opens full screen */}
       <aside className="lg:sticky lg:top-20 lg:self-start">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="inline-flex rounded-full border border-zinc-200 bg-white p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setPreviewDevice("mobile")}
-              className={`inline-flex h-7 items-center gap-1 rounded-full px-3 font-medium ${
-                previewDevice === "mobile" ? "bg-zinc-900 text-white" : "text-zinc-600"
-              }`}
-            >
-              <IconDeviceMobile size={13} /> Mobile
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPreviewDevice("pc");
-                setPcPreviewOpen(true);
-              }}
-              className={`inline-flex h-7 items-center gap-1 rounded-full px-3 font-medium ${
-                previewDevice === "pc" ? "bg-zinc-900 text-white" : "text-zinc-600"
-              }`}
-            >
-              <IconDeviceDesktop size={13} /> Preview PC
-            </button>
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div role="tablist" aria-label="Perangkat pratinjau" className="inline-flex rounded-full border border-[#E9DDC6] bg-white p-1 text-xs shadow-sm">
+            {(
+              [
+                ["mobile", IconDeviceMobile, "Mobile"],
+                ["pc", IconDeviceDesktop, "Desktop"],
+              ] as const
+            ).map(([key, Icon, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={previewDevice === key}
+                onClick={() => setPreviewDevice(key)}
+                className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 font-medium transition-colors ${
+                  previewDevice === key ? "bg-[#1F1A14] text-[#F6EEDD] shadow-sm" : "text-[#6B5F50] hover:text-[#1F1A14]"
+                }`}
+              >
+                <Icon size={14} /> {label}
+              </button>
+            ))}
           </div>
           <button
             type="button"
             onClick={() => setPcPreviewOpen(true)}
-            className="text-xs font-medium text-[#8A6A2F] hover:underline"
+            disabled={d.kind !== "ENGINE"}
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E9DDC6] bg-white px-3.5 text-xs font-medium text-[#8A6424] transition-colors hover:border-[#8A6424] disabled:opacity-40"
           >
-            Perbesar layar penuh →
+            <IconMaximize size={14} /> Layar penuh
           </button>
         </div>
 
-        <div className="mx-auto w-full max-w-[350px] overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-sm">
-          {/* HTML templates scroll inside their own iframe, so the frame itself must not scroll too */}
-          <div className={`h-[660px] overscroll-contain [scrollbar-width:thin] ${theme.customHtml?.trim() && d.kind === "ENGINE" ? "overflow-hidden" : "overflow-y-auto"}`}>
-            {d.kind === "ENGINE" ? (
-              <div className={theme.customHtml?.trim() ? "h-full" : undefined} style={theme.customHtml?.trim() ? undefined : { zoom: 346 / 375, width: 375 }}>
-                <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={theme} embedded />
-              </div>
-            ) : d.thumbnail ? (
-              <div className="relative h-full">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+        {d.kind !== "ENGINE" ? (
+          <div className="mx-auto w-full max-w-[330px] overflow-hidden rounded-[38px] bg-[#111] p-[7px] shadow-[0_30px_60px_-24px_rgba(26,21,16,.45)]">
+            <div className="relative h-[640px] overflow-hidden rounded-[31px] bg-[#F6EEDF]">
+              {d.thumbnail ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={d.thumbnail} alt="" className="absolute inset-0 h-full w-full object-cover" />
-              </div>
-            ) : (
-              <p className="p-10 text-center text-sm text-zinc-500">Isi URL thumbnail untuk melihat pratinjau.</p>
-            )}
+              ) : (
+                <p className="p-10 pt-40 text-center text-sm text-[#6B5F50]">Isi URL thumbnail untuk melihat pratinjau.</p>
+              )}
+            </div>
           </div>
-        </div>
+        ) : previewDevice === "mobile" ? (
+          // Phone mockup: content scrolls inside the screen with no visible scrollbars
+          <div className="mx-auto w-fit rounded-[40px] bg-[#111] p-[7px] shadow-[0_30px_60px_-24px_rgba(26,21,16,.45)] ring-1 ring-black/5">
+            <div className="relative overflow-hidden rounded-[33px] bg-white" style={{ width: PHONE_W, height: PHONE_H }}>
+              <span aria-hidden className="pointer-events-none absolute left-1/2 top-2.5 z-20 h-[18px] w-[76px] -translate-x-1/2 rounded-full bg-[#111]" />
+              {theme.customHtml?.trim() ? (
+                <div className="h-full">
+                  <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={theme} embedded />
+                </div>
+              ) : (
+                <div className="h-full overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div style={{ zoom: PHONE_W / 375, width: 375 }}>
+                    <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={theme} embedded />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          // Mini desktop: a scaled 1280px render; clicking it opens the full-screen preview
+          <button
+            type="button"
+            onClick={() => setPcPreviewOpen(true)}
+            aria-label="Buka pratinjau desktop layar penuh"
+            className="group mx-auto block w-full max-w-[420px] text-left"
+          >
+            <div className="overflow-hidden rounded-xl border border-[#2B241B] bg-[#1F1A14] shadow-[0_24px_50px_-24px_rgba(26,21,16,.5)]">
+              <div className="flex items-center gap-1.5 px-3 py-2">
+                <span className="h-2 w-2 rounded-full bg-[#F06A5D]" />
+                <span className="h-2 w-2 rounded-full bg-[#F4BE4F]" />
+                <span className="h-2 w-2 rounded-full bg-[#61C454]" />
+                <span className="ml-2 h-4 flex-1 truncate rounded bg-white/10 px-2 text-[9px] leading-4 text-white/50">satumoment.id/{d.slug || "template"}</span>
+              </div>
+              <div className="relative aspect-[16/10] overflow-hidden bg-white">
+                <div className="pointer-events-none absolute left-0 top-0 origin-top-left" style={{ width: 1280, height: 800, transform: `scale(${DESKTOP_THUMB_SCALE})` }}>
+                  <div className="h-full overflow-hidden" style={{ ["--uy-stage-h" as string]: "800px" }}>
+                    <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={theme} forceOpened sampleMode />
+                  </div>
+                </div>
+                <span className="absolute inset-0 flex items-center justify-center bg-[#1A1510]/0 transition-colors duration-300 group-hover:bg-[#1A1510]/45">
+                  <span className="inline-flex translate-y-1 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-[#1F1A14] opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                    <IconMaximize size={14} /> Lihat layar penuh
+                  </span>
+                </span>
+              </div>
+            </div>
+            <div className="mx-auto h-2.5 w-[22%] rounded-b-lg bg-[#2B241B]" />
+            <p className="mt-3 text-center text-xs text-[#6B5F50]">Klik pratinjau untuk membuka tampilan desktop layar penuh.</p>
+          </button>
+        )}
       </aside>
 
       <Dialog open={pcPreviewOpen} onOpenChange={setPcPreviewOpen}>
-        <DialogContent className="flex! h-[88vh] max-h-[88vh] max-w-[94vw] flex-col gap-0 overflow-hidden border-[#E6DFD3] bg-[#FFFDF9] p-0 sm:max-w-5xl sm:rounded-2xl">
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 px-5 py-3 pr-12">
-            <DialogTitle className="flex items-center gap-2 font-serif text-xl font-medium text-zinc-900">
-              <IconDeviceDesktop size={18} className="text-[#8A6A2F]" />
-              Pratinjau PC / Desktop — {d.name || theme.name}
+        <DialogContent
+          showCloseButton={false}
+          className="flex! top-0! left-0! h-dvh! max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col gap-0 overflow-hidden rounded-none! border-0 bg-[#1A1510] p-0"
+        >
+          <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-2.5 text-[#F6EEDD] sm:px-6">
+            <DialogTitle className="flex min-w-0 items-center gap-2 text-sm font-medium">
+              <IconDeviceDesktop size={18} className="shrink-0 text-[#D9B56A]" />
+              <span className="truncate">Pratinjau desktop · {d.name || theme.name}</span>
+              <span className="hidden rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] text-[#CDBF9F] sm:inline">{htmlMode ? "HTML sandbox" : "Mesin tema"}</span>
             </DialogTitle>
-            <span className="rounded-full bg-zinc-100 px-3 py-0.5 text-[11px] font-medium text-zinc-600">
-              {htmlMode ? "HTML Sandboxed Aman" : "Responsif Desktop"}
-            </span>
+            <DialogClose asChild>
+              <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3.5 text-xs font-medium hover:bg-white/20">
+                <IconX size={15} /> Tutup
+              </button>
+            </DialogClose>
           </div>
-          <div className={`min-h-0 flex-1 overscroll-contain bg-white ${theme.customHtml?.trim() ? "overflow-hidden" : "overflow-y-auto"}`}>
+          <div
+            className={`min-h-0 flex-1 overscroll-contain bg-white ${theme.customHtml?.trim() ? "overflow-hidden" : "overflow-y-auto"}`}
+            style={{ ["--uy-stage-h" as string]: "calc(100dvh - 53px)" }}
+          >
             {d.kind === "ENGINE" ? (
-              <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={theme} forceOpened />
+              <AiDesignTemplate data={MOCK_WEDDING_DATA} theme={theme} forceOpened sampleMode />
             ) : (
-              <p className="p-10 text-center text-sm text-zinc-500">Pratinjau PC tersedia untuk Mesin Tema &amp; HTML.</p>
+              <p className="p-10 text-center text-sm text-zinc-500">Pratinjau desktop tersedia untuk Mesin Tema &amp; HTML.</p>
             )}
           </div>
         </DialogContent>

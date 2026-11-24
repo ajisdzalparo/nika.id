@@ -11,11 +11,11 @@ export default async function AdminPromoPage() {
     <>
       <SiteHeader />
       <div className="flex-1 px-4 pb-16 pt-8 lg:px-8">
-        <div className="mx-auto max-w-4xl space-y-8">
+        <div className="w-full space-y-8">
           <header className="space-y-2">
-            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">Penjualan</p>
-            <h1 className="font-serif text-4xl font-medium text-[#1E1B17]">Kode promo</h1>
-            <p className="max-w-2xl text-[15px] text-[#6B6358]">
+            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">Penjualan</p>
+            <h1 className="font-serif text-4xl font-medium text-[#1F1A14]">Kode promo</h1>
+            <p className="max-w-2xl text-[15px] text-[#6B5F50]">
               Buat kode diskon yang diketik pembeli di kolom &ldquo;Kode promo&rdquo; saat checkout. Kode yang sudah pernah dipakai tidak bisa dihapus, cukup dinonaktifkan.
             </p>
           </header>

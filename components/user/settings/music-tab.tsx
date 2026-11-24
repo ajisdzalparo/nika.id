@@ -63,11 +63,11 @@ export function MusicTab({ invitation, isEnabled }: MusicTabProps) {
       {!isEnabled ? (
         <UpgradeBanner feature="Musik Latar" plan="Silver" />
       ) : (
-        <div className="rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-6 space-y-6">
+        <div className="rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-6 space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-serif text-xl font-medium text-[#1E1B17]">Musik Latar</h3>
-              <p className="text-sm text-[#6B6358]">Pilih musik dari link YouTube atau unggah file audio ke S3.</p>
+              <h3 className="font-serif text-xl font-medium text-[#1F1A14]">Musik Latar</h3>
+              <p className="text-sm text-[#6B5F50]">Pilih musik dari link YouTube atau unggah file audio ke S3.</p>
             </div>
             <button
               type="button"
@@ -75,7 +75,7 @@ export function MusicTab({ invitation, isEnabled }: MusicTabProps) {
               aria-checked={musicEnabled}
               aria-label="Aktifkan musik latar"
               onClick={() => setMusicEnabled((v) => !v)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${musicEnabled ? "bg-[#1E1B17]" : "bg-[#CFC5B4]"}`}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${musicEnabled ? "bg-[#1F1A14]" : "bg-[#D9CBAE]"}`}
             >
               <span className={`inline-block h-4.5 w-4.5 transform rounded-full bg-[#FFFDF9] transition-transform ${musicEnabled ? "translate-x-5.5" : "translate-x-1"}`} />
             </button>
@@ -83,9 +83,9 @@ export function MusicTab({ invitation, isEnabled }: MusicTabProps) {
 
           <MusicSourcePicker type={musicType} url={musicUrl} onChangeType={setMusicType} onChangeUrl={setMusicUrl} />
 
-          <div className="flex items-center justify-between border-t border-[#E1D8C9] pt-4">
-            <Label className="text-xs text-[#6B6358]">Musik diputar saat tamu mengetuk “Buka Undangan”.</Label>
-            <Button onClick={handleSave} disabled={loading} className="h-11 rounded-full bg-[#1E1B17] px-6 text-[#F7F3EC] hover:bg-[#2E2A24]">
+          <div className="flex items-center justify-between border-t border-[#E9DDC6] pt-4">
+            <Label className="text-xs text-[#6B5F50]">Musik diputar saat tamu mengetuk “Buka Undangan”.</Label>
+            <Button onClick={handleSave} disabled={loading} className="h-11 rounded-full bg-[#1F1A14] px-6 text-[#FCF8F1] hover:bg-[#2E2A24]">
               {loading && <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />}
               Simpan Perubahan
             </Button>

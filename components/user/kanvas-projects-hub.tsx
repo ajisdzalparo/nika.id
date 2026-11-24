@@ -10,7 +10,6 @@ import {
   IconCopy,
   IconEdit,
   IconFilePlus,
-  IconLoader2,
   IconPalette,
   IconPlus,
   IconShoppingBag,
@@ -18,6 +17,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
+import { MarketplaceSellDialog } from "@/components/user/marketplace-sell-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,14 +29,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { AI_THEME_PRESETS } from "@/lib/ai-design/presets";
 import type { AiTheme } from "@/lib/ai-design/schema";
-import { CATALOG_CATEGORIES } from "@/lib/catalog-shared";
-import { DEFAULT_MARKETPLACE_FEE_PCT, MARKETPLACE_MAX_PRICE, MARKETPLACE_MIN_PRICE } from "@/lib/limits";
 import type { WeddingData } from "@/types/wedding";
 
 export interface HubDesignItem {
@@ -89,11 +83,6 @@ export function KanvasProjectsHub({
   const [deleting, setDeleting] = useState(false);
 
   const [sellDesign, setSellDesign] = useState<HubDesignItem | null>(null);
-  const [sellName, setSellName] = useState("");
-  const [sellCategory, setSellCategory] = useState<(typeof CATALOG_CATEGORIES)[number]>("Elegan");
-  const [sellDesc, setSellDesc] = useState("");
-  const [sellPrice, setSellPrice] = useState(29000);
-  const [submittingSell, setSubmittingSell] = useState(false);
 
   const duplicateDesign = async (item: HubDesignItem) => {
     setBusyId(item.id);
@@ -170,56 +159,23 @@ export function KanvasProjectsHub({
     }
   };
 
-  const submitMarketplace = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!sellDesign) return;
-    setSubmittingSell(true);
-    try {
-      const res = await fetch("/api/user/marketplace", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: sellName,
-          category: sellCategory,
-          description: sellDesc,
-          price: sellPrice,
-          theme: sellDesign.theme,
-        }),
-      });
-      const d = await res.json();
-      if (!res.ok) {
-        toast.error(d.message || "Gagal mengajukan template");
-        return;
-      }
-      setMyTemplates((prev) => [d.template, ...prev]);
-      setSellDesign(null);
-      toast.success("Template diajukan! Admin akan mereview sebelum tayang di Marketplace.");
-      router.refresh();
-    } finally {
-      setSubmittingSell(false);
-    }
-  };
-
-  const feeEstimate = Math.round(sellPrice * (DEFAULT_MARKETPLACE_FEE_PCT / 100));
-  const creatorEstimate = Math.max(0, sellPrice - feeEstimate);
-
   return (
-    <div className="flex-1 bg-[#FAF8F4] px-4 pb-20 pt-8 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-10">
+    <div className="flex-1 bg-[#FCF8F1] px-4 pb-20 pt-8 lg:px-8">
+      <div className="w-full space-y-10">
         {/* Header */}
         <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div className="space-y-1.5">
-            <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A6A2F]">
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A6424]">
               <IconBrush size={14} /> Studio Kanvas Kreatif
             </p>
-            <h1 className="font-serif text-4xl font-medium tracking-tight text-[#15130F] sm:text-5xl">
+            <h1 className="font-serif text-4xl font-medium tracking-tight text-[#1A1510] sm:text-5xl">
               Proyek &amp; Desain Kanvas
             </h1>
-            <p className="max-w-2xl text-sm text-[#5E574D]">
-              Mulai dari kanvas kosong seperti Canva, ubah desain yang sudah tersimpan, atau ajukan karya terbaik Anda untuk dijual di Marketplace UNDANGIN YUK.
+            <p className="max-w-2xl text-sm text-[#5E5446]">
+              Mulai dari kanvas kosong seperti Canva, ubah desain yang sudah tersimpan, atau ajukan karya terbaik Anda untuk dijual di Marketplace SatuMoment.
             </p>
           </div>
-          <Button asChild className="h-11 shrink-0 rounded-full bg-[#15130F] px-5 text-sm font-medium text-[#FAF8F4] hover:bg-[#2A261F]">
+          <Button asChild className="h-11 shrink-0 rounded-full bg-[#1A1510] px-5 text-sm font-medium text-[#FCF8F1] hover:bg-[#2B241B]">
             <Link href="/kanvas/editor?blank=1">
               <IconPlus size={16} className="mr-1.5" /> Buat Kanvas Kosong
             </Link>
@@ -229,9 +185,9 @@ export function KanvasProjectsHub({
         {/* Section 1: Create Project */}
         <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-serif text-2xl font-medium text-[#15130F]">Mulai Proyek Baru</h2>
+            <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Mulai Proyek Baru</h2>
             {aiEnabled && (
-              <Link href="/desain-ai" className="inline-flex items-center gap-1.5 text-xs font-medium text-[#8A6A2F] hover:underline">
+              <Link href="/desain-ai" className="inline-flex items-center gap-1.5 text-xs font-medium text-[#8A6424] hover:underline">
                 <IconSparkles size={14} /> Atau generate pakai AI →
               </Link>
             )}
@@ -241,16 +197,16 @@ export function KanvasProjectsHub({
             {/* Blank Canvas Primary Card */}
             <Link
               href="/kanvas/editor?blank=1"
-              className="group flex flex-col justify-between rounded-2xl border-2 border-dashed border-[#C9A45C] bg-[#FFFDF9] p-4 transition hover:-translate-y-0.5 hover:border-[#8A6A2F] hover:bg-[#FBF6EB] hover:shadow-sm"
+              className="group flex flex-col justify-between rounded-2xl border-2 border-dashed border-[#D9B56A] bg-[#FFFDF9] p-4 transition hover:-translate-y-0.5 hover:border-[#8A6424] hover:bg-[#FCF5E6] hover:shadow-sm"
             >
-              <div className="flex aspect-[9/12] flex-col items-center justify-center rounded-xl border border-[#EFEAE0] bg-white p-3 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F4EAD6] text-[#8A6A2F] transition-transform group-hover:scale-105">
+              <div className="flex aspect-[9/12] flex-col items-center justify-center rounded-xl border border-[#F3EBDB] bg-white p-3 text-center">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F5E8CA] text-[#8A6424] transition-transform group-hover:scale-105">
                   <IconFilePlus size={22} />
                 </span>
-                <p className="mt-3 font-serif text-lg font-medium text-[#15130F]">Kanvas Kosong</p>
-                <p className="mt-1 text-[11px] leading-snug text-[#6B6358]">Mulai 0% dari layar putih polos</p>
+                <p className="mt-3 font-serif text-lg font-medium text-[#1A1510]">Kanvas Kosong</p>
+                <p className="mt-1 text-[11px] leading-snug text-[#6B5F50]">Mulai 0% dari layar putih polos</p>
               </div>
-              <span className="mt-3 inline-flex items-center justify-center rounded-full bg-[#8A6A2F] py-1.5 text-xs font-medium text-white">
+              <span className="mt-3 inline-flex items-center justify-center rounded-full bg-[#8A6424] py-1.5 text-xs font-medium text-white">
                 + Buat Baru
               </span>
             </Link>
@@ -260,7 +216,7 @@ export function KanvasProjectsHub({
               <Link
                 key={key}
                 href={`/kanvas/editor?preset=${encodeURIComponent(key)}`}
-                className="group flex flex-col justify-between rounded-2xl border border-[#E6DFD3] bg-white p-3 transition hover:-translate-y-0.5 hover:border-[#C9A45C] hover:shadow-sm"
+                className="group flex flex-col justify-between rounded-2xl border border-[#EDE3CF] bg-white p-3 transition hover:-translate-y-0.5 hover:border-[#D9B56A] hover:shadow-sm"
               >
                 <div className="relative aspect-[9/12] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
                   <CoverThumb theme={preset.theme} data={previewData} zoom={0.42} className="h-full w-full" />
@@ -269,8 +225,8 @@ export function KanvasProjectsHub({
                   </span>
                 </div>
                 <div className="mt-2.5 px-0.5">
-                  <p className="truncate font-serif text-base font-medium text-[#15130F]">{preset.theme.name}</p>
-                  <p className="truncate text-[11px] text-[#6B6358]">Preset · {preset.label}</p>
+                  <p className="truncate font-serif text-base font-medium text-[#1A1510]">{preset.theme.name}</p>
+                  <p className="truncate text-[11px] text-[#6B5F50]">Preset · {preset.label}</p>
                 </div>
               </Link>
             ))}
@@ -281,25 +237,25 @@ export function KanvasProjectsHub({
         <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="font-serif text-2xl font-medium text-[#15130F]">
+              <h2 className="font-serif text-2xl font-medium text-[#1A1510]">
                 Desain Saya ({designs.length})
               </h2>
-              <p className="text-xs text-[#6B6358]">
+              <p className="text-xs text-[#6B5F50]">
                 Pilih desain untuk diedit lagi di studio, duplikat menjadi varian baru, pasang ke undangan, atau jual.
               </p>
             </div>
           </div>
 
           {designs.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#DFD2BC] bg-white px-6 py-12 text-center">
-              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F4EAD6] text-[#8A6A2F]">
+            <div className="rounded-2xl border border-dashed border-[#E6D5B2] bg-white px-6 py-12 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#F5E8CA] text-[#8A6424]">
                 <IconPalette size={22} />
               </span>
-              <h3 className="mt-3 font-serif text-2xl font-medium text-[#15130F]">Belum ada proyek tersimpan</h3>
-              <p className="mx-auto mt-1 max-w-md text-sm text-[#6B6358]">
+              <h3 className="mt-3 font-serif text-2xl font-medium text-[#1A1510]">Belum ada proyek tersimpan</h3>
+              <p className="mx-auto mt-1 max-w-md text-sm text-[#6B5F50]">
                 Mulai buat desain pertamamu dari Kanvas Kosong atau salah satu preset di atas, lalu klik Simpan Draf.
               </p>
-              <Button asChild className="mt-5 h-10 rounded-full bg-[#15130F] px-5 text-xs font-medium text-[#FAF8F4]">
+              <Button asChild className="mt-5 h-10 rounded-full bg-[#1A1510] px-5 text-xs font-medium text-[#FCF8F1]">
                 <Link href="/kanvas/editor?blank=1">Mulai dari Kanvas Kosong</Link>
               </Button>
             </div>
@@ -313,7 +269,7 @@ export function KanvasProjectsHub({
                   <article
                     key={d.id}
                     className={`flex flex-col justify-between rounded-2xl border bg-white p-3.5 transition ${
-                      isActive ? "border-[#8A6A2F] ring-2 ring-[#C9A45C]/30" : "border-[#E6DFD3] hover:border-[#C9A45C]"
+                      isActive ? "border-[#8A6424] ring-2 ring-[#D9B56A]/30" : "border-[#EDE3CF] hover:border-[#D9B56A]"
                     }`}
                   >
                     <div>
@@ -323,25 +279,25 @@ export function KanvasProjectsHub({
                       >
                         <CoverThumb theme={d.theme} data={previewData} zoom={0.48} className="h-full w-full" />
                         <div className="absolute left-2 top-2 flex flex-wrap gap-1">
-                          <span className="rounded-full bg-[#15130F]/80 px-2 py-0.5 text-[10px] font-medium text-[#FAF8F4] backdrop-blur-xs">
+                          <span className="rounded-full bg-[#1A1510]/80 px-2 py-0.5 text-[10px] font-medium text-[#FCF8F1] backdrop-blur-xs">
                             {d.source === "CANVAS" ? "Kanvas" : d.source === "AI" ? "AI" : "Katalog"}
                           </span>
                           {layerCount > 0 && (
-                            <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-[#15130F]">
+                            <span className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-[#1A1510]">
                               {layerCount} layer
                             </span>
                           )}
                         </div>
                         {isActive && (
-                          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#8A6A2F] px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-xs">
+                          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#8A6424] px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-xs">
                             <IconCheck size={11} /> Dipakai
                           </span>
                         )}
                       </Link>
 
                       <div className="mt-3 space-y-0.5 px-0.5">
-                        <h3 className="truncate font-serif text-xl font-medium text-[#15130F]">{d.theme.name}</h3>
-                        <p className="text-[11px] text-[#6B6358]">
+                        <h3 className="truncate font-serif text-xl font-medium text-[#1A1510]">{d.theme.name}</h3>
+                        <p className="text-[11px] text-[#6B5F50]">
                           Diubah{" "}
                           {new Date(d.createdAt).toLocaleDateString("id-ID", {
                             day: "numeric",
@@ -353,22 +309,18 @@ export function KanvasProjectsHub({
                       </div>
                     </div>
 
-                    <div className="mt-3 space-y-2 border-t border-[#EFEAE0] pt-3">
+                    <div className="mt-3 space-y-2 border-t border-[#F3EBDB] pt-3">
                       <div className="flex gap-1.5">
                         <Link
                           href={`/kanvas/editor?designId=${encodeURIComponent(d.id)}`}
-                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-full bg-[#15130F] px-3 text-xs font-medium text-[#FAF8F4] hover:bg-[#2A261F]"
+                          className="flex h-9 flex-1 items-center justify-center gap-1 rounded-full bg-[#1A1510] px-3 text-xs font-medium text-[#FCF8F1] hover:bg-[#2B241B]"
                         >
                           <IconEdit size={13} /> Edit
                         </Link>
                         <button
                           type="button"
-                          onClick={() => {
-                            setSellDesign(d);
-                            setSellName(d.theme.name);
-                            setSellDesc(d.theme.mood);
-                          }}
-                          className="flex h-9 items-center justify-center gap-1 rounded-full bg-[#8A6A2F] px-3 text-xs font-medium text-white hover:bg-[#755925]"
+                          onClick={() => setSellDesign(d)}
+                          className="flex h-9 items-center justify-center gap-1 rounded-full bg-[#8A6424] px-3 text-xs font-medium text-white hover:bg-[#755925]"
                         >
                           <IconShoppingBag size={13} /> Jual
                         </button>
@@ -378,7 +330,7 @@ export function KanvasProjectsHub({
                           type="button"
                           disabled={isBusy}
                           onClick={() => void duplicateDesign(d)}
-                          className="flex h-8 flex-1 items-center justify-center gap-1 rounded-full border border-[#DFD7C8] bg-[#FAF8F4] px-2.5 text-[11px] font-medium text-[#3F3A33] hover:bg-[#EFEAE0] disabled:opacity-50"
+                          className="flex h-8 flex-1 items-center justify-center gap-1 rounded-full border border-[#E9DDC6] bg-[#FCF8F1] px-2.5 text-[11px] font-medium text-[#40372B] hover:bg-[#F3EBDB] disabled:opacity-50"
                         >
                           <IconCopy size={12} /> Duplikat
                         </button>
@@ -387,7 +339,7 @@ export function KanvasProjectsHub({
                             type="button"
                             disabled={isBusy}
                             onClick={() => void applyDesign(d)}
-                            className="flex h-8 flex-1 items-center justify-center gap-1 rounded-full border border-[#DFD7C8] bg-white px-2.5 text-[11px] font-medium text-[#3F3A33] hover:bg-[#FAF8F4] disabled:opacity-50"
+                            className="flex h-8 flex-1 items-center justify-center gap-1 rounded-full border border-[#E9DDC6] bg-white px-2.5 text-[11px] font-medium text-[#40372B] hover:bg-[#FCF8F1] disabled:opacity-50"
                           >
                             Pakai
                           </button>
@@ -396,7 +348,7 @@ export function KanvasProjectsHub({
                           type="button"
                           onClick={() => setDeleteTarget(d)}
                           aria-label={`Hapus ${d.theme.name}`}
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6B6358] hover:bg-red-50 hover:text-red-600"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6B5F50] hover:bg-red-50 hover:text-red-600"
                         >
                           <IconTrash size={14} />
                         </button>
@@ -411,24 +363,24 @@ export function KanvasProjectsHub({
 
         {/* Section 3: Submitted Marketplace Templates */}
         {myTemplates.length > 0 && (
-          <section className="space-y-3 rounded-2xl border border-[#E6DFD3] bg-white p-5 sm:p-6">
+          <section className="space-y-3 rounded-2xl border border-[#EDE3CF] bg-white p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h2 className="font-serif text-2xl font-medium text-[#15130F]">Template Saya di Marketplace</h2>
-                <p className="text-xs text-[#6B6358]">Pantau status kurasi dan jumlah penjualan template Anda.</p>
+                <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Template Saya di Marketplace</h2>
+                <p className="text-xs text-[#6B5F50]">Pantau status kurasi dan jumlah penjualan template Anda.</p>
               </div>
-              <Link href="/dompet" className="text-xs font-medium text-[#8A6A2F] hover:underline">
+              <Link href="/dompet" className="text-xs font-medium text-[#8A6424] hover:underline">
                 Lihat penghasilan di Dompet →
               </Link>
             </div>
-            <div className="divide-y divide-[#EFEAE0]">
+            <div className="divide-y divide-[#F3EBDB]">
               {myTemplates.map((t) => (
                 <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
                   <div>
-                    <p className="font-medium text-[#15130F]">
-                      {t.name} <span className="text-xs font-normal text-[#6B6358]">· {t.category}</span>
+                    <p className="font-medium text-[#1A1510]">
+                      {t.name} <span className="text-xs font-normal text-[#6B5F50]">· {t.category}</span>
                     </p>
-                    <p className="text-xs text-[#6B6358]">
+                    <p className="text-xs text-[#6B5F50]">
                       Harga {rupiah(t.price)} · Komisi platform {t.platformFeePct}% · Dipakai {t.usageCount}×
                     </p>
                     {t.reviewNote && t.reviewStatus === "REJECTED" && <p className="text-xs text-red-600">Catatan: {t.reviewNote}</p>}
@@ -436,7 +388,7 @@ export function KanvasProjectsHub({
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                       t.reviewStatus === "APPROVED" && t.isActive
-                        ? "border border-[#DFD2BC] bg-[#F5EFE3] text-[#5C4620]"
+                        ? "border border-[#E6D5B2] bg-[#F7F0E1] text-[#5C431A]"
                         : t.reviewStatus === "REJECTED"
                           ? "bg-red-50 text-red-700"
                           : "bg-amber-50 text-amber-800"
@@ -453,17 +405,17 @@ export function KanvasProjectsHub({
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}>
-        <AlertDialogContent className="border-[#E6DFD3] bg-[#FFFDF9] text-[#15130F] sm:rounded-2xl">
+        <AlertDialogContent className="border-[#EDE3CF] bg-[#FFFDF9] text-[#1A1510] sm:rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#15130F]">
+            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#1A1510]">
               Hapus desain &ldquo;{deleteTarget?.theme.name}&rdquo;?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-[#5E574D]">
+            <AlertDialogDescription className="text-sm text-[#5E5446]">
               Draf desain ini akan dihapus dari daftar proyek Anda. Template yang sudah terbit di Marketplace tetap aman.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel disabled={deleting} className="rounded-full border-[#DFD7C8] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]">
+            <AlertDialogCancel disabled={deleting} className="rounded-full border-[#E9DDC6] bg-white text-[#40372B] hover:bg-[#FCF8F1]">
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -480,80 +432,19 @@ export function KanvasProjectsHub({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Sell on Marketplace dialog */}
-      <Dialog open={sellDesign !== null} onOpenChange={(open) => !open && !submittingSell && setSellDesign(null)}>
-        <DialogContent className="border-[#E6DFD3] bg-[#FFFDF9] text-[#15130F] sm:rounded-2xl">
-          <form onSubmit={submitMarketplace} className="space-y-4">
-            <DialogHeader>
-              <DialogTitle className="font-serif text-2xl font-medium">Jual Template di Marketplace</DialogTitle>
-              <DialogDescription>
-                Ajukan desain &ldquo;{sellDesign?.theme.name}&rdquo; untuk dijual ke pengguna UNDANGIN YUK.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-1.5">
-              <Label htmlFor="hub-sell-name">Nama Template</Label>
-              <Input id="hub-sell-name" value={sellName} onChange={(e) => setSellName(e.target.value)} required minLength={3} maxLength={60} />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="hub-sell-cat">Kategori</Label>
-                <select
-                  id="hub-sell-cat"
-                  value={sellCategory}
-                  onChange={(e) => setSellCategory(e.target.value as (typeof CATALOG_CATEGORIES)[number])}
-                  className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-white px-3 text-sm"
-                >
-                  {CATALOG_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="hub-sell-price">Harga Jual (Rp)</Label>
-                <Input
-                  id="hub-sell-price"
-                  type="number"
-                  min={MARKETPLACE_MIN_PRICE}
-                  max={MARKETPLACE_MAX_PRICE}
-                  step={1000}
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(Number(e.target.value) || MARKETPLACE_MIN_PRICE)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="hub-sell-desc">Deskripsi Singkat</Label>
-              <Textarea id="hub-sell-desc" value={sellDesc} onChange={(e) => setSellDesc(e.target.value)} required />
-            </div>
-            <div className="space-y-1.5 rounded-xl border border-[#DFD2BC] bg-[#F5EFE3] p-3.5 text-xs text-[#5C4620]">
-              <div className="flex justify-between">
-                <span>Harga jual ke pembeli</span>
-                <span className="font-semibold">{rupiah(sellPrice)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Komisi platform UNDANGIN YUK ({DEFAULT_MARKETPLACE_FEE_PCT}%)</span>
-                <span>−{rupiah(feeEstimate)}</span>
-              </div>
-              <div className="flex justify-between border-t border-[#DFD2BC] pt-1.5 text-sm font-semibold text-[#15130F]">
-                <span>Pendapatan bersih Anda ({100 - DEFAULT_MARKETPLACE_FEE_PCT}%)</span>
-                <span>{rupiah(creatorEstimate)} / penjualan</span>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setSellDesign(null)} disabled={submittingSell}>
-                Batal
-              </Button>
-              <Button type="submit" disabled={submittingSell} className="rounded-full bg-[#15130F] text-[#FAF8F4]">
-                {submittingSell && <IconLoader2 size={15} className="mr-2 animate-spin" />}
-                Ajukan untuk Review
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Sell on Marketplace dialog with pre-sell AI plagiarism check */}
+      <MarketplaceSellDialog
+        open={sellDesign !== null}
+        onOpenChange={(open) => !open && setSellDesign(null)}
+        theme={sellDesign?.theme ?? null}
+        initialName={sellDesign?.theme.name ?? ""}
+        initialDescription={sellDesign?.theme.mood ?? ""}
+        previewData={previewData}
+        onSubmitted={(created) => {
+          setMyTemplates((prev) => [created, ...prev]);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

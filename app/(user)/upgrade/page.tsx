@@ -125,7 +125,7 @@ export default async function UpgradePage({
 
   const initialReferral =
     referralRes.valid && referralRes.code
-      ? { code: referralRes.code, referrerName: referralRes.referrerName || "Mitra UNDANGIN YUK" }
+      ? { code: referralRes.code, referrerName: referralRes.referrerName || "Mitra SatuMoment" }
       : null;
 
   return (

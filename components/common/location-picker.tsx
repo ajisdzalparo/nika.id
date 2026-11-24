@@ -20,6 +20,34 @@ interface SearchResult {
 
 const INDONESIA: [number, number] = [-2.5, 118];
 
+interface PhotonFeature {
+  geometry: { coordinates: [number, number] };
+  properties: Record<string, string | undefined>;
+}
+
+async function searchPhoton(q: string): Promise<SearchResult[]> {
+  // bbox keeps results inside Indonesia; lang=default keeps local names (Jawa Barat, not West Java)
+  const params = new URLSearchParams({ q, limit: "6", bbox: "94.7,-11.2,141.1,6.3", lang: "default" });
+  const res = await fetch(`https://photon.komoot.io/api/?${params}`);
+  if (!res.ok) return [];
+  const { features = [] } = (await res.json()) as { features?: PhotonFeature[] };
+  const seen = new Set<string>();
+  return features.flatMap(({ geometry, properties: p }) => {
+    const [lon, lat] = geometry.coordinates;
+    const parts = [p.name, p.street && p.housenumber ? `${p.street} ${p.housenumber}` : p.street, p.district, p.city ?? p.county, p.state];
+    const display_name = [...new Set(parts.filter(Boolean))].join(", ");
+    if (!display_name || seen.has(display_name)) return [];
+    seen.add(display_name);
+    return [{ display_name, lat: String(lat), lon: String(lon) }];
+  });
+}
+
+async function searchNominatim(q: string): Promise<SearchResult[]> {
+  const params = new URLSearchParams({ q, format: "json", limit: "5", countrycodes: "id", "accept-language": "id" });
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { headers: { Accept: "application/json" } });
+  return res.ok ? res.json() : [];
+}
+
 export function mapsLink(lat: number, lng: number) {
   return `https://www.google.com/maps/search/?api=1&query=${lat.toFixed(6)},${lng.toFixed(6)}`;
 }
@@ -66,6 +94,7 @@ export function LocationPicker({
   useEffect(() => {
     if (viewMode !== "pin") return;
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
     (async () => {
       const L = (await import("leaflet")).default;
       if (cancelled || !mapEl.current || mapRef.current) return;
@@ -84,7 +113,7 @@ export function LocationPicker({
 
       const icon = L.divIcon({
         className: "",
-        html: '<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:#1E1B17;transform:rotate(-45deg);border:3px solid #FFFDF9;box-shadow:0 4px 10px rgba(0,0,0,.3)"></div>',
+        html: '<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:#1F1A14;transform:rotate(-45deg);border:3px solid #FFFDF9;box-shadow:0 4px 10px rgba(0,0,0,.3)"></div>',
         iconSize: [28, 28],
         iconAnchor: [14, 28],
       });
@@ -92,6 +121,7 @@ export function LocationPicker({
       const place = (lat: number, lng: number) => {
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
         marker.setLatLng([lat, lng]).setOpacity(1);
+        setError("");
         onChangeRef.current({ lat, lng });
       };
       marker.on("dragend", () => {
@@ -102,9 +132,21 @@ export function LocationPicker({
 
       mapRef.current = map;
       markerRef.current = marker;
+
+      // The editor keeps hidden tabs mounted: a map created at 0×0 renders grey tiles and maps clicks to
+      // the wrong spot until Leaflet re-measures. Re-measure whenever the container's size changes.
+      resizeObserver = new ResizeObserver(() => {
+        const el = mapEl.current;
+        if (!el || el.clientWidth === 0 || el.clientHeight === 0) return;
+        map.invalidateSize({ pan: false });
+        const cur = marker.getLatLng();
+        if (marker.options.opacity) map.setView(cur, map.getZoom(), { animate: false });
+      });
+      resizeObserver.observe(mapEl.current);
     })();
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
       mapRef.current?.remove();
       mapRef.current = null;
       markerRef.current = null;
@@ -125,11 +167,11 @@ export function LocationPicker({
     setSearching(true);
     setError("");
     try {
-      const params = new URLSearchParams({ q: query, format: "json", limit: "5", countrycodes: "id", "accept-language": "id" });
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { headers: { Accept: "application/json" } });
-      const data: SearchResult[] = await res.json();
+      // Photon knows many Indonesian villages (desa/kelurahan) that Nominatim misses; Nominatim is the fallback.
+      let data = await searchPhoton(query).catch(() => [] as SearchResult[]);
+      if (!data.length) data = await searchNominatim(query).catch(() => [] as SearchResult[]);
       setResults(data);
-      if (!data.length) setError("Tempat tidak ditemukan. Coba nama gedung + kota, atau klik langsung di peta.");
+      if (!data.length) setError("Tempat tidak ditemukan. Coba nama desa/gedung + kota, atau klik langsung di peta.");
     } catch {
       setError("Pencarian gagal. Klik langsung di peta untuk menaruh pin.");
     } finally {
@@ -197,7 +239,7 @@ export function LocationPicker({
             {results.map((r) => (
               <li key={`${r.lat},${r.lon}`}>
                 <button type="button" onClick={() => pick(r)} className="flex w-full gap-2 px-3.5 py-3 text-left text-sm hover:bg-zinc-100">
-                  <IconMapPin size={16} className="mt-0.5 shrink-0 text-[#8A6A2F]" />
+                  <IconMapPin size={16} className="mt-0.5 shrink-0 text-[#8A6424]" />
                   <span className="line-clamp-2">{r.display_name}</span>
                 </button>
               </li>
@@ -234,13 +276,14 @@ export function LocationPicker({
           href={gmapsDirectUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex min-h-9 items-center gap-1 text-xs font-medium text-[#8A6A2F] hover:underline"
+          className="inline-flex min-h-9 items-center gap-1 text-xs font-medium text-[#8A6424] hover:underline"
         >
           Buka di Google Maps <IconExternalLink size={12} />
         </a>
       </div>
 
-      <div className="relative overflow-hidden rounded-xl border border-zinc-200">
+      {/* isolate: Leaflet panes use z-index 400-1000; keep them below popovers (date picker, selects) */}
+      <div className="relative isolate overflow-hidden rounded-xl border border-zinc-200">
         {viewMode === "gmaps" ? (
           <iframe
             title="Pratinjau Google Maps"

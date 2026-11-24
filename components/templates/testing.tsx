@@ -93,7 +93,7 @@ export default function SimpleElegant({ data }: { data: WeddingData }) {
 
       {/* Footer */}
       <footer className="py-8 text-center text-sm text-slate-400 bg-slate-950">
-        <p>Created with Undangin Yuk</p>
+        <p>Created with SatuMoment</p>
       </footer>
     </div>
   );

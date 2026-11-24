@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AiThemeSchema, type AiTheme } from "./schema";
 import { AI_DESIGN_SYSTEM_PROMPT, buildUserPrompt, REFERENCE_INSTRUCTIONS } from "./prompt";
 import { normalizeTheme } from "./color";
+import { pickArtKit } from "./art-kits";
 import {
   DEFAULT_OPENROUTER_DESIGN_MODEL,
   OpenRouterError,
@@ -13,6 +14,8 @@ export class AiDesignError extends Error {
   constructor(
     public code: "NOT_CONFIGURED" | "REFUSED" | "INVALID_OUTPUT" | "RATE_LIMITED" | "UPSTREAM" | "BAD_REFERENCE",
     message: string,
+    /** HTTP status OpenRouter answered with, when the failure came from there */
+    public upstreamStatus?: number,
   ) {
     super(message);
   }
@@ -90,7 +93,7 @@ export async function generateAiTheme(
     });
   } catch (error) {
     if (error instanceof OpenRouterError) {
-      throw new AiDesignError(error.code, error.message);
+      throw new AiDesignError(error.code, error.message, error.status);
     }
     throw new AiDesignError("UPSTREAM", error instanceof Error ? error.message : "AI gagal merespons");
   }
@@ -107,5 +110,8 @@ export async function generateAiTheme(
     throw new AiDesignError("INVALID_OUTPUT", "Hasil AI tidak sesuai skema tema");
   }
 
-  return normalizeTheme(parsed.data);
+  const theme = normalizeTheme(parsed.data);
+  // Every generated design ships fully composed: if the model skipped the illustration set, pick one
+  // from its own palette, ornament and mood.
+  return { ...theme, artKit: theme.artKit ?? pickArtKit(theme) };
 }

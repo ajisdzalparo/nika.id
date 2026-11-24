@@ -14,13 +14,16 @@ export function SandboxedHtmlFrame({
   data,
   title = "Pratinjau Template HTML",
   className = "h-screen min-h-[700px] w-full border-0 bg-white",
+  hideScrollbar = false,
 }: {
   html: string;
   data: WeddingData;
   title?: string;
   className?: string;
+  /** Phone mockups: scroll without a visible bar, like a real phone */
+  hideScrollbar?: boolean;
 }) {
-  const srcDoc = useMemo(() => compileSafeWeddingHtml(html, data), [html, data]);
+  const srcDoc = useMemo(() => compileSafeWeddingHtml(html, data, { hideScrollbar }), [html, data, hideScrollbar]);
 
   return (
     <iframe

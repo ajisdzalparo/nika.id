@@ -22,12 +22,12 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Pro
     <>
       <SiteHeader user={session.user} />
       <div className="flex-1 px-4 pb-16 pt-8 lg:px-8 lg:pt-10">
-        <div className="mx-auto max-w-6xl space-y-8">
+        <div className="w-full space-y-8">
           <header className="max-w-2xl space-y-2">
-            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6A2F]">Masukan</p>
-            <h2 className="font-serif text-4xl font-medium text-[#1E1B17] md:text-5xl">Bantu kami jadi lebih baik</h2>
-            <p className="text-[15px] leading-relaxed text-[#6B6358]">
-              Ada yang membingungkan, kurang, atau justru sudah pas? Ceritakan pengalamanmu memakai UNDANGIN YUK. Setiap masukan dibaca tim kami, dan kamu akan
+            <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">Masukan</p>
+            <h2 className="font-serif text-4xl font-medium text-[#1F1A14] md:text-5xl">Bantu kami jadi lebih baik</h2>
+            <p className="text-[15px] leading-relaxed text-[#6B5F50]">
+              Ada yang membingungkan, kurang, atau justru sudah pas? Ceritakan pengalamanmu memakai SatuMoment. Setiap masukan dibaca tim kami, dan kamu akan
               dapat kabar saat statusnya berubah.
             </p>
           </header>

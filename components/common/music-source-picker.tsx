@@ -116,9 +116,9 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
   const hasDefaults = allowDefaults && defaults.length > 0;
 
   return (
-    <div className="space-y-4 rounded-xl border border-[#E1D8C9] bg-[#F7F3EC]/60 p-4">
+    <div className="space-y-4 rounded-xl border border-[#E9DDC6] bg-[#FCF8F1]/60 p-4">
       <div className="space-y-2">
-        <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6B6358]">Sumber Musik</Label>
+        <Label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#6B5F50]">Sumber Musik</Label>
         <div className={`grid grid-cols-1 gap-2.5 ${hasDefaults ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
           {hasDefaults && (
             <button
@@ -126,20 +126,20 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
               onClick={() => setTab("default")}
               className={`flex min-h-14 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-all ${
                 effectiveTab === "default"
-                  ? "border-[#1E1B17] bg-[#FFFDF9] text-[#1E1B17] shadow-xs"
-                  : "border-[#E1D8C9] bg-[#FFFDF9]/50 text-[#6B6358] hover:border-[#CFC5B4] hover:bg-[#FFFDF9]"
+                  ? "border-[#1F1A14] bg-[#FFFDF9] text-[#1F1A14] shadow-xs"
+                  : "border-[#E9DDC6] bg-[#FFFDF9]/50 text-[#6B5F50] hover:border-[#D9CBAE] hover:bg-[#FFFDF9]"
               }`}
             >
               <span
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                  effectiveTab === "default" ? "bg-[#1E1B17] text-[#F7F3EC]" : "bg-[#EFE8DC] text-[#8A6A2F]"
+                  effectiveTab === "default" ? "bg-[#1F1A14] text-[#FCF8F1]" : "bg-[#F5EDDD] text-[#8A6424]"
                 }`}
               >
                 <IconMusic size={18} />
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-medium leading-tight">Musik Default</p>
-                <p className="mt-0.5 truncate text-xs text-[#6B6358]">{defaults.length} pilihan siap pakai</p>
+                <p className="mt-0.5 truncate text-xs text-[#6B5F50]">{defaults.length} pilihan siap pakai</p>
               </div>
             </button>
           )}
@@ -152,20 +152,20 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
             }}
             className={`flex min-h-14 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-all ${
               effectiveTab === "youtube"
-                ? "border-[#1E1B17] bg-[#FFFDF9] text-[#1E1B17] shadow-xs"
-                : "border-[#E1D8C9] bg-[#FFFDF9]/50 text-[#6B6358] hover:border-[#CFC5B4] hover:bg-[#FFFDF9]"
+                ? "border-[#1F1A14] bg-[#FFFDF9] text-[#1F1A14] shadow-xs"
+                : "border-[#E9DDC6] bg-[#FFFDF9]/50 text-[#6B5F50] hover:border-[#D9CBAE] hover:bg-[#FFFDF9]"
             }`}
           >
             <span
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                effectiveTab === "youtube" ? "bg-[#1E1B17] text-[#F7F3EC]" : "bg-[#EFE8DC] text-[#8A6A2F]"
+                effectiveTab === "youtube" ? "bg-[#1F1A14] text-[#FCF8F1]" : "bg-[#F5EDDD] text-[#8A6424]"
               }`}
             >
               <IconBrandYoutube size={18} />
             </span>
             <div className="min-w-0">
               <p className="text-sm font-medium leading-tight">Link YouTube</p>
-              <p className="mt-0.5 truncate text-xs text-[#6B6358]">Tempel link YouTube</p>
+              <p className="mt-0.5 truncate text-xs text-[#6B5F50]">Tempel link YouTube</p>
             </div>
           </button>
 
@@ -177,20 +177,20 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
             }}
             className={`flex min-h-14 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-all ${
               effectiveTab === "upload"
-                ? "border-[#1E1B17] bg-[#FFFDF9] text-[#1E1B17] shadow-xs"
-                : "border-[#E1D8C9] bg-[#FFFDF9]/50 text-[#6B6358] hover:border-[#CFC5B4] hover:bg-[#FFFDF9]"
+                ? "border-[#1F1A14] bg-[#FFFDF9] text-[#1F1A14] shadow-xs"
+                : "border-[#E9DDC6] bg-[#FFFDF9]/50 text-[#6B5F50] hover:border-[#D9CBAE] hover:bg-[#FFFDF9]"
             }`}
           >
             <span
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                effectiveTab === "upload" ? "bg-[#1E1B17] text-[#F7F3EC]" : "bg-[#EFE8DC] text-[#8A6A2F]"
+                effectiveTab === "upload" ? "bg-[#1F1A14] text-[#FCF8F1]" : "bg-[#F5EDDD] text-[#8A6424]"
               }`}
             >
               <IconUpload size={18} />
             </span>
             <div className="min-w-0">
               <p className="text-sm font-medium leading-tight">Upload Audio (S3)</p>
-              <p className="mt-0.5 truncate text-xs text-[#6B6358]">MP3, WAV, OGG, M4A</p>
+              <p className="mt-0.5 truncate text-xs text-[#6B5F50]">MP3, WAV, OGG, M4A</p>
             </div>
           </button>
         </div>
@@ -205,7 +205,7 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
               <div
                 key={item.id}
                 className={`flex items-center justify-between gap-3 rounded-xl border px-3.5 py-2.5 transition-colors ${
-                  selected ? "border-[#1E1B17] bg-[#FFFDF9]" : "border-[#E1D8C9] bg-[#FFFDF9]/75 hover:bg-[#FFFDF9]"
+                  selected ? "border-[#1F1A14] bg-[#FFFDF9]" : "border-[#E9DDC6] bg-[#FFFDF9]/75 hover:bg-[#FFFDF9]"
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-3">
@@ -213,7 +213,7 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
                     type="button"
                     onClick={() => togglePreview(item)}
                     aria-label={item.type === "upload" ? (playing ? "Jeda lagu" : "Putar pratinjau") : "Buka di YouTube"}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EFE8DC] text-[#8A6A2F] transition-colors hover:bg-[#E4DCCF]"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5EDDD] text-[#8A6424] transition-colors hover:bg-[#E4DCCF]"
                   >
                     {item.type === "youtube" ? (
                       <IconBrandYoutube size={17} />
@@ -224,8 +224,8 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
                     )}
                   </button>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[#1E1B17]">{item.title}</p>
-                    <p className="truncate text-xs text-[#6B6358]">
+                    <p className="truncate text-sm font-medium text-[#1F1A14]">{item.title}</p>
+                    <p className="truncate text-xs text-[#6B5F50]">
                       {item.artist ? `${item.artist} · ` : ""}
                       {item.type === "youtube" ? "YouTube" : "Audio S3"}
                     </p>
@@ -239,7 +239,7 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
                     setUploadedFileName(item.title);
                   }}
                   className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-xs font-medium transition-colors ${
-                    selected ? "bg-[#1E1B17] text-[#F7F3EC]" : "border border-[#CFC5B4] bg-white text-[#1E1B17] hover:bg-[#EFE8DC]"
+                    selected ? "bg-[#1F1A14] text-[#FCF8F1]" : "border border-[#D9CBAE] bg-white text-[#1F1A14] hover:bg-[#F5EDDD]"
                   }`}
                 >
                   {selected && <IconCheck size={14} />}
@@ -264,7 +264,7 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
               onChangeUrl(e.target.value);
             }}
             placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/..."
-            className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+            className="h-11 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
           />
           {url ? (
             youtubeId ? (
@@ -275,7 +275,7 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
               <p className="text-xs text-amber-700">Format link YouTube belum dikenali. Contoh: https://youtu.be/xxxx atau youtube.com/watch?v=xxxx</p>
             )
           ) : (
-            <p className="text-xs text-[#6B6358]">Mendukung link youtube.com, youtu.be, shorts, dan music.youtube.com.</p>
+            <p className="text-xs text-[#6B5F50]">Mendukung link youtube.com, youtu.be, shorts, dan music.youtube.com.</p>
           )}
         </div>
       )}
@@ -297,34 +297,34 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex min-h-20 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#CFC5B4] bg-[#FFFDF9] px-4 py-4 text-center transition-colors hover:border-[#8A6A2F] disabled:opacity-60"
+            className="flex min-h-20 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#D9CBAE] bg-[#FFFDF9] px-4 py-4 text-center transition-colors hover:border-[#8A6424] disabled:opacity-60"
           >
             {uploading ? (
-              <span className="flex items-center gap-2 text-sm font-medium text-[#1E1B17]">
-                <IconLoader2 size={18} className="animate-spin text-[#8A6A2F]" />
+              <span className="flex items-center gap-2 text-sm font-medium text-[#1F1A14]">
+                <IconLoader2 size={18} className="animate-spin text-[#8A6424]" />
                 Mengunggah file audio ke S3...
               </span>
             ) : (
               <>
-                <span className="flex items-center gap-2 text-sm font-medium text-[#1E1B17]">
-                  <IconUpload size={17} className="text-[#8A6A2F]" />
+                <span className="flex items-center gap-2 text-sm font-medium text-[#1F1A14]">
+                  <IconUpload size={17} className="text-[#8A6424]" />
                   {url ? "Ganti file audio" : "Pilih atau unggah file audio"}
                 </span>
-                <span className="text-xs text-[#6B6358]">MP3, WAV, OGG, M4A, AAC · Maksimal 10MB</span>
+                <span className="text-xs text-[#6B5F50]">MP3, WAV, OGG, M4A, AAC · Maksimal 10MB</span>
               </>
             )}
           </button>
 
           {url && !extractYouTubeId(url) && (
-            <div className="space-y-2.5 rounded-xl border border-[#E1D8C9] bg-[#FFFDF9] p-3">
+            <div className="space-y-2.5 rounded-xl border border-[#E9DDC6] bg-[#FFFDF9] p-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#EFE8DC] text-[#8A6A2F]">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F5EDDD] text-[#8A6424]">
                     <IconMusic size={16} />
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-[#1E1B17]">{uploadedFileName || "Audio tersimpan di storage"}</p>
-                    <p className="truncate text-[11px] text-[#6B6358]">{url}</p>
+                    <p className="truncate text-xs font-medium text-[#1F1A14]">{uploadedFileName || "Audio tersimpan di storage"}</p>
+                    <p className="truncate text-[11px] text-[#6B5F50]">{url}</p>
                   </div>
                 </div>
                 <button
@@ -334,7 +334,7 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
                     setUploadedFileName("");
                   }}
                   aria-label="Hapus audio"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#6B6358] transition-colors hover:bg-[#EFE8DC] hover:text-red-600"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#6B5F50] transition-colors hover:bg-[#F5EDDD] hover:text-red-600"
                 >
                   <IconTrash size={15} />
                 </button>
@@ -343,8 +343,8 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
             </div>
           )}
 
-          <details className="text-xs text-[#6B6358]">
-            <summary className="cursor-pointer py-1 hover:text-[#1E1B17]">Atau tempel link audio MP3 langsung</summary>
+          <details className="text-xs text-[#6B5F50]">
+            <summary className="cursor-pointer py-1 hover:text-[#1F1A14]">Atau tempel link audio MP3 langsung</summary>
             <Input
               value={url}
               onChange={(e) => {
@@ -353,7 +353,7 @@ export function MusicSourcePicker({ type, url, onChangeType, onChangeUrl, allowD
               }}
               aria-label="URL file audio"
               placeholder="https://.../lagu.mp3"
-              className="mt-2 h-10 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+              className="mt-2 h-10 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
             />
           </details>
         </div>

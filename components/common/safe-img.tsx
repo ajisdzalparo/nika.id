@@ -10,8 +10,8 @@ export function SafeImg({ src, alt, className = "" }: { src: string | null | und
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   if (!src || failedSrc === src) {
     return (
-      <div className={`flex items-center justify-center bg-[#EFE8DC] p-4 text-center ${className}`} role="img" aria-label={alt}>
-        <span className="font-(family-name:--font-landing-display) text-2xl leading-tight text-[#8A6A2F]">{alt}</span>
+      <div className={`flex items-center justify-center bg-[#F5EDDD] p-4 text-center ${className}`} role="img" aria-label={alt}>
+        <span className="font-(family-name:--font-landing-display) text-2xl leading-tight text-[#8A6424]">{alt}</span>
       </div>
     );
   }

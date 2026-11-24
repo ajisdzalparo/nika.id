@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowUpRight, IconBook, IconBrush, IconBuildingStore, IconEdit, IconHome, IconListDetails, IconPalette, IconSettings, IconTemplate, IconUsers, type Icon, IconWallet, IconMessageCircleHeart } from "@tabler/icons-react";
+import { IconArrowUpRight, IconBook, IconBrandWhatsapp, IconBrush, IconScan, IconBuildingStore, IconEdit, IconHome, IconListDetails, IconPalette, IconSettings, IconTemplate, IconUsers, type Icon, IconWallet, IconMessageCircleHeart } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
 import { InvitationSwitcher } from "@/components/user/active-invitation-context";
@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/sidebar";
 import { useSession } from "@/lib/auth-client";
 import { getPlanLimits, type PlanType } from "@/lib/limits";
+import { BrandLogo } from "@/components/common/brand-logo";
 
-const groups: { label: string; items: { title: string; url: string; icon: Icon }[] }[] = [
+const groups: { label: string; items: { title: string; url: string; icon: Icon; badge?: string }[] }[] = [
   {
     label: "Undangan",
     items: [
@@ -38,7 +39,9 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
     label: "Tamu",
     items: [
       { title: "Daftar Tamu", url: "/manajemen-tamu", icon: IconUsers },
+      { title: "WA Blast", url: "/wa-blast", icon: IconBrandWhatsapp, badge: "Segera" },
       { title: "RSVP & Ucapan", url: "/buku-tamu", icon: IconBook },
+      { title: "Check-in Tamu", url: "/check-in", icon: IconScan },
     ],
   },
   {
@@ -78,20 +81,10 @@ export function UserSidebar({
       <SidebarHeader className="gap-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" tooltip="UNDANGIN YUK" className="hover:bg-transparent">
+            <SidebarMenuButton asChild size="lg" tooltip="SatuMoment" className="hover:bg-transparent">
               <Link href="/dashboard" className="flex items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/logo-mark.png"
-                  alt="UNDANGIN YUK"
-                  className="hidden size-7 shrink-0 object-contain group-data-[collapsible=icon]:block"
-                />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/logo.png"
-                  alt="UNDANGIN YUK"
-                  className="h-8 w-auto object-contain group-data-[collapsible=icon]:hidden"
-                />
+                <BrandLogo variant="symbol" className="hidden size-7 shrink-0 group-data-[collapsible=icon]:block" />
+                <BrandLogo className="h-8 group-data-[collapsible=icon]:hidden" />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -102,17 +95,22 @@ export function UserSidebar({
       <SidebarContent>
         {groups.map((g) => (
           <SidebarGroup key={g.label}>
-            <SidebarGroupLabel className="text-[11px] uppercase tracking-[0.18em] text-[#8C8272]">{g.label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-[11px] uppercase tracking-[0.18em] text-[#8E8268]">{g.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {g.items
                   .filter((item) => aiDesignEnabled || item.url !== "/desain-ai")
                   .map((item) => (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild tooltip={item.title} isActive={pathname === item.url || pathname.startsWith(`${item.url}/`)}className="h-10 data-[active=true]:bg-[#1E1B17] data-[active=true]:text-[#F7F3EC] data-[active=true]:font-normal">
+                    <SidebarMenuButton asChild tooltip={item.title} isActive={pathname === item.url || pathname.startsWith(`${item.url}/`)}className="relative h-10 rounded-xl transition-colors hover:bg-[#EEE2C9]/70 data-[active=true]:bg-[#1F1A14] data-[active=true]:font-medium data-[active=true]:text-[#F6EEDD] data-[active=true]:shadow-[0_8px_18px_-12px_rgba(26,21,16,.7)] data-[active=true]:before:absolute data-[active=true]:before:inset-y-2.5 data-[active=true]:before:left-0 data-[active=true]:before:w-[3px] data-[active=true]:before:rounded-full data-[active=true]:before:bg-[linear-gradient(180deg,#E6CB86,#B8903F)] [&[data-active=true]>svg]:text-[#D9B56A]">
                       <Link href={item.url}>
                         <item.icon stroke={1.6} />
-                        <span>{item.title}</span>
+                        <span className="truncate">{item.title}</span>
+                        {item.badge && (
+                          <span className="ml-auto rounded-full bg-[#F6EEDF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#8A6424] group-data-[collapsible=icon]:hidden">
+                            {item.badge}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -124,10 +122,11 @@ export function UserSidebar({
       </SidebarContent>
 
       <SidebarFooter className="gap-3">
-        <Link href="/upgrade" className="group block rounded-xl border border-[#E1D8C9] bg-[#F7F3EC] p-4 transition-colors hover:border-[#C9A45C] group-data-[collapsible=icon]:hidden">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-[#8C8272]">Paket</p>
-          <p className="mt-1 font-(family-name:--font-landing-display) text-xl">{limits.name}</p>
-          <p className="mt-2 flex items-center gap-1 text-sm text-[#8A6A2F]">
+        <Link href="/upgrade" className="group relative block overflow-hidden rounded-2xl bg-[#1A1510] p-4 text-[#F6EEDD] transition-transform hover:-translate-y-0.5 group-data-[collapsible=icon]:hidden">
+          <span aria-hidden className="uy-lattice-light pointer-events-none absolute inset-0" />
+          <p className="relative text-[11px] uppercase tracking-[0.18em] text-[#D9B56A]">Paket</p>
+          <p className="relative mt-1 font-(family-name:--font-landing-display) text-2xl">{limits.name}</p>
+          <p className="relative mt-2 flex items-center gap-1 text-sm text-[#E6CB86]">
             {plan === "EKSKLUSIF" ? "Lihat detail paket" : plan === "FREE" ? "Aktifkan paket" : "Tingkatkan paket"} <IconArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </p>
         </Link>

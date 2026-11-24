@@ -6,16 +6,23 @@ import { MOCK_WEDDING_DATA } from "@/lib/constants/mock-wedding-data";
 import type { AiTheme } from "@/lib/ai-design/schema";
 import type { WeddingData } from "@/types/wedding";
 
-/** Landing palette — scoped to the landing page so the dashboard keeps its own tokens. */
+/** Landing palette: champagne paper, espresso ink and gold. Scoped to the landing so the dashboard keeps its own tokens. */
 export const L = {
-  bg: "#F7F3EC",
-  surface: "#FFFDF9",
-  ink: "#1E1B17",
-  muted: "#6B6358",
-  line: "#E4DCCF",
-  accent: "#8A6A2F", // deep antique gold: readable as text on ivory (5.1:1)
-  accentBright: "#C9A45C",
-  night: "#15130F",
+  bg: "#FCF8F1",
+  surface: "#FFFFFF",
+  blush: "#F6EEDF", // champagne, alternate section background
+  ink: "#1F1A14",
+  muted: "#6B5F50", // 6.1:1 on bg
+  line: "#E9DDC6",
+  accent: "#8A6424", // deep gold, readable as text on champagne (5.0:1)
+  accentSoft: "#F3E6C8",
+  accentBright: "#D9B56A", // bright gold for text on the night background
+  night: "#1A1510", // espresso, warmer than black
+  nightText: "#F6EEDD",
+  nightMuted: "#CDBF9F",
+  nightLine: "#3A3122",
+  /** Gold foil for primary buttons; ink text on it stays above 7:1 */
+  foil: "linear-gradient(120deg, #B8903F 0%, #E6CB86 45%, #C9A24E 70%, #A8823A 100%)",
 };
 
 type RevealDirection = "up" | "down" | "left" | "right" | "scale";
@@ -41,8 +48,9 @@ export function Reveal({ children, className = "", delay = 0, direction = "up" }
   return (
     <div
       ref={ref}
+      data-shown={shown}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${shown ? "translate-x-0 translate-y-0 scale-100 opacity-100" : `${HIDDEN_STATE[direction]} motion-reduce:translate-x-0 motion-reduce:translate-y-0 motion-reduce:scale-100 motion-reduce:opacity-100`} ${className}`}
+      className={`group/reveal transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${shown ? "translate-x-0 translate-y-0 scale-100 opacity-100" : `${HIDDEN_STATE[direction]} motion-reduce:translate-x-0 motion-reduce:translate-y-0 motion-reduce:scale-100 motion-reduce:opacity-100`} ${className}`}
     >
       {children}
     </div>
@@ -58,7 +66,7 @@ export function Eyebrow({ children, light = false }: { children: ReactNode; ligh
 }
 
 export function Display({ children, className = "", as: Tag = "h2" }: { children: ReactNode; className?: string; as?: "h1" | "h2" | "h3" }) {
-  return <Tag className={`font-(family-name:--font-landing-display) font-medium lining-nums leading-[1.04] tracking-[-0.01em] ${className}`}>{children}</Tag>;
+  return <Tag className={`font-(family-name:--font-landing-display) font-normal lining-nums leading-[1.08] tracking-[-0.02em] ${className}`}>{children}</Tag>;
 }
 
 /** Thin gold rule with a diamond, the landing's single ornament. */
@@ -80,7 +88,7 @@ export function Phone({ theme, zoom = 0.78, interactive = false, className = "",
   const width = Math.round(375 * zoom);
   const height = Math.round(720 * zoom);
   return (
-    <div className={`relative shrink-0 rounded-[38px] bg-[#111] p-[7px] shadow-[0_30px_60px_-20px_rgba(30,27,23,.45)] ${className}`} style={{ width: width + 14 }}>
+    <div className={`relative shrink-0 rounded-[38px] bg-[#111] p-[7px] shadow-[0_30px_60px_-20px_rgba(26,21,16,.45)] ${className}`} style={{ width: width + 14 }}>
       <div className="absolute left-1/2 top-[13px] z-20 h-[18px] w-[76px] -translate-x-1/2 rounded-full bg-[#111]" />
       <div className={`overflow-hidden rounded-[31px] bg-white ${interactive ? "" : "pointer-events-none select-none"}`} style={{ width, height }}>
         <div className={`h-full ${interactive ? "overflow-y-auto overscroll-contain [scrollbar-width:none]" : "overflow-hidden"}`}>

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       valid: true,
       code: referrer.referralCode,
-      referrerName: referrer.name || "Mitra UNDANGIN YUK",
+      referrerName: referrer.name || "Mitra SatuMoment",
     });
   }
 

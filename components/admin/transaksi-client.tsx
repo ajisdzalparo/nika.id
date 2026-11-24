@@ -123,11 +123,11 @@ export function TransactionsClient({ initialTransactions }: TransactionsClientPr
                   <TableCell>
                     <span className="font-semibold">Rp {t.amount.toLocaleString("id-ID")}</span>
                     {t.kind === "AGENCY_QUOTA" ? (
-                      <span className="ml-2 rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-2 py-0.5 text-[11px] text-[#5C4620]">
+                      <span className="ml-2 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[11px] text-[#5C431A]">
                         Kuota Mitra ({t.addonUnits ?? 0})
                       </span>
                     ) : t.kind === "AI_CREDIT" ? (
-                      <span className="ml-2 rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-2 py-0.5 text-[11px] text-[#5C4620]">
+                      <span className="ml-2 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[11px] text-[#5C431A]">
                         Top-up {t.addonUnits ?? 0} Kredit AI
                       </span>
                     ) : t.kind === "GUEST_ADDON" ? (

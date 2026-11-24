@@ -198,7 +198,7 @@ export async function buildFinanceWorkbook(
   periodLabel: string,
 ) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "UNDANGIN YUK";
+  wb.creator = "SatuMoment";
 
   const s = wb.addWorksheet("Ringkasan");
   s.columns = [{ width: 32 }, { width: 20, style: { numFmt: RUPIAH_FMT } }, { width: 12 }];

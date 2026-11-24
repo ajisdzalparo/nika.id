@@ -4,6 +4,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { IconCopy, IconLayersSubtract, IconLock, IconLockOpen, IconRefresh, IconSparkles, IconStackForward, IconTrash } from "@tabler/icons-react";
 import { getPresetOrnament } from "@/lib/ai-design/ornament-library";
 import type { AiTheme, CanvasLayer, CanvasSectionId, LayerAnimation, SectionEntrance } from "@/lib/ai-design/schema";
+import type { ParticleKind } from "@/lib/ai-design/schema";
 import type { WeddingData } from "@/types/wedding";
 import { fontStack } from "./theme";
 
@@ -15,6 +16,8 @@ export interface PaletteDragPayload {
   fontWeight?: CanvasLayer["fontWeight"];
   italic?: boolean;
   uppercase?: boolean;
+  heightRatio?: number;
+  color?: string;
 }
 
 export interface CanvasEditorBridge {
@@ -334,6 +337,7 @@ const LAYER_ANIM_CLASS: Record<LayerAnimation, string> = {
   "zoom-in": "animate-uy-zoom-in",
   "slide-left": "animate-uy-slide-left",
   "slide-right": "animate-uy-slide-right",
+  drift: "animate-uy-drift",
 };
 
 const SECTION_ENTRANCE_CLASS: Record<SectionEntrance, string> = {
@@ -436,6 +440,151 @@ function LayerVisual({ layer, theme, data }: { layer: CanvasLayer; theme: AiThem
     <div className={`h-full w-full ${animClass}`} style={animStyle}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt="" className="h-full w-full object-contain select-none" draggable={false} />
+    </div>
+  );
+}
+
+
+// ─── Ambient particles ───────────────────────────────────────────────────
+
+/** Fixed pseudo-random spread so server and client render the same particles. */
+const PARTICLE_SPREAD = [
+  { x: 6, d: 0, t: 15, s: 1, r: 320 },
+  { x: 18, d: 4.5, t: 18, s: 0.8, r: -260 },
+  { x: 31, d: 9, t: 14, s: 1.15, r: 380 },
+  { x: 44, d: 2, t: 20, s: 0.7, r: -300 },
+  { x: 57, d: 11, t: 16, s: 0.95, r: 280 },
+  { x: 69, d: 6.5, t: 19, s: 1.1, r: -340 },
+  { x: 81, d: 1, t: 15, s: 0.85, r: 300 },
+  { x: 93, d: 8, t: 17, s: 1, r: -280 },
+  { x: 25, d: 13, t: 21, s: 0.75, r: 360 },
+  { x: 75, d: 15, t: 18, s: 0.9, r: -320 },
+];
+
+function ParticleShape({ kind, color }: { kind: ParticleKind; color: string }) {
+  if (kind === "gold-dust") {
+    return (
+      <svg viewBox="0 0 10 10" width="7" height="7" aria-hidden="true">
+        <path d="M5 0 L6 4 L10 5 L6 6 L5 10 L4 6 L0 5 L4 4Z" fill={color} />
+      </svg>
+    );
+  }
+  if (kind === "leaves") {
+    return (
+      <svg viewBox="0 0 20 12" width="16" height="10" aria-hidden="true">
+        <path d="M1 6 C5 0 14 0 19 6 C14 12 5 12 1 6Z" fill={color} opacity=".8" />
+        <path d="M2 6 H17" stroke="#ffffff" strokeOpacity=".4" strokeWidth=".8" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 16 18" width="13" height="15" aria-hidden="true">
+      <path d="M8 1 C14 4 16 11 8 17 C0 11 2 4 8 1Z" fill={color} opacity=".85" />
+      <path d="M8 3 C9 8 9 12 8 15" stroke="#ffffff" strokeOpacity=".35" strokeWidth=".8" fill="none" />
+    </svg>
+  );
+}
+
+/** Petals, gold dust or leaves drifting down over a section; hidden for reduced motion. */
+export function AmbientParticles({ kind, theme, variant = 0 }: { kind: ParticleKind; theme: AiTheme; variant?: number }) {
+  // Each placement gets its own timing and lanes so two panels on one screen never move in step
+  const shift = (variant * 5.3) % 17;
+  const lane = (x: number) => (x + variant * 37) % 96;
+  if (kind === "none") return null;
+  const color = kind === "petals" ? "#E9A9B4" : kind === "leaves" ? "#8FA287" : theme.palette.accent;
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[15] overflow-hidden">
+      {PARTICLE_SPREAD.map((p, i) => (
+        <span
+          key={i}
+          className="uy-particle"
+          style={
+            {
+              left: `${lane(p.x)}%`,
+              "--uy-p-delay": `${(p.d + shift) % 17}s`,
+              "--uy-p-dur": `${p.t}s`,
+              "--uy-p-spin": `${p.r}deg`,
+              "--uy-p-drift": `${i % 2 ? -50 : 50}px`,
+              "--uy-p-opacity": kind === "gold-dust" ? 0.9 : 0.75,
+              transform: `scale(${p.s})`,
+            } as React.CSSProperties
+          }
+        >
+          <ParticleShape kind={kind} color={color} />
+        </span>
+      ))}
+      {kind === "petals" &&
+        BUTTERFLIES.map((b, i) => (
+          <span
+            key={`b${i}`}
+            className="uy-butterfly"
+            style={
+              {
+                left: `${lane(b.x)}%`,
+                "--uy-fly-delay": `${(b.d + shift * 1.7) % 19}s`,
+                "--uy-fly-dur": `${b.t}s`,
+                "--uy-fly-x1": `${b.w}px`,
+                "--uy-fly-x2": `${-b.w / 2}px`,
+                "--uy-fly-x3": `${b.w * 1.4}px`,
+                "--uy-fly-x4": `${b.w / 2}px`,
+              } as React.CSSProperties
+            }
+          >
+            <Butterfly color={b.c} />
+          </span>
+        ))}
+    </div>
+  );
+}
+
+const BUTTERFLIES = [
+  { x: 12, d: 1, t: 17, w: 70, c: "#E7A3B3" },
+  { x: 62, d: 7, t: 20, w: -60, c: "#D8B4E2" },
+  { x: 38, d: 13, t: 19, w: 50, c: "#F2C9A0" },
+];
+
+function Butterfly({ color }: { color: string }) {
+  return (
+    <svg viewBox="0 0 30 22" width="26" height="19" aria-hidden="true" className="block overflow-visible">
+      <g className="uy-wing-l">
+        <path d="M15 11 C10 1 2 0 2 6 C2 10 8 12 15 11Z" fill={color} />
+        <path d="M15 12 C9 13 4 16 6 20 C9 22 13 18 15 12Z" fill={color} opacity=".8" />
+      </g>
+      <g className="uy-wing-r">
+        <path d="M15 11 C20 1 28 0 28 6 C28 10 22 12 15 11Z" fill={color} />
+        <path d="M15 12 C21 13 26 16 24 20 C21 22 17 18 15 12Z" fill={color} opacity=".8" />
+      </g>
+      <path d="M15 6 V17" stroke="#5B4636" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/**
+ * Read-only copy of one section's illustration layers, for places outside the section itself
+ * (the desktop stage reuses the cover's frame, vines and bouquets so both halves of the screen move).
+ */
+export function StaticSectionLayers({ theme, section, data, className = "" }: { theme: AiTheme; section: CanvasSectionId; data?: WeddingData; className?: string }) {
+  const layers = (theme.layers ?? []).filter((l) => l.section === section && l.kind !== "text");
+  if (!layers.length) return null;
+  return (
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-0 ${className}`}>
+      {layers.map((layer, idx) => (
+        <div
+          key={layer.id}
+          className="absolute"
+          style={{
+            left: `${layer.x}%`,
+            top: `${layer.y}%`,
+            width: `${layer.size}px`,
+            height: `${Math.round(layer.size * (layer.heightRatio ?? 1))}px`,
+            opacity: layer.opacity,
+            transform: `translate(-50%, -50%) rotate(${layer.rotation}deg) scaleX(${layer.flipX ? -1 : 1})`,
+            zIndex: layer.zIndex ?? idx + 1,
+          }}
+        >
+          <LayerVisual layer={layer} theme={theme} data={data} />
+        </div>
+      ))}
     </div>
   );
 }
@@ -827,7 +976,7 @@ export function CanvasSectionFrame({
             src={secStyle.backgroundImage}
             alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            className="uy-kenburns pointer-events-none absolute inset-0 h-full w-full object-cover"
           />
           <div
             aria-hidden="true"
@@ -839,6 +988,8 @@ export function CanvasSectionFrame({
           />
         </>
       )}
+
+      {(section === "cover" || section === "closing") && theme.particles && !canvasEditor && <AmbientParticles kind={theme.particles} theme={theme} />}
 
       {behindLayers.length > 0 && (
         <div className="pointer-events-none absolute inset-0 z-[5]">

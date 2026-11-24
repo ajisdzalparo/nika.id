@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import {
   IconBold,
   IconBrush,
   IconCheck,
+  IconFlower,
   IconCopy,
   IconDeviceDesktop,
   IconDeviceFloppy,
@@ -35,6 +36,7 @@ import {
   IconTrash,
   IconTypography,
   IconUpload,
+  IconX,
 } from "@tabler/icons-react";
 import AiDesignTemplate from "@/components/templates/ai-design";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
@@ -51,7 +53,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { MarketplaceSellDialog } from "@/components/user/marketplace-sell-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,9 +82,9 @@ import {
   type SectionStyle,
 } from "@/lib/ai-design/schema";
 import type { AiQuota } from "@/lib/ai-design/server";
-import { CATALOG_CATEGORIES } from "@/lib/catalog-shared";
-import { DEFAULT_MARKETPLACE_FEE_PCT, MARKETPLACE_MAX_PRICE, MARKETPLACE_MIN_PRICE } from "@/lib/limits";
+import { ART_KIT_DEFS, artKitLibrary, composeArtKit, withArtKit, type ArtKitKey } from "@/lib/ai-design/art-kits";
 import type { WeddingData } from "@/types/wedding";
+import { SelectField } from "@/components/ui/select";
 
 interface DesignItem {
   id: string;
@@ -153,11 +156,11 @@ const CURATED_WEDDING_KEYS = new Set([
 const SECTION_STYLE_PRESETS: ReadonlyArray<{ label: string; style: Partial<SectionStyle> }> = [
   {
     label: "Klasik Emas",
-    style: { background: "#FAF6EC", backgroundEnd: "#EFE4CC", textColor: "#241D14", accentColor: "#8A6A2F", surfaceColor: "#FFFDF9", displayFont: "Cormorant Garamond" },
+    style: { background: "#FAF6EC", backgroundEnd: "#EFE4CC", textColor: "#241D14", accentColor: "#8A6424", surfaceColor: "#FFFDF9", displayFont: "Cormorant Garamond" },
   },
   {
     label: "Minimalis Putih",
-    style: { background: "#FFFFFF", backgroundEnd: undefined, textColor: "#15130F", accentColor: "#5E574D", surfaceColor: "#FAF8F4", displayFont: "Tenor Sans", clearDecor: true },
+    style: { background: "#FFFFFF", backgroundEnd: undefined, textColor: "#1A1510", accentColor: "#5E5446", surfaceColor: "#FCF8F1", displayFont: "Tenor Sans", clearDecor: true },
   },
   {
     label: "Malam Mewah",
@@ -169,6 +172,21 @@ const SECTION_STYLE_PRESETS: ReadonlyArray<{ label: string; style: Partial<Secti
   },
 ];
 
+const ART_LIBRARY = artKitLibrary();
+const ART_SLOT_SIZE = { frame: 380, corner: 220, side: 80, emblem: 80 } as const;
+const ART_SLOT_LABEL = { frame: "Bingkai atas", corner: "Bunga sudut", side: "Sulur", emblem: "Lambang" } as const;
+
+/** Previews of tinted (line) art are shown in the theme accent instead of black. */
+function tintSrc(src: string, tinted: boolean) {
+  return tinted && src.startsWith("data:image/svg+xml") ? src.replace(/currentColor/g, encodeURIComponent("#8A6424")) : src;
+}
+
+function isDarkHex(hex: string) {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map((c) => c + c).join("") : h, 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 < 0.45;
+}
+
 const ANIMATION_LABELS: Record<LayerAnimation, string> = {
   none: "Tanpa Animasi",
   float: "Mengambang (Float)",
@@ -179,6 +197,7 @@ const ANIMATION_LABELS: Record<LayerAnimation, string> = {
   "zoom-in": "Zoom Masuk (Zoom In)",
   "slide-left": "Geser Kiri (Slide Left)",
   "slide-right": "Geser Kanan (Slide Right)",
+  drift: "Melayang Berputar (Drift)",
 };
 
 const ENTRANCE_LABELS: Record<SectionEntrance, string> = {
@@ -212,14 +231,20 @@ export function CanvasStudio({
   initialMyTemplates: MyTemplateItem[];
 }) {
   const router = useRouter();
-  const [theme, setTheme] = useState<AiTheme>(initialTheme);
+  // A theme without hand-placed layers opens with its art kit laid out as normal, editable layers
+  const [theme, setTheme] = useState<AiTheme>(() => withArtKit(initialTheme));
   const [designId, setDesignId] = useState<string | null>(initialDesignId);
   const [designs, setDesigns] = useState<DesignItem[]>(initialDesigns);
+  // Set while the canvas holds a built-in preset or a catalog template: those can be used, not sold
+  const [templateOrigin, setTemplateOrigin] = useState<string | null>(() => {
+    const d = initialDesigns.find((x) => x.id === initialDesignId);
+    return d?.source === "CATALOG" ? d.theme.name : null;
+  });
   const [quota, setQuota] = useState<AiQuota>(initialQuota);
   const [myTemplates, setMyTemplates] = useState<MyTemplateItem[]>(initialMyTemplates);
 
   const [toolTab, setToolTab] = useState<"ornaments" | "colors" | "type" | "layout">("ornaments");
-  const [ornamentSourceTab, setOrnamentSourceTab] = useState<"library" | "ai" | "upload" | "text">("ai");
+  const [ornamentSourceTab, setOrnamentSourceTab] = useState<"art" | "library" | "ai" | "upload" | "text">("art");
   const [activeSection, setActiveSection] = useState<CanvasSectionId>("cover");
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
 
@@ -230,16 +255,55 @@ export function CanvasStudio({
 
   // Custom upload & text
   const [uploadedAssetUrl, setUploadedAssetUrl] = useState("");
+  const [uploadedGallery, setUploadedGallery] = useState<string[]>([]);
+  const [showGlobalAssets, setShowGlobalAssets] = useState(
+    () => Boolean(initialTheme.assets?.backgroundImage || initialTheme.assets?.ornamentImage),
+  );
   const [textLayerInput, setTextLayerInput] = useState("The Wedding");
+
+  // Load saved uploaded assets tray from localStorage so uploads stay reusable across sections
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("uy_canvas_uploads");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        setUploadedGallery(parsed.filter((u): u is string => typeof u === "string" && u.length > 0).slice(0, 24));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const rememberUploadedAsset = (url: string) => {
+    const clean = url.trim();
+    if (!clean) return;
+    setUploadedGallery((prev) => {
+      const next = [clean, ...prev.filter((u) => u !== clean)].slice(0, 24);
+      try {
+        window.localStorage.setItem("uy_canvas_uploads", JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
+  const removeUploadedAsset = (url: string) => {
+    setUploadedGallery((prev) => {
+      const next = prev.filter((u) => u !== url);
+      try {
+        window.localStorage.setItem("uy_canvas_uploads", JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
 
   // Save / Apply / Marketplace modal
   const [saving, setSaving] = useState(false);
-  const [sellOpen, setSellOpen] = useState(false);
-  const [sellName, setSellName] = useState(initialTheme.name || "");
-  const [sellCategory, setSellCategory] = useState<(typeof CATALOG_CATEGORIES)[number]>("Elegan");
-  const [sellDesc, setSellDesc] = useState(initialTheme.mood || "");
-  const [sellPrice, setSellPrice] = useState(29000);
-  const [submittingSell, setSubmittingSell] = useState(false);
+  const [sellTheme, setSellTheme] = useState<AiTheme | null>(null);
   const [showSectionBgEditor, setShowSectionBgEditor] = useState(false);
   const [deleteDesignTarget, setDeleteDesignTarget] = useState<DesignItem | null>(null);
   const [deletingDesign, setDeletingDesign] = useState(false);
@@ -316,8 +380,41 @@ export function CanvasStudio({
     });
   };
 
+  /** Lays the kit out on every section; earlier kit pieces are replaced, the user's own layers stay. */
+  const applyArtKit = (key: Exclude<ArtKitKey, "none">) => {
+    setTheme((prev) => {
+      const { layers: kitLayers, sectionStyles } = composeArtKit(prev, key);
+      const own = (prev.layers ?? []).filter((l) => !l.id.startsWith("kit-"));
+      return {
+        ...prev,
+        artKit: key,
+        particles: ART_KIT_DEFS[key].particles,
+        layers: [...kitLayers, ...own],
+        sectionStyles: { ...(prev.sectionStyles ?? {}), ...sectionStyles },
+      };
+    });
+    setSelectedLayerId(null);
+    toast.success(`Paket ${ART_KIT_DEFS[key].label} dipasang. Geser, ubah ukuran atau hapus elemennya sesuka hati.`);
+  };
+
+  const removeArtKit = () => {
+    setTheme((prev) => ({ ...prev, artKit: "none", particles: "none", layers: (prev.layers ?? []).filter((l) => !l.id.startsWith("kit-")) }));
+    setSelectedLayerId(null);
+    toast.success("Paket ilustrasi dilepas");
+  };
+
+  /** Only original designs go to the marketplace; AI + server double-checks similarity before & on submit. */
+  const openSell = (t: AiTheme, origin: string | null) => {
+    if (origin) {
+      toast.error(`Desain ini berasal dari template "${origin}". Template bawaan tidak bisa dijual ulang: mulai dari Kanvas Kosong atau Desain AI untuk membuat desain yang bisa dijual.`, { duration: 7000 });
+      return;
+    }
+    setSellTheme(t);
+  };
+
   const loadBlankCanvas = () => {
     setTheme(BLANK_CANVAS_THEME);
+    setTemplateOrigin(null);
     setDesignId(null);
     setSelectedLayerId(null);
     setActiveSection("cover");
@@ -456,37 +553,6 @@ export function CanvasStudio({
     }
   };
 
-  const submitToMarketplace = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmittingSell(true);
-    try {
-      const res = await fetch("/api/user/marketplace", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: sellName,
-          category: sellCategory,
-          description: sellDesc,
-          price: sellPrice,
-          theme,
-        }),
-      });
-      const d = await res.json();
-      if (!res.ok) {
-        toast.error(d.message || "Gagal mengajukan template");
-        return;
-      }
-      setMyTemplates((prev) => [d.template, ...prev]);
-      setSellOpen(false);
-      toast.success("Template diajukan! Admin akan mereview sebelum tayang di Marketplace.");
-      router.refresh();
-    } finally {
-      setSubmittingSell(false);
-    }
-  };
-
-  const feeEstimate = Math.round(sellPrice * (DEFAULT_MARKETPLACE_FEE_PCT / 100));
-  const creatorEstimate = Math.max(0, sellPrice - feeEstimate);
   const queryClean = elementQuery.trim().toLowerCase();
   const curatedPresets = useMemo(
     () => PRESET_ORNAMENTS.filter((p) => CURATED_WEDDING_KEYS.has(p.key)),
@@ -499,30 +565,30 @@ export function CanvasStudio({
   }, [curatedPresets, expandedGroup, queryClean]);
 
   return (
-    <div className="min-w-0 flex-1 overflow-x-hidden bg-[#FAF8F4] px-4 pb-20 pt-6 lg:px-6">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="min-w-0 flex-1 overflow-x-hidden bg-[#FCF8F1] px-4 pb-20 pt-6 lg:px-8">
+      <div className="w-full space-y-6">
         {/* Top Studio Toolbar */}
-        <header className="flex flex-col justify-between gap-4 rounded-2xl border border-[#E6DFD3] bg-white p-4 sm:p-5 xl:flex-row xl:items-center">
+        <header className="flex flex-col justify-between gap-4 rounded-2xl border border-[#EDE3CF] bg-white p-4 sm:p-5 xl:flex-row xl:items-center">
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/kanvas"
-              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[#DFD7C8] bg-[#FAF8F4] px-3.5 text-xs font-medium text-[#15130F] hover:bg-[#EFEAE0]"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[#E9DDC6] bg-[#FCF8F1] px-3.5 text-xs font-medium text-[#1A1510] hover:bg-[#F3EBDB]"
             >
               <IconArrowLeft size={14} /> Daftar Desain
             </Link>
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F4EAD6] text-[#8A6A2F]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5E8CA] text-[#8A6424]">
               <IconBrush size={20} />
             </span>
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8A6A2F]">Kanvas Desain Kreatif</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8A6424]">Kanvas Desain Kreatif</p>
               <div className="mt-0.5 flex flex-wrap items-center gap-2">
                 <input
                   value={theme.name}
                   onChange={(e) => setTheme((prev) => ({ ...prev, name: e.target.value }))}
                   aria-label="Nama desain"
-                  className="h-9 min-w-0 w-full rounded-lg border border-[#E1D8C9] bg-[#FAF8F4] px-2.5 font-serif text-xl font-medium text-[#15130F] outline-none focus:border-[#8A6A2F] sm:w-52"
+                  className="h-9 min-w-0 w-full rounded-lg border border-[#E9DDC6] bg-[#FCF8F1] px-2.5 font-serif text-xl font-medium text-[#1A1510] outline-none focus:border-[#8A6424] sm:w-52"
                 />
-                <select
+                <SelectField size="sm"
                   aria-label="Muat preset atau desain tersimpan"
                   value=""
                   onChange={(e) => {
@@ -536,7 +602,8 @@ export function CanvasStudio({
                       const k = val.slice(7);
                       const p = AI_THEME_PRESETS[k];
                       if (p) {
-                        setTheme(p.theme);
+                        setTheme(withArtKit(p.theme));
+                        setTemplateOrigin(p.theme.name);
                         setDesignId(null);
                         setSelectedLayerId(null);
                         toast.success(`Preset "${p.label}" dimuat ke kanvas`);
@@ -545,14 +612,15 @@ export function CanvasStudio({
                       const id = val.slice(7);
                       const found = designs.find((d) => d.id === id);
                       if (found) {
-                        setTheme(found.theme);
+                        setTheme(withArtKit(found.theme));
+                        setTemplateOrigin(found.source === "CATALOG" ? found.theme.name : null);
                         setDesignId(found.source === "CANVAS" ? found.id : null);
                         setSelectedLayerId(null);
                         toast.success(`Desain "${found.theme.name}" dimuat ke kanvas`);
                       }
                     }
                   }}
-                  className="h-9 min-w-0 max-w-full rounded-lg border border-[#E1D8C9] bg-white px-2.5 text-xs text-[#3F3A33]"
+                  className="min-w-0 max-w-full"
                 >
                   <option value="">Muat dari kanvas / preset…</option>
                   <option value="blank">Kanvas Kosong (Mulai dari 0%)</option>
@@ -572,7 +640,7 @@ export function CanvasStudio({
                       ))}
                     </optgroup>
                   )}
-                </select>
+                </SelectField>
               </div>
             </div>
           </div>
@@ -582,16 +650,16 @@ export function CanvasStudio({
               type="button"
               variant="outline"
               onClick={loadBlankCanvas}
-              className="h-10 rounded-full border-[#DFD7C8] bg-[#FAF8F4] px-3.5 text-xs font-medium text-[#15130F]"
+              className="h-10 rounded-full border-[#E9DDC6] bg-[#FCF8F1] px-3.5 text-xs font-medium text-[#1A1510]"
             >
-              <IconFilePlus size={15} className="mr-1.5 text-[#8A6A2F]" /> Kanvas Kosong
+              <IconFilePlus size={15} className="mr-1.5 text-[#8A6424]" /> Kanvas Kosong
             </Button>
             <Button
               type="button"
               variant="outline"
               disabled={saving}
               onClick={() => void saveCanvas(false)}
-              className="h-10 rounded-full border-[#DFD7C8] px-4 text-xs font-medium"
+              className="h-10 rounded-full border-[#E9DDC6] px-4 text-xs font-medium"
             >
               <IconDeviceFloppy size={15} className="mr-1.5" /> {designId ? "Simpan" : "Simpan Draf"}
             </Button>
@@ -601,7 +669,7 @@ export function CanvasStudio({
                 variant="outline"
                 disabled={saving}
                 onClick={() => void saveCanvas(false, true)}
-                className="h-10 rounded-full border-[#DFD7C8] px-3.5 text-xs font-medium"
+                className="h-10 rounded-full border-[#E9DDC6] px-3.5 text-xs font-medium"
               >
                 <IconCopy size={15} className="mr-1.5" /> Simpan Baru
               </Button>
@@ -610,7 +678,7 @@ export function CanvasStudio({
               type="button"
               disabled={saving}
               onClick={() => void saveCanvas(true)}
-              className="h-10 rounded-full bg-[#15130F] px-4 text-xs font-medium text-[#FAF8F4] hover:bg-[#2A261F]"
+              className="h-10 rounded-full bg-[#1A1510] px-4 text-xs font-medium text-[#FCF8F1] hover:bg-[#2B241B]"
             >
               {saving ? <IconLoader2 size={15} className="mr-1.5 animate-spin" /> : <IconCheck size={15} className="mr-1.5" />}
               Pakai di Undangan
@@ -618,11 +686,9 @@ export function CanvasStudio({
             <Button
               type="button"
               onClick={() => {
-                setSellName(theme.name);
-                setSellDesc(theme.mood);
-                setSellOpen(true);
+                openSell(theme, templateOrigin);
               }}
-              className="h-10 rounded-full bg-[#8A6A2F] px-4 text-xs font-semibold text-white hover:bg-[#755925]"
+              className="h-10 rounded-full bg-[#8A6424] px-4 text-xs font-semibold text-white hover:bg-[#755925]"
             >
               <IconShoppingBag size={15} className="mr-1.5" /> Jual Template
             </Button>
@@ -636,10 +702,11 @@ export function CanvasStudio({
               {/* Canva Left Vertical Rail */}
               <nav
                 aria-label="Alat kanvas"
-                className="flex shrink-0 gap-1 overflow-x-auto rounded-2xl border border-[#E6DFD3] bg-white p-1.5 sm:w-[76px] sm:flex-col sm:overflow-visible"
+                className="flex shrink-0 gap-1 overflow-x-auto rounded-2xl border border-[#EDE3CF] bg-white p-1.5 sm:w-[76px] sm:flex-col sm:overflow-visible"
               >
                 {(
                   [
+                    ["ornaments", "Ilustrasi", IconFlower, "art"],
                     ["ornaments", "AI", IconSparkles, "ai"],
                     ["ornaments", "Bingkai & Hiasan", IconShape, "library"],
                     ["type", "Teks", IconTypography, "text"],
@@ -662,8 +729,8 @@ export function CanvasStudio({
                       }}
                       className={`flex min-w-[62px] flex-col items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[11px] font-medium transition sm:min-w-0 sm:w-full ${
                         active
-                          ? "bg-[#15130F] text-[#FAF8F4] shadow-xs"
-                          : "text-[#5E574D] hover:bg-[#FAF8F4] hover:text-[#15130F]"
+                          ? "bg-[#1A1510] text-[#FCF8F1] shadow-xs"
+                          : "text-[#5E5446] hover:bg-[#FCF8F1] hover:text-[#1A1510]"
                       }`}
                     >
                       <Icon size={18} />
@@ -675,35 +742,35 @@ export function CanvasStudio({
 
               <div className="min-w-0 flex-1 space-y-6">
             {/* Context-Aware Click-to-Edit Section Card (WordPress/Canva style) */}
-            <div className="rounded-2xl border border-[#DFD2BC] bg-[#FFFDF9] p-4 shadow-2xs">
+            <div className="rounded-2xl border border-[#E6D5B2] bg-[#FFFDF9] p-4 shadow-2xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-[#F4EAD6] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[#8A6A2F]">
+                  <span className="rounded-full bg-[#F5E8CA] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[#8A6424]">
                     Section Dipilih
                   </span>
-                  <select
+                  <SelectField size="sm"
                     aria-label="Pilih section aktif"
                     value={activeSection}
                     onChange={(e) => {
                       setActiveSection(e.target.value as CanvasSectionId);
                       setSelectedLayerId(null);
                     }}
-                    className="h-8 rounded-lg border border-[#DFD7C8] bg-white px-2.5 text-xs font-semibold text-[#15130F]"
+                    className="font-semibold"
                   >
                     {CANVAS_SECTION_IDS.map((s) => (
                       <option key={s} value={s}>
                         {SECTION_LABELS[s]}
                       </option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
-                <span className="text-[11px] font-medium text-[#6B6358]">Struktur Baku 11 Section</span>
+                <span className="text-[11px] font-medium text-[#6B5F50]">Struktur Baku 11 Section</span>
               </div>
 
               {/* Instant Layout / Copy Controls for clicked section */}
               {activeSection === "cover" && (
-                <div className="mt-3 space-y-2.5 border-t border-[#EFEAE0] pt-3">
-                  <p className="text-[11px] font-medium text-[#5E574D]">Layout Sampul (klik langsung untuk ganti):</p>
+                <div className="mt-3 space-y-2.5 border-t border-[#F3EBDB] pt-3">
+                  <p className="text-[11px] font-medium text-[#5E5446]">Layout Sampul (klik langsung untuk ganti):</p>
                   <div className="flex flex-wrap gap-1.5">
                     {COVER_LAYOUTS.map((l) => (
                       <button
@@ -712,8 +779,8 @@ export function CanvasStudio({
                         onClick={() => setTheme((prev) => ({ ...prev, layout: { ...prev.layout, cover: l } }))}
                         className={`h-7 rounded-full border px-2.5 text-[11px] font-medium transition ${
                           theme.layout.cover === l
-                            ? "border-[#15130F] bg-[#15130F] text-white"
-                            : "border-[#E1D8C9] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]"
+                            ? "border-[#1A1510] bg-[#1A1510] text-white"
+                            : "border-[#E9DDC6] bg-white text-[#40372B] hover:bg-[#FCF8F1]"
                         }`}
                       >
                         {l}
@@ -738,8 +805,8 @@ export function CanvasStudio({
               )}
 
               {activeSection === "couple" && (
-                <div className="mt-3 space-y-2 border-t border-[#EFEAE0] pt-3">
-                  <p className="text-[11px] font-medium text-[#5E574D]">Layout Mempelai:</p>
+                <div className="mt-3 space-y-2 border-t border-[#F3EBDB] pt-3">
+                  <p className="text-[11px] font-medium text-[#5E5446]">Layout Mempelai:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {COUPLE_LAYOUTS.map((l) => (
                       <button
@@ -748,8 +815,8 @@ export function CanvasStudio({
                         onClick={() => setTheme((prev) => ({ ...prev, layout: { ...prev.layout, couple: l } }))}
                         className={`h-7 rounded-full border px-2.5 text-[11px] font-medium transition ${
                           theme.layout.couple === l
-                            ? "border-[#15130F] bg-[#15130F] text-white"
-                            : "border-[#E1D8C9] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]"
+                            ? "border-[#1A1510] bg-[#1A1510] text-white"
+                            : "border-[#E9DDC6] bg-white text-[#40372B] hover:bg-[#FCF8F1]"
                         }`}
                       >
                         {l}
@@ -760,8 +827,8 @@ export function CanvasStudio({
               )}
 
               {activeSection === "events" && (
-                <div className="mt-3 space-y-2 border-t border-[#EFEAE0] pt-3">
-                  <p className="text-[11px] font-medium text-[#5E574D]">Layout Jadwal Acara:</p>
+                <div className="mt-3 space-y-2 border-t border-[#F3EBDB] pt-3">
+                  <p className="text-[11px] font-medium text-[#5E5446]">Layout Jadwal Acara:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {EVENT_LAYOUTS.map((l) => (
                       <button
@@ -770,8 +837,8 @@ export function CanvasStudio({
                         onClick={() => setTheme((prev) => ({ ...prev, layout: { ...prev.layout, events: l } }))}
                         className={`h-7 rounded-full border px-2.5 text-[11px] font-medium transition ${
                           theme.layout.events === l
-                            ? "border-[#15130F] bg-[#15130F] text-white"
-                            : "border-[#E1D8C9] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]"
+                            ? "border-[#1A1510] bg-[#1A1510] text-white"
+                            : "border-[#E9DDC6] bg-white text-[#40372B] hover:bg-[#FCF8F1]"
                         }`}
                       >
                         {l}
@@ -782,8 +849,8 @@ export function CanvasStudio({
               )}
 
               {activeSection === "gallery" && (
-                <div className="mt-3 space-y-2 border-t border-[#EFEAE0] pt-3">
-                  <p className="text-[11px] font-medium text-[#5E574D]">Layout Galeri Foto:</p>
+                <div className="mt-3 space-y-2 border-t border-[#F3EBDB] pt-3">
+                  <p className="text-[11px] font-medium text-[#5E5446]">Layout Galeri Foto:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {GALLERY_LAYOUTS.map((l) => (
                       <button
@@ -792,8 +859,8 @@ export function CanvasStudio({
                         onClick={() => setTheme((prev) => ({ ...prev, layout: { ...prev.layout, gallery: l } }))}
                         className={`h-7 rounded-full border px-2.5 text-[11px] font-medium transition ${
                           theme.layout.gallery === l
-                            ? "border-[#15130F] bg-[#15130F] text-white"
-                            : "border-[#E1D8C9] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]"
+                            ? "border-[#1A1510] bg-[#1A1510] text-white"
+                            : "border-[#E9DDC6] bg-white text-[#40372B] hover:bg-[#FCF8F1]"
                         }`}
                       >
                         {l}
@@ -804,7 +871,7 @@ export function CanvasStudio({
               )}
 
               {activeSection === "opening" && (
-                <div className="mt-3 space-y-2 border-t border-[#EFEAE0] pt-3">
+                <div className="mt-3 space-y-2 border-t border-[#F3EBDB] pt-3">
                   <Input
                     value={theme.copy.greeting}
                     onChange={(e) => setTheme((prev) => ({ ...prev, copy: { ...prev.copy, greeting: e.target.value } }))}
@@ -822,7 +889,7 @@ export function CanvasStudio({
               )}
 
               {activeSection === "closing" && (
-                <div className="mt-3 space-y-2 border-t border-[#EFEAE0] pt-3">
+                <div className="mt-3 space-y-2 border-t border-[#F3EBDB] pt-3">
                   <Textarea
                     rows={2}
                     value={theme.copy.closing}
@@ -834,10 +901,10 @@ export function CanvasStudio({
               )}
 
               {/* Quick trigger & full per-section style panel (always reachable for ALL 11 sections) */}
-              <div className="mt-3 border-t border-[#EFEAE0] pt-2.5">
+              <div className="mt-3 border-t border-[#F3EBDB] pt-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#3F3A33]">
-                    <IconPalette size={14} className="text-[#8A6A2F]" />
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#40372B]">
+                    <IconPalette size={14} className="text-[#8A6424]" />
                     Kustomisasi Tampilan Section: <strong>{SECTION_LABELS[activeSection]}</strong>
                   </span>
                   <div className="flex items-center gap-2">
@@ -859,7 +926,7 @@ export function CanvasStudio({
                     <button
                       type="button"
                       onClick={() => setShowSectionBgEditor((v) => !v)}
-                      className="rounded-full border border-[#DFD2BC] bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#8A6A2F] hover:bg-[#FBF6EB]"
+                      className="rounded-full border border-[#E6D5B2] bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#8A6424] hover:bg-[#FCF5E6]"
                     >
                       {showSectionBgEditor ? "Tutup Gaya Section" : "Ubah Warna, Font & Gaya →"}
                     </button>
@@ -867,7 +934,7 @@ export function CanvasStudio({
                 </div>
 
                 {showSectionBgEditor && (
-                  <div className="mt-3 grid gap-3 rounded-xl border border-[#EFEAE0] bg-[#FAF8F4] p-3 sm:grid-cols-2">
+                  <div className="mt-3 grid gap-3 rounded-xl border border-[#F3EBDB] bg-[#FCF8F1] p-3 sm:grid-cols-2">
                     <div className="space-y-1.5 sm:col-span-2">
                       <Label className="text-[11px]">Preset Cepat Gaya Section (1 Klik)</Label>
                       <div className="flex flex-wrap gap-1.5">
@@ -876,7 +943,7 @@ export function CanvasStudio({
                             key={preset.label}
                             type="button"
                             onClick={() => updateSectionStyle(activeSection, preset.style)}
-                            className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#DFD2BC] bg-white px-2.5 text-[11px] font-medium text-[#3F3A33] hover:border-[#8A6A2F] hover:bg-[#FBF6EB]"
+                            className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#E6D5B2] bg-white px-2.5 text-[11px] font-medium text-[#40372B] hover:border-[#8A6424] hover:bg-[#FCF5E6]"
                           >
                             <span
                               aria-hidden="true"
@@ -896,9 +963,9 @@ export function CanvasStudio({
                           title="Warna awal / solid"
                           value={activeSectionStyle.background || theme.palette.background}
                           onChange={(e) => updateSectionStyle(activeSection, { background: e.target.value })}
-                          className="h-8 w-10 cursor-pointer rounded-lg border border-[#DFD7C8] bg-white p-0.5"
+                          className="h-8 w-10 cursor-pointer rounded-lg border border-[#E9DDC6] bg-white p-0.5"
                         />
-                        <span className="text-[10px] text-[#6B6358]">→</span>
+                        <span className="text-[10px] text-[#6B5F50]">→</span>
                         <input
                           type="color"
                           title="Warna akhir gradasi (opsional)"
@@ -909,13 +976,13 @@ export function CanvasStudio({
                               backgroundEnd: e.target.value,
                             })
                           }
-                          className="h-8 w-10 cursor-pointer rounded-lg border border-[#DFD7C8] bg-white p-0.5"
+                          className="h-8 w-10 cursor-pointer rounded-lg border border-[#E9DDC6] bg-white p-0.5"
                         />
                         {(activeSectionStyle.background || activeSectionStyle.backgroundEnd) && (
                           <button
                             type="button"
                             onClick={() => updateSectionStyle(activeSection, { background: undefined, backgroundEnd: undefined })}
-                            className="text-[10px] text-[#8A6A2F] underline"
+                            className="text-[10px] text-[#8A6424] underline"
                           >
                             Reset
                           </button>
@@ -926,31 +993,31 @@ export function CanvasStudio({
                     <div className="space-y-1">
                       <Label className="text-[11px]">Warna Teks, Aksen &amp; Kartu</Label>
                       <div className="flex flex-wrap items-center gap-2">
-                        <label className="inline-flex items-center gap-1 text-[10px] text-[#5E574D]">
+                        <label className="inline-flex items-center gap-1 text-[10px] text-[#5E5446]">
                           Teks
                           <input
                             type="color"
                             value={activeSectionStyle.textColor || theme.palette.ink}
                             onChange={(e) => updateSectionStyle(activeSection, { textColor: e.target.value })}
-                            className="h-8 w-9 cursor-pointer rounded-lg border border-[#DFD7C8] bg-white p-0.5"
+                            className="h-8 w-9 cursor-pointer rounded-lg border border-[#E9DDC6] bg-white p-0.5"
                           />
                         </label>
-                        <label className="inline-flex items-center gap-1 text-[10px] text-[#5E574D]">
+                        <label className="inline-flex items-center gap-1 text-[10px] text-[#5E5446]">
                           Aksen
                           <input
                             type="color"
                             value={activeSectionStyle.accentColor || theme.palette.accent}
                             onChange={(e) => updateSectionStyle(activeSection, { accentColor: e.target.value })}
-                            className="h-8 w-9 cursor-pointer rounded-lg border border-[#DFD7C8] bg-white p-0.5"
+                            className="h-8 w-9 cursor-pointer rounded-lg border border-[#E9DDC6] bg-white p-0.5"
                           />
                         </label>
-                        <label className="inline-flex items-center gap-1 text-[10px] text-[#5E574D]">
+                        <label className="inline-flex items-center gap-1 text-[10px] text-[#5E5446]">
                           Kartu
                           <input
                             type="color"
                             value={activeSectionStyle.surfaceColor || theme.palette.surface}
                             onChange={(e) => updateSectionStyle(activeSection, { surfaceColor: e.target.value })}
-                            className="h-8 w-9 cursor-pointer rounded-lg border border-[#DFD7C8] bg-white p-0.5"
+                            className="h-8 w-9 cursor-pointer rounded-lg border border-[#E9DDC6] bg-white p-0.5"
                           />
                         </label>
                       </div>
@@ -958,14 +1025,14 @@ export function CanvasStudio({
 
                     <div className="space-y-1">
                       <Label className="text-[11px]">Font Judul Section</Label>
-                      <select
+                      <SelectField size="sm"
                         value={activeSectionStyle.displayFont ?? ""}
                         onChange={(e) =>
                           updateSectionStyle(activeSection, {
                             displayFont: e.target.value ? (e.target.value as SectionStyle["displayFont"]) : undefined,
                           })
                         }
-                        className="h-8 w-full rounded-lg border border-[#DFD7C8] bg-white px-2 text-xs"
+                        className="w-full"
                       >
                         <option value="">Ikuti font global ({theme.typography.display})</option>
                         {[...DISPLAY_FONTS, ...SCRIPT_FONTS].map((f) => (
@@ -973,19 +1040,19 @@ export function CanvasStudio({
                             {f}
                           </option>
                         ))}
-                      </select>
+                      </SelectField>
                     </div>
 
                     <div className="space-y-1">
                       <Label className="text-[11px]">Font Isi Section</Label>
-                      <select
+                      <SelectField size="sm"
                         value={activeSectionStyle.bodyFont ?? ""}
                         onChange={(e) =>
                           updateSectionStyle(activeSection, {
                             bodyFont: e.target.value ? (e.target.value as SectionStyle["bodyFont"]) : undefined,
                           })
                         }
-                        className="h-8 w-full rounded-lg border border-[#DFD7C8] bg-white px-2 text-xs"
+                        className="w-full"
                       >
                         <option value="">Ikuti font global ({theme.typography.body})</option>
                         {BODY_FONTS.map((f) => (
@@ -993,7 +1060,7 @@ export function CanvasStudio({
                             {f}
                           </option>
                         ))}
-                      </select>
+                      </SelectField>
                     </div>
 
                     <div className="space-y-1">
@@ -1012,8 +1079,8 @@ export function CanvasStudio({
                             onClick={() => updateSectionStyle(activeSection, { textAlign: al })}
                             className={`h-7 rounded-lg border px-2 text-[11px] ${
                               (activeSectionStyle.textAlign ?? "center") === al
-                                ? "border-[#15130F] bg-[#15130F] text-white"
-                                : "border-[#DFD7C8] bg-white text-[#3F3A33]"
+                                ? "border-[#1A1510] bg-[#1A1510] text-white"
+                                : "border-[#E9DDC6] bg-white text-[#40372B]"
                             }`}
                           >
                             {lbl}
@@ -1032,8 +1099,8 @@ export function CanvasStudio({
                             onClick={() => updateSectionStyle(activeSection, { paddingY: pad })}
                             className={`h-7 rounded-lg border px-2 text-[11px] ${
                               (activeSectionStyle.paddingY ?? "normal") === pad
-                                ? "border-[#8A6A2F] bg-[#FBF6EB] font-semibold text-[#5C4620]"
-                                : "border-[#DFD7C8] bg-white text-[#3F3A33]"
+                                ? "border-[#8A6424] bg-[#FCF5E6] font-semibold text-[#5C431A]"
+                                : "border-[#E9DDC6] bg-white text-[#40372B]"
                             }`}
                           >
                             {lbl}
@@ -1044,28 +1111,28 @@ export function CanvasStudio({
 
                     <div className="space-y-1">
                       <Label className="text-[11px]">Animasi Masuk Section</Label>
-                      <select
+                      <SelectField size="sm"
                         value={activeSectionStyle.entrance ?? "none"}
                         onChange={(e) =>
                           updateSectionStyle(activeSection, {
                             entrance: e.target.value === "none" ? undefined : (e.target.value as SectionEntrance),
                           })
                         }
-                        className="h-8 w-full rounded-lg border border-[#DFD7C8] bg-white px-2 text-xs"
+                        className="w-full"
                       >
                         {SECTION_ENTRANCES.map((ent) => (
                           <option key={ent} value={ent}>
                             {ENTRANCE_LABELS[ent]}
                           </option>
                         ))}
-                      </select>
+                      </SelectField>
                     </div>
 
                     <div className="space-y-1">
                       <label className="block space-y-1 text-[11px]">
-                        <span className="flex justify-between font-medium text-[#3F3A33]">
+                        <span className="flex justify-between font-medium text-[#40372B]">
                           <span>Tinggi Minimal Kanvas Section</span>
-                          <span className="tabular-nums text-[#6B6358]">{activeSectionStyle.minHeight ?? 0}px</span>
+                          <span className="tabular-nums text-[#6B5F50]">{activeSectionStyle.minHeight ?? 0}px</span>
                         </span>
                         <input
                           type="range"
@@ -1074,18 +1141,18 @@ export function CanvasStudio({
                           step={20}
                           value={activeSectionStyle.minHeight ?? 240}
                           onChange={(e) => updateSectionStyle(activeSection, { minHeight: Number(e.target.value) })}
-                          className="w-full accent-[#8A6A2F]"
+                          className="w-full accent-[#8A6424]"
                         />
                       </label>
                     </div>
 
                     <div className="flex items-center">
-                      <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#DFD7C8] bg-white px-3 py-2 text-[11px] font-medium text-[#3F3A33]">
+                      <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#E9DDC6] bg-white px-3 py-2 text-[11px] font-medium text-[#40372B]">
                         <input
                           type="checkbox"
                           checked={Boolean(activeSectionStyle.clearDecor)}
                           onChange={(e) => updateSectionStyle(activeSection, { clearDecor: e.target.checked })}
-                          className="h-4 w-4 accent-[#8A6A2F]"
+                          className="h-4 w-4 accent-[#8A6424]"
                         />
                         <span>Kanvas Bersih (sembunyikan ornamen bawaan section ini)</span>
                       </label>
@@ -1110,7 +1177,7 @@ export function CanvasStudio({
                             max={85}
                             value={Math.round((activeSectionStyle.overlayOpacity ?? 0.35) * 100)}
                             onChange={(e) => updateSectionStyle(activeSection, { overlayOpacity: Number(e.target.value) / 100 })}
-                            className="w-full accent-[#8A6A2F]"
+                            className="w-full accent-[#8A6424]"
                           />
                         </label>
                       )}
@@ -1122,32 +1189,33 @@ export function CanvasStudio({
 
             {/* TAB 1: Ornaments & Canvas Layers */}
             {toolTab === "ornaments" && (
-              <div className="min-w-0 space-y-5 overflow-hidden rounded-2xl border border-[#E6DFD3] bg-white p-4 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EFEAE0] pb-4">
+              <div className="min-w-0 space-y-5 overflow-hidden rounded-2xl border border-[#EDE3CF] bg-white p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F3EBDB] pb-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-[#8A6A2F]">Target Section Kanvas</p>
-                    <p className="text-xs text-[#6B6358]">Pilih section lalu tambahkan ornamen, dan seret langsung di pratinjau HP.</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#8A6424]">Target Section Kanvas</p>
+                    <p className="text-xs text-[#6B5F50]">Pilih section lalu tambahkan ornamen, dan seret langsung di pratinjau HP.</p>
                   </div>
-                  <select
+                  <SelectField
                     value={activeSection}
                     onChange={(e) => {
                       setActiveSection(e.target.value as CanvasSectionId);
                       setSelectedLayerId(null);
                     }}
-                    className="h-10 rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm font-medium text-[#15130F]"
+                    className="font-medium"
                   >
                     {CANVAS_SECTION_IDS.map((s) => (
                       <option key={s} value={s}>
                         {SECTION_LABELS[s]}
                       </option>
                     ))}
-                  </select>
+                  </SelectField>
                 </div>
 
                 {/* Source sub-tabs */}
-                <div className="grid grid-cols-2 gap-2 2xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 2xl:grid-cols-5">
                   {(
                     [
+                      ["art", "Ilustrasi"],
                       ["ai", "AI Studio & Ornamen"],
                       ["library", "Bingkai & Hiasan"],
                       ["upload", "Upload Sendiri"],
@@ -1160,8 +1228,8 @@ export function CanvasStudio({
                       onClick={() => setOrnamentSourceTab(k)}
                       className={`h-10 rounded-xl border text-xs font-medium transition ${
                         ornamentSourceTab === k
-                          ? "border-[#8A6A2F] bg-[#FBF6EB] text-[#5C4620]"
-                          : "border-[#EFEAE0] bg-[#FAF8F4] text-[#5E574D] hover:bg-[#F3EEE5]"
+                          ? "border-[#8A6424] bg-[#FCF5E6] text-[#5C431A]"
+                          : "border-[#F3EBDB] bg-[#FCF8F1] text-[#5E5446] hover:bg-[#F6EEDF]"
                       }`}
                     >
                       {label}
@@ -1172,13 +1240,13 @@ export function CanvasStudio({
                 {ornamentSourceTab === "library" && (
                   <div className="space-y-3.5">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <label className="flex h-9 flex-1 items-center gap-2 rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-xs">
-                        <IconSearch size={14} className="shrink-0 text-[#6B6358]" />
+                      <label className="flex h-9 flex-1 items-center gap-2 rounded-xl border border-[#E9DDC6] bg-[#FCF8F1] px-3 text-xs">
+                        <IconSearch size={14} className="shrink-0 text-[#6B5F50]" />
                         <input
                           value={elementQuery}
                           onChange={(e) => setElementQuery(e.target.value)}
                           placeholder="Cari bingkai foto, bunga, adat, segel…"
-                          className="w-full min-w-0 bg-transparent text-xs text-[#15130F] outline-none placeholder:text-[#8E8578]"
+                          className="w-full min-w-0 bg-transparent text-xs text-[#1A1510] outline-none placeholder:text-[#8E8578]"
                         />
                       </label>
                     </div>
@@ -1189,8 +1257,8 @@ export function CanvasStudio({
                         onClick={() => setExpandedGroup(null)}
                         className={`h-7 rounded-full border px-2.5 text-[11px] font-medium transition ${
                           !expandedGroup
-                            ? "border-[#15130F] bg-[#15130F] text-white"
-                            : "border-[#DFD7C8] bg-white text-[#5E574D] hover:bg-[#FAF8F4]"
+                            ? "border-[#1A1510] bg-[#1A1510] text-white"
+                            : "border-[#E9DDC6] bg-white text-[#5E5446] hover:bg-[#FCF8F1]"
                         }`}
                       >
                         Pilihan Undangan ({curatedPresets.length})
@@ -1202,8 +1270,8 @@ export function CanvasStudio({
                           onClick={() => setExpandedGroup(groupName)}
                           className={`h-7 rounded-full border px-2.5 text-[11px] font-medium transition ${
                             expandedGroup === groupName
-                              ? "border-[#15130F] bg-[#15130F] text-white"
-                              : "border-[#DFD7C8] bg-white text-[#5E574D] hover:bg-[#FAF8F4]"
+                              ? "border-[#1A1510] bg-[#1A1510] text-white"
+                              : "border-[#E9DDC6] bg-white text-[#5E5446] hover:bg-[#FCF8F1]"
                           }`}
                         >
                           {groupName}
@@ -1211,7 +1279,7 @@ export function CanvasStudio({
                       ))}
                     </div>
 
-                    <p className="text-[11px] text-[#6B6358]">
+                    <p className="text-[11px] text-[#6B5F50]">
                       Gunakan <strong>Bingkai Foto</strong> atau <strong>Upload Sendiri / AI</strong> untuk hasil paling unik — seret atau klik ke section <strong>{SECTION_LABELS[activeSection]}</strong>.
                     </p>
 
@@ -1242,7 +1310,7 @@ export function CanvasStudio({
                             });
                           }}
                           title={o.label}
-                          className="flex cursor-grab flex-col items-center gap-1 rounded-xl border border-[#EFEAE0] bg-[#FAF8F4]/70 p-2 text-center transition hover:border-[#8A6A2F] hover:bg-[#FBF6EB] active:cursor-grabbing"
+                          className="flex cursor-grab flex-col items-center gap-1 rounded-xl border border-[#F3EBDB] bg-[#FCF8F1]/70 p-2 text-center transition hover:border-[#8A6424] hover:bg-[#FCF5E6] active:cursor-grabbing"
                         >
                           <svg
                             viewBox={o.viewBox}
@@ -1250,7 +1318,7 @@ export function CanvasStudio({
                             style={{ color: theme.palette.accent }}
                             dangerouslySetInnerHTML={{ __html: o.paths }}
                           />
-                          <span className="pointer-events-none line-clamp-1 text-[10px] font-medium text-[#3F3A33]">
+                          <span className="pointer-events-none line-clamp-1 text-[10px] font-medium text-[#40372B]">
                             {o.label}
                           </span>
                         </button>
@@ -1261,32 +1329,32 @@ export function CanvasStudio({
 
                 {ornamentSourceTab === "ai" && (
                   <div className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#DFD2BC] bg-[#FBF6EB] px-3.5 py-2.5 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#E6D5B2] bg-[#FCF5E6] px-3.5 py-2.5 text-xs">
                       <div className="space-y-0.5">
-                        <p className="font-semibold text-[#15130F]">Generate Tema Otomatis dengan AI Designer</p>
-                        <p className="text-[11px] text-[#5E574D]">
-                          Buat seluruh palet warna, tipografi, dan tata letak tema utuh menggunakan AI resmi UNDANGIN YUK.
+                        <p className="font-semibold text-[#1A1510]">Generate Tema Otomatis dengan AI Designer</p>
+                        <p className="text-[11px] text-[#5E5446]">
+                          Buat seluruh palet warna, tipografi, dan tata letak tema utuh menggunakan AI resmi SatuMoment.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Link
                           href="/ai-design"
-                          className="inline-flex h-8 items-center gap-1 rounded-full bg-[#15130F] px-3 text-[11px] font-medium text-[#FAF8F4] hover:bg-[#2A261F]"
+                          className="inline-flex h-8 items-center gap-1 rounded-full bg-[#1A1510] px-3 text-[11px] font-medium text-[#FCF8F1] hover:bg-[#2B241B]"
                         >
                           <IconSparkles size={13} /> Buka AI Designer
                         </Link>
                         <Link
                           href="/upgrade?pilih=kredit#kredit-ai"
-                          className="inline-flex h-8 items-center rounded-full border border-[#C9A45C] bg-white px-3 text-[11px] font-medium text-[#8A6A2F] hover:bg-[#FAF8F4]"
+                          className="inline-flex h-8 items-center rounded-full border border-[#D9B56A] bg-white px-3 text-[11px] font-medium text-[#8A6424] hover:bg-[#FCF8F1]"
                         >
                           Top-up Kredit
                         </Link>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5E574D]">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5E5446]">
                       <span>Deskripsikan ornamen vektor yang ingin dibuat AI (1 kredit per generate).</span>
-                      <span className="rounded-full border border-[#DFD2BC] bg-[#F5EFE3] px-2.5 py-0.5 font-medium text-[#5C4620]">
+                      <span className="rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2.5 py-0.5 font-medium text-[#5C431A]">
                         Sisa: {quota.remaining} kredit
                       </span>
                     </div>
@@ -1302,7 +1370,7 @@ export function CanvasStudio({
                         type="button"
                         disabled={generatingOrnament || quota.remaining < 1}
                         onClick={() => void generateOrnament()}
-                        className="h-11 rounded-xl bg-[#15130F] px-5 text-xs font-medium text-[#FAF8F4]"
+                        className="h-11 rounded-xl bg-[#1A1510] px-5 text-xs font-medium text-[#FCF8F1]"
                       >
                         {generatingOrnament ? <IconLoader2 size={16} className="mr-1.5 animate-spin" /> : <IconSparkles size={16} className="mr-1.5" />}
                         {generatingOrnament ? "Membuat..." : "Generate Ornamen (1 Kredit)"}
@@ -1343,11 +1411,11 @@ export function CanvasStudio({
                                 opacity: 0.9,
                               })
                             }
-                            className="flex cursor-grab flex-col items-center gap-1.5 rounded-xl border border-[#DFD2BC] bg-[#FAF8F4] p-2.5 hover:border-[#8A6A2F] active:cursor-grabbing"
+                            className="flex cursor-grab flex-col items-center gap-1.5 rounded-xl border border-[#E6D5B2] bg-[#FCF8F1] p-2.5 hover:border-[#8A6424] active:cursor-grabbing"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={g.dataUri} alt={g.prompt} className="pointer-events-none h-14 w-14 object-contain" />
-                            <span className="pointer-events-none line-clamp-1 text-[10px] text-[#5E574D]">{g.prompt}</span>
+                            <span className="pointer-events-none line-clamp-1 text-[10px] text-[#5E5446]">{g.prompt}</span>
                           </button>
                         ))}
                       </div>
@@ -1355,83 +1423,355 @@ export function CanvasStudio({
                   </div>
                 )}
 
-                {ornamentSourceTab === "upload" && (
-                  <div className="grid gap-5 sm:grid-cols-2">
+                {ornamentSourceTab === "art" && (
+                  <div className="space-y-6">
+                    {/* One click: a complete layered composition on every section */}
                     <div className="space-y-2.5">
-                      <Label className="text-xs">Tambah Stiker / Ilustrasi ke Section ({SECTION_LABELS[activeSection]})</Label>
-                      <ImageUploadField value={uploadedAssetUrl} onChange={setUploadedAssetUrl} aspect="aspect-[4/3]" />
-                      {uploadedAssetUrl && (
-                        <div
-                          draggable
-                          onDragStart={(e) =>
-                            startPaletteDrag(e, {
-                              kind: "image",
-                              value: uploadedAssetUrl,
-                              size: 120,
-                            })
-                          }
-                          onDragEnd={endPaletteDrag}
-                          className="flex cursor-grab items-center justify-center gap-2 rounded-xl border border-dashed border-[#C9A45C] bg-[#FBF6EB] px-3 py-2 text-xs font-medium text-[#5C4620] active:cursor-grabbing"
-                        >
-                          Seret aset ini ke layar HP, atau klik tombol di bawah
+                      <div className="flex items-end justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-[#1A1510]">Paket ilustrasi</p>
+                          <p className="text-[11px] text-[#6B5F50]">Pasang bingkai, bunga sudut, sulur, lambang, latar & partikel ke semua section sekaligus. Setelah itu tiap elemen bebas digeser, diubah ukurannya, ditumpuk atau dihapus.</p>
                         </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {ART_LIBRARY.map((kit) => {
+                          const active = theme.artKit === kit.key;
+                          const corner = kit.items.find((i) => i.slot === "corner") ?? kit.items[0];
+                          return (
+                            <button
+                              key={kit.key}
+                              type="button"
+                              onClick={() => applyArtKit(kit.key)}
+                              className={`group overflow-hidden rounded-xl border text-left transition ${active ? "border-[#8A6424] ring-2 ring-[#8A6424]/20" : "border-[#EDE3CF] hover:border-[#8A6424]"}`}
+                            >
+                              <span className="relative block h-20 overflow-hidden" style={{ background: kit.tinted ? theme.palette.background : "#F6F2EA" }}>
+                                {kit.backdrop && (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={kit.backdrop} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+                                )}
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={tintSrc(corner.src, kit.tinted)} alt="" className="absolute bottom-0 left-0 h-[85%] w-auto transition-transform duration-500 group-hover:scale-105" />
+                              </span>
+                              <span className="flex items-center justify-between gap-1 px-2.5 py-2 text-xs font-medium text-[#1A1510]">
+                                {kit.label}
+                                {active && <IconCheck size={14} className="text-[#8A6424]" />}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {theme.artKit && theme.artKit !== "none" && (
+                        <button type="button" onClick={removeArtKit} className="text-[11px] font-medium text-[#8A6424] hover:underline">
+                          Lepas paket ilustrasi
+                        </button>
                       )}
-                      <Button
-                        type="button"
-                        disabled={!uploadedAssetUrl}
-                        onClick={() => {
-                          if (!uploadedAssetUrl) return;
+                    </div>
+
+                    {/* Ambient particles */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-[#1A1510]">Partikel jatuh (sampul & penutup)</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(
+                          [
+                            ["none", "Tanpa"],
+                            ["petals", "Kelopak bunga"],
+                            ["gold-dust", "Debu emas"],
+                            ["leaves", "Daun"],
+                          ] as const
+                        ).map(([k, label]) => (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => setTheme((prev) => ({ ...prev, particles: k }))}
+                            className={`h-9 rounded-full border px-3.5 text-xs font-medium transition ${
+                              (theme.particles ?? "none") === k ? "border-[#1A1510] bg-[#1A1510] text-white" : "border-[#E9DDC6] bg-white text-[#40372B] hover:border-[#8A6424]"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Individual illustrations: click or drag onto the canvas, stack them freely */}
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-semibold text-[#1A1510]">Elemen ilustrasi</p>
+                        <p className="text-[11px] text-[#6B5F50]">
+                          Klik untuk menambah ke <strong>{SECTION_LABELS[activeSection]}</strong> atau seret ke posisi yang diinginkan. Atur urutan tumpukan di daftar layer di bawah.
+                        </p>
+                      </div>
+                      {ART_LIBRARY.map((kit) => (
+                        <div key={kit.key} className="space-y-1.5">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6B5F50]">{kit.label}</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {kit.items.map((item) => {
+                              const size = ART_SLOT_SIZE[item.slot];
+                              const src = tintSrc(item.src, kit.tinted);
+                              const payload = { kind: "image" as const, value: item.src, size, heightRatio: item.ratio, color: kit.tinted ? theme.palette.accent : undefined };
+                              return (
+                                <button
+                                  key={item.slot}
+                                  type="button"
+                                  draggable
+                                  onDragStart={(e) => startPaletteDrag(e, payload)}
+                                  onDragEnd={endPaletteDrag}
+                                  onClick={() =>
+                                    addLayer({
+                                      section: activeSection,
+                                      kind: "image",
+                                      value: item.src,
+                                      x: 50,
+                                      y: item.slot === "frame" ? 8 : item.slot === "corner" ? 90 : 40,
+                                      size,
+                                      heightRatio: item.ratio,
+                                      rotation: 0,
+                                      opacity: 1,
+                                      animation: item.slot === "frame" ? undefined : item.slot === "emblem" ? "float" : "sway",
+                                      ...(kit.tinted ? { color: theme.palette.accent } : {}),
+                                    })
+                                  }
+                                  title={`${kit.label} · ${ART_SLOT_LABEL[item.slot]}`}
+                                  className="flex cursor-grab flex-col items-center gap-1 rounded-xl border border-[#F3EBDB] p-1.5 transition hover:border-[#8A6424] active:cursor-grabbing"
+                                  style={{ background: kit.tinted ? theme.palette.background : "#FCF8F1" }}
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={src} alt="" className="pointer-events-none h-12 w-full object-contain" draggable={false} />
+                                  <span className="pointer-events-none text-[10px] font-medium" style={{ color: kit.tinted && isDarkHex(theme.palette.background) ? "#F6EEDD" : "#40372B" }}>
+                                    {ART_SLOT_LABEL[item.slot]}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Illustrated backdrops for the active section */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-[#1A1510]">Latar ilustrasi untuk {SECTION_LABELS[activeSection]}</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {ART_LIBRARY.filter((k) => k.backdrop).map((kit) => (
+                          <button
+                            key={kit.key}
+                            type="button"
+                            onClick={() => {
+                              updateSectionStyle(activeSection, { backgroundImage: kit.backdrop, overlayOpacity: 0.12 });
+                              toast.success(`Latar ${kit.label} dipasang di ${SECTION_LABELS[activeSection]}`);
+                            }}
+                            className="overflow-hidden rounded-xl border border-[#EDE3CF] transition hover:border-[#8A6424]"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={kit.backdrop} alt={`Latar ${kit.label}`} className="h-16 w-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {ornamentSourceTab === "upload" && (
+                  <div className="space-y-5">
+                    {/* Primary: Canva-style upload dropzone + reusable gallery */}
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-semibold text-[#1A1510]">Unggah Stiker, Ilustrasi PNG, atau Foto</p>
+                          <p className="text-[11px] text-[#6B5F50]">
+                            File yang diunggah otomatis tersimpan di galeri di bawah dan langsung dipasang ke <strong>{SECTION_LABELS[activeSection]}</strong>.
+                          </p>
+                        </div>
+                      </div>
+
+                      <ImageUploadField
+                        value={uploadedAssetUrl}
+                        onChange={setUploadedAssetUrl}
+                        onUploaded={(url) => {
+                          rememberUploadedAsset(url);
                           addLayer({
                             section: activeSection,
                             kind: "image",
-                            value: uploadedAssetUrl,
+                            value: url,
                             x: 50,
                             y: 25,
-                            size: 120,
+                            size: 130,
                             rotation: 0,
                             opacity: 0.95,
                           });
                           setUploadedAssetUrl("");
+                          toast.success(`Aset dipasang ke ${SECTION_LABELS[activeSection]} & disimpan ke galeri`);
                         }}
-                        className="h-10 w-full rounded-xl bg-[#15130F] text-xs text-[#FAF8F4]"
-                      >
-                        <IconUpload size={15} className="mr-1.5" /> Taruh di Kanvas
-                      </Button>
+                        aspect="aspect-[16/5]"
+                        fit="contain"
+                        fullWidth
+                        compact
+                        placeholder="Klik atau seret gambar/PNG ke sini untuk langsung dipasang"
+                      />
+
+                      {uploadedAssetUrl.trim() && (
+                        <Button
+                          type="button"
+                          variant="ink"
+                          onClick={() => {
+                            const url = uploadedAssetUrl.trim();
+                            if (!url) return;
+                            rememberUploadedAsset(url);
+                            addLayer({
+                              section: activeSection,
+                              kind: "image",
+                              value: url,
+                              x: 50,
+                              y: 25,
+                              size: 130,
+                              rotation: 0,
+                              opacity: 0.95,
+                            });
+                            setUploadedAssetUrl("");
+                            toast.success(`Aset dipasang ke ${SECTION_LABELS[activeSection]}`);
+                          }}
+                          className="h-9 w-full text-xs"
+                        >
+                          <IconPlus size={15} /> Pasang ke {SECTION_LABELS[activeSection]} &amp; Simpan di Galeri
+                        </Button>
+                      )}
+
+                      {/* Reusable uploads gallery */}
+                      {uploadedGallery.length > 0 && (
+                        <div className="space-y-2 pt-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8A6424]">
+                              Galeri Unggahanmu ({uploadedGallery.length})
+                            </p>
+                            <span className="text-[11px] text-[#8E8268]">Klik atau seret ke layar HP</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-5">
+                            {uploadedGallery.map((url) => (
+                              <div
+                                key={url}
+                                draggable
+                                onDragStart={(e) =>
+                                  startPaletteDrag(e, {
+                                    kind: "image",
+                                    value: url,
+                                    size: 130,
+                                  })
+                                }
+                                onDragEnd={endPaletteDrag}
+                                className="group relative overflow-hidden rounded-xl border border-[#E9DDC6] bg-[#FCF8F1] transition hover:border-[#8A6424] hover:shadow-sm"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    addLayer({
+                                      section: activeSection,
+                                      kind: "image",
+                                      value: url,
+                                      x: 50,
+                                      y: 25,
+                                      size: 130,
+                                      rotation: 0,
+                                      opacity: 0.95,
+                                    });
+                                    toast.success(`Dipasang ke ${SECTION_LABELS[activeSection]}`);
+                                  }}
+                                  title={`Pasang ke ${SECTION_LABELS[activeSection]}`}
+                                  className="flex aspect-square w-full cursor-grab items-center justify-center p-2 active:cursor-grabbing"
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={url} alt="Aset unggahan" className="max-h-full max-w-full object-contain" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeUploadedAsset(url);
+                                  }}
+                                  aria-label="Hapus dari galeri unggahan"
+                                  title="Hapus dari galeri"
+                                  className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-[#1A1510]/75 text-white opacity-0 transition hover:bg-[#9A3B2E] group-hover:opacity-100"
+                                >
+                                  <IconX size={12} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Tekstur / Background Halaman Global (opsional)</Label>
-                        <ImageUploadField
-                          value={theme.assets?.backgroundImage ?? ""}
-                          onChange={(url) =>
-                            setTheme((prev) => ({
-                              ...prev,
-                              assets: { ...prev.assets, backgroundImage: url || undefined },
-                            }))
-                          }
-                          aspect="aspect-[4/3]"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Ornamen Sudut Global (opsional)</Label>
-                        <ImageUploadField
-                          value={theme.assets?.ornamentImage ?? ""}
-                          onChange={(url) =>
-                            setTheme((prev) => ({
-                              ...prev,
-                              assets: { ...prev.assets, ornamentImage: url || undefined },
-                            }))
-                          }
-                          aspect="aspect-[4/3]"
-                        />
-                      </div>
+
+                    {/* Secondary collapsible: Global page background & corner ornament */}
+                    <div className="rounded-2xl border border-[#EDE3CF] bg-[#FCF8F1]/70 p-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowGlobalAssets((v) => !v)}
+                        className="flex w-full items-center justify-between gap-3 text-left"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-semibold text-[#1A1510]">Latar &amp; Hiasan Sudut untuk Semua Section</p>
+                            {(theme.assets?.backgroundImage || theme.assets?.ornamentImage) && (
+                              <span className="rounded-full bg-[#F5E8CA] px-2 py-0.5 text-[10px] font-semibold text-[#8A6424]">
+                                {[theme.assets?.backgroundImage, theme.assets?.ornamentImage].filter(Boolean).length} aktif
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-[#6B5F50]">
+                            Opsional — berlaku otomatis ke seluruh halaman undangan tanpa perlu diseret satu per satu.
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-[#E9DDC6] bg-white px-3 py-1 text-[11px] font-medium text-[#40372B]">
+                          {showGlobalAssets ? "Sembunyikan" : "Atur"}
+                        </span>
+                      </button>
+
+                      {showGlobalAssets && (
+                        <div className="mt-4 grid gap-4 border-t border-[#EDE3CF] pt-4 sm:grid-cols-2">
+                          <div className="space-y-1.5 rounded-xl border border-[#EDE3CF] bg-white p-3">
+                            <Label className="text-xs text-[#1A1510]">Tekstur / Latar Semua Halaman</Label>
+                            <p className="text-[11px] text-[#8E8268]">Tampil sebagai latar halus di belakang setiap section.</p>
+                            <ImageUploadField
+                              value={theme.assets?.backgroundImage ?? ""}
+                              onChange={(url) =>
+                                setTheme((prev) => ({
+                                  ...prev,
+                                  assets: { ...prev.assets, backgroundImage: url || undefined },
+                                }))
+                              }
+                              aspect="aspect-[16/10]"
+                              fit="cover"
+                              fullWidth
+                              compact
+                              placeholder="Unggah tekstur latar"
+                            />
+                          </div>
+                          <div className="space-y-1.5 rounded-xl border border-[#EDE3CF] bg-white p-3">
+                            <Label className="text-xs text-[#1A1510]">Hiasan 4 Sudut Otomatis</Label>
+                            <p className="text-[11px] text-[#8E8268]">PNG bunga/bingkai yang otomatis muncul di sudut tiap section.</p>
+                            <ImageUploadField
+                              value={theme.assets?.ornamentImage ?? ""}
+                              onChange={(url) =>
+                                setTheme((prev) => ({
+                                  ...prev,
+                                  assets: { ...prev.assets, ornamentImage: url || undefined },
+                                }))
+                              }
+                              aspect="aspect-[16/10]"
+                              fit="contain"
+                              fullWidth
+                              compact
+                              placeholder="Unggah PNG hiasan sudut"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {ornamentSourceTab === "text" && (
                   <div className="space-y-3">
-                    <p className="text-[11px] text-[#6B6358]">
+                    <p className="text-[11px] text-[#6B5F50]">
                       Ketik teks di bawah atau <strong>seret kartu gaya teks</strong> langsung ke pratinjau HP.
                     </p>
                     <div className="flex flex-col gap-2 sm:flex-row">
@@ -1457,7 +1797,7 @@ export function CanvasStudio({
                             font: theme.typography.display,
                           });
                         }}
-                        className="h-11 rounded-xl bg-[#15130F] px-5 text-xs text-[#FAF8F4]"
+                        className="h-11 rounded-xl bg-[#1A1510] px-5 text-xs text-[#FCF8F1]"
                       >
                         <IconPlus size={15} className="mr-1.5" /> Tambah Teks ke Kanvas
                       </Button>
@@ -1520,10 +1860,10 @@ export function CanvasStudio({
                               uppercase: chip.uppercase,
                             })
                           }
-                          className="flex cursor-grab flex-col items-start rounded-xl border border-[#DFD2BC] bg-[#FAF8F4] px-3 py-2.5 text-left transition hover:border-[#8A6A2F] hover:bg-[#FBF6EB] active:cursor-grabbing"
+                          className="flex cursor-grab flex-col items-start rounded-xl border border-[#E6D5B2] bg-[#FCF8F1] px-3 py-2.5 text-left transition hover:border-[#8A6424] hover:bg-[#FCF5E6] active:cursor-grabbing"
                         >
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8A6A2F]">{chip.label}</span>
-                          <span className="mt-0.5 truncate text-xs text-[#15130F]">{chip.value}</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8A6424]">{chip.label}</span>
+                          <span className="mt-0.5 truncate text-xs text-[#1A1510]">{chip.value}</span>
                         </button>
                       ))}
                     </div>
@@ -1532,8 +1872,8 @@ export function CanvasStudio({
 
                 {/* Active Section Layers & Selected Layer Inspector */}
                 {sectionLayers.length > 0 && (
-                  <div className="space-y-3 border-t border-[#EFEAE0] pt-4">
-                    <p className="text-xs font-semibold text-[#15130F]">Layer di {SECTION_LABELS[activeSection]} ({sectionLayers.length})</p>
+                  <div className="space-y-3 border-t border-[#F3EBDB] pt-4">
+                    <p className="text-xs font-semibold text-[#1A1510]">Layer di {SECTION_LABELS[activeSection]} ({sectionLayers.length})</p>
                     <div className="flex flex-wrap gap-1.5">
                       {sectionLayers.map((l, idx) => (
                         <button
@@ -1542,8 +1882,8 @@ export function CanvasStudio({
                           onClick={() => setSelectedLayerId(l.id)}
                           className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs ${
                             selectedLayerId === l.id
-                              ? "border-[#15130F] bg-[#15130F] text-[#FAF8F4]"
-                              : "border-[#DFD7C8] bg-[#FAF8F4] text-[#3F3A33]"
+                              ? "border-[#1A1510] bg-[#1A1510] text-[#FCF8F1]"
+                              : "border-[#E9DDC6] bg-[#FCF8F1] text-[#40372B]"
                           }`}
                         >
                           <span>
@@ -1554,9 +1894,9 @@ export function CanvasStudio({
                     </div>
 
                     {selectedLayer && (
-                      <div className="min-w-0 space-y-3 overflow-hidden rounded-xl border border-[#DFD2BC] bg-[#FAF6EC] p-4">
+                      <div className="min-w-0 space-y-3 overflow-hidden rounded-xl border border-[#E6D5B2] bg-[#FAF6EC] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-[#5C4620]">Atur Layer Terpilih (seret posisi &amp; sudut kanan bawah untuk ukuran)</span>
+                          <span className="text-xs font-semibold text-[#5C431A]">Atur Layer Terpilih (seret posisi &amp; sudut kanan bawah untuk ukuran)</span>
                           <div className="flex flex-wrap items-center gap-1.5">
                             <button
                               type="button"
@@ -1564,8 +1904,8 @@ export function CanvasStudio({
                               title="Taruh di belakang teks (background) atau di depan teks"
                               className={`flex h-8 items-center gap-1 rounded-lg border px-2 text-xs font-medium ${
                                 (selectedLayer.zIndex ?? 12) <= 5
-                                  ? "border-[#8A6A2F] bg-[#FBF6EB] text-[#8A6A2F]"
-                                  : "border-[#DFD7C8] bg-white text-[#3F3A33]"
+                                  ? "border-[#8A6424] bg-[#FCF5E6] text-[#8A6424]"
+                                  : "border-[#E9DDC6] bg-white text-[#40372B]"
                               }`}
                             >
                               <IconLayersSubtract size={14} />
@@ -1575,7 +1915,7 @@ export function CanvasStudio({
                               type="button"
                               onClick={() => shiftLayerZ(selectedLayer.id, 1)}
                               title="Majukan layer ke depan"
-                              className="flex h-8 items-center gap-1 rounded-lg border border-[#DFD7C8] bg-white px-2 text-xs"
+                              className="flex h-8 items-center gap-1 rounded-lg border border-[#E9DDC6] bg-white px-2 text-xs"
                             >
                               <IconStackForward size={14} /> Maju
                             </button>
@@ -1583,7 +1923,7 @@ export function CanvasStudio({
                               type="button"
                               onClick={() => shiftLayerZ(selectedLayer.id, -1)}
                               title="Mundurkan layer ke belakang"
-                              className="flex h-8 items-center gap-1 rounded-lg border border-[#DFD7C8] bg-white px-2 text-xs"
+                              className="flex h-8 items-center gap-1 rounded-lg border border-[#E9DDC6] bg-white px-2 text-xs"
                             >
                               <IconStackBackward size={14} /> Mundur
                             </button>
@@ -1591,7 +1931,7 @@ export function CanvasStudio({
                               type="button"
                               onClick={() => updateLayer(selectedLayer.id, { flipX: !selectedLayer.flipX })}
                               title="Balik horizontal"
-                              className="flex h-8 items-center gap-1 rounded-lg border border-[#DFD7C8] bg-white px-2 text-xs"
+                              className="flex h-8 items-center gap-1 rounded-lg border border-[#E9DDC6] bg-white px-2 text-xs"
                             >
                               <IconFlipHorizontal size={14} /> Balik
                             </button>
@@ -1603,7 +1943,7 @@ export function CanvasStudio({
                                 addLayer({ ...rest, x: Math.min(92, rest.x + 8), y: Math.min(92, rest.y + 8) });
                               }}
                               title="Duplikat layer"
-                              className="flex h-8 items-center gap-1 rounded-lg border border-[#DFD7C8] bg-white px-2 text-xs"
+                              className="flex h-8 items-center gap-1 rounded-lg border border-[#E9DDC6] bg-white px-2 text-xs"
                             >
                               <IconCopy size={14} /> Duplikat
                             </button>
@@ -1619,17 +1959,17 @@ export function CanvasStudio({
                         </div>
 
                         {selectedLayer.kind === "preset" && getPresetOrnament(selectedLayer.value)?.photoMask && (
-                          <div className="rounded-xl border border-[#E6DFD3] bg-white p-3">
+                          <div className="rounded-xl border border-[#EDE3CF] bg-white p-3">
                             <label className="block space-y-1 text-xs">
-                              <span className="font-medium text-[#3F3A33]">Foto di Dalam Bingkai (otomatis terisi data undangan pembeli)</span>
-                              <select
+                              <span className="font-medium text-[#40372B]">Foto di Dalam Bingkai (otomatis terisi data undangan pembeli)</span>
+                              <SelectField size="sm"
                                 value={selectedLayer.frameSlot ?? ""}
                                 onChange={(e) =>
                                   updateLayer(selectedLayer.id, {
                                     frameSlot: e.target.value ? (e.target.value as CanvasLayer["frameSlot"]) : undefined,
                                   })
                                 }
-                                className="h-9 w-full rounded-lg border border-[#DFD7C8] bg-[#FAF8F4] px-2.5 text-xs"
+                                className="w-full"
                               >
                                 <option value="">Placeholder Pemandangan (Kanvas)</option>
                                 <option value="cover">Foto Sampul Utama</option>
@@ -1637,16 +1977,16 @@ export function CanvasStudio({
                                 <option value="groom">Foto Mempelai Pria</option>
                                 <option value="gallery0">Foto Galeri #1</option>
                                 <option value="gallery1">Foto Galeri #2</option>
-                              </select>
+                              </SelectField>
                             </label>
                           </div>
                         )}
 
                         {selectedLayer.kind === "text" && (
-                          <div className="min-w-0 space-y-3 overflow-hidden rounded-xl border border-[#E6DFD3] bg-white p-3">
+                          <div className="min-w-0 space-y-3 overflow-hidden rounded-xl border border-[#EDE3CF] bg-white p-3">
                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                               <label className="block min-w-0 space-y-1 text-xs">
-                                <span className="font-medium text-[#3F3A33]">Isi Teks</span>
+                                <span className="font-medium text-[#40372B]">Isi Teks</span>
                                 <Input
                                   value={selectedLayer.value}
                                   onChange={(e) => updateLayer(selectedLayer.id, { value: e.target.value })}
@@ -1654,20 +1994,20 @@ export function CanvasStudio({
                                 />
                               </label>
                               <label className="block min-w-0 space-y-1 text-xs">
-                                <span className="font-medium text-[#3F3A33]">Font Layer Teks</span>
-                                <select
+                                <span className="font-medium text-[#40372B]">Font Layer Teks</span>
+                                <SelectField size="sm"
                                   value={selectedLayer.font || theme.typography.display}
                                   onChange={(e) =>
                                     updateLayer(selectedLayer.id, { font: e.target.value as CanvasLayer["font"] })
                                   }
-                                  className="h-9 w-full min-w-0 rounded-lg border border-[#DFD7C8] bg-[#FAF8F4] px-2.5 text-xs"
+                                  className="w-full min-w-0"
                                 >
                                   {ALL_LAYER_FONTS.map((f) => (
                                     <option key={f} value={f}>
                                       {f}
                                     </option>
                                   ))}
-                                </select>
+                                </SelectField>
                               </label>
                             </div>
                             <div className="flex flex-wrap items-center gap-1.5">
@@ -1680,8 +2020,8 @@ export function CanvasStudio({
                                 }
                                 className={`flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs ${
                                   selectedLayer.fontWeight === "bold"
-                                    ? "border-[#15130F] bg-[#15130F] text-white"
-                                    : "border-[#DFD7C8] bg-[#FAF8F4] text-[#3F3A33]"
+                                    ? "border-[#1A1510] bg-[#1A1510] text-white"
+                                    : "border-[#E9DDC6] bg-[#FCF8F1] text-[#40372B]"
                                 }`}
                               >
                                 <IconBold size={13} /> Tebal
@@ -1691,8 +2031,8 @@ export function CanvasStudio({
                                 onClick={() => updateLayer(selectedLayer.id, { italic: !selectedLayer.italic })}
                                 className={`flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs ${
                                   selectedLayer.italic
-                                    ? "border-[#15130F] bg-[#15130F] text-white"
-                                    : "border-[#DFD7C8] bg-[#FAF8F4] text-[#3F3A33]"
+                                    ? "border-[#1A1510] bg-[#1A1510] text-white"
+                                    : "border-[#E9DDC6] bg-[#FCF8F1] text-[#40372B]"
                                 }`}
                               >
                                 <IconItalic size={13} /> Miring
@@ -1702,13 +2042,13 @@ export function CanvasStudio({
                                 onClick={() => updateLayer(selectedLayer.id, { uppercase: !selectedLayer.uppercase })}
                                 className={`flex h-8 items-center rounded-lg border px-2.5 text-xs font-medium ${
                                   selectedLayer.uppercase
-                                    ? "border-[#15130F] bg-[#15130F] text-white"
-                                    : "border-[#DFD7C8] bg-[#FAF8F4] text-[#3F3A33]"
+                                    ? "border-[#1A1510] bg-[#1A1510] text-white"
+                                    : "border-[#E9DDC6] bg-[#FCF8F1] text-[#40372B]"
                                 }`}
                               >
                                 AA Kapital
                               </button>
-                              <div className="flex items-center overflow-hidden rounded-lg border border-[#DFD7C8]">
+                              <div className="flex items-center overflow-hidden rounded-lg border border-[#E9DDC6]">
                                 {(
                                   [
                                     ["left", IconAlignLeft],
@@ -1722,27 +2062,27 @@ export function CanvasStudio({
                                     onClick={() => updateLayer(selectedLayer.id, { textAlign: al })}
                                     className={`flex h-8 w-8 items-center justify-center ${
                                       (selectedLayer.textAlign ?? "center") === al
-                                        ? "bg-[#15130F] text-white"
-                                        : "bg-[#FAF8F4] text-[#3F3A33]"
+                                        ? "bg-[#1A1510] text-white"
+                                        : "bg-[#FCF8F1] text-[#40372B]"
                                     }`}
                                   >
                                     <Icon size={14} />
                                   </button>
                                 ))}
                               </div>
-                              <label className="ml-auto flex items-center gap-1.5 text-[11px] text-[#3F3A33]">
+                              <label className="ml-auto flex items-center gap-1.5 text-[11px] text-[#40372B]">
                                 <span>Latar Badge:</span>
                                 <input
                                   type="color"
-                                  value={selectedLayer.bgColor || "#FAF8F4"}
+                                  value={selectedLayer.bgColor || "#FCF8F1"}
                                   onChange={(e) => updateLayer(selectedLayer.id, { bgColor: e.target.value, borderRadius: selectedLayer.borderRadius ?? 14 })}
-                                  className="h-7 w-8 cursor-pointer rounded border border-[#DFD7C8] bg-white p-0.5"
+                                  className="h-7 w-8 cursor-pointer rounded border border-[#E9DDC6] bg-white p-0.5"
                                 />
                                 {selectedLayer.bgColor && (
                                   <button
                                     type="button"
                                     onClick={() => updateLayer(selectedLayer.id, { bgColor: undefined })}
-                                    className="text-[11px] text-[#8A6A2F] underline"
+                                    className="text-[11px] text-[#8A6424] underline"
                                   >
                                     Hapus
                                   </button>
@@ -1764,7 +2104,7 @@ export function CanvasStudio({
                               max={360}
                               value={selectedLayer.size}
                               onChange={(e) => updateLayer(selectedLayer.id, { size: Number(e.target.value) })}
-                              className="w-full accent-[#8A6A2F]"
+                              className="w-full accent-[#8A6424]"
                             />
                           </label>
                           {selectedLayer.kind !== "text" ? (
@@ -1779,7 +2119,7 @@ export function CanvasStudio({
                                 max={260}
                                 value={Math.round((selectedLayer.heightRatio ?? 1) * 100)}
                                 onChange={(e) => updateLayer(selectedLayer.id, { heightRatio: Number(e.target.value) / 100 })}
-                                className="w-full accent-[#8A6A2F]"
+                                className="w-full accent-[#8A6424]"
                               />
                             </label>
                           ) : (
@@ -1794,7 +2134,7 @@ export function CanvasStudio({
                                 max={35}
                                 value={Math.round((selectedLayer.letterSpacing ?? 0) * 100)}
                                 onChange={(e) => updateLayer(selectedLayer.id, { letterSpacing: Number(e.target.value) / 100 })}
-                                className="w-full accent-[#8A6A2F]"
+                                className="w-full accent-[#8A6424]"
                               />
                             </label>
                           )}
@@ -1809,7 +2149,7 @@ export function CanvasStudio({
                               max={180}
                               value={selectedLayer.rotation}
                               onChange={(e) => updateLayer(selectedLayer.id, { rotation: Number(e.target.value) })}
-                              className="w-full accent-[#8A6A2F]"
+                              className="w-full accent-[#8A6424]"
                             />
                           </label>
                           <label className="space-y-1 text-xs">
@@ -1823,7 +2163,7 @@ export function CanvasStudio({
                               max={100}
                               value={Math.round(selectedLayer.opacity * 100)}
                               onChange={(e) => updateLayer(selectedLayer.id, { opacity: Number(e.target.value) / 100 })}
-                              className="w-full accent-[#8A6A2F]"
+                              className="w-full accent-[#8A6424]"
                             />
                           </label>
                           <label className="space-y-1 text-xs">
@@ -1833,12 +2173,12 @@ export function CanvasStudio({
                                 type="color"
                                 value={selectedLayer.color || theme.palette.accent}
                                 onChange={(e) => updateLayer(selectedLayer.id, { color: e.target.value })}
-                                className="h-8 w-10 cursor-pointer rounded border border-[#DFD7C8] bg-white p-0.5"
+                                className="h-8 w-10 cursor-pointer rounded border border-[#E9DDC6] bg-white p-0.5"
                               />
                               <button
                                 type="button"
                                 onClick={() => updateLayer(selectedLayer.id, { color: undefined })}
-                                className="text-[11px] text-[#8A6A2F] underline"
+                                className="text-[11px] text-[#8A6424] underline"
                               >
                                 Ikuti aksen
                               </button>
@@ -1846,21 +2186,21 @@ export function CanvasStudio({
                           </label>
                           <label className="space-y-1 text-xs sm:col-span-2">
                             <span>Animasi Layer</span>
-                            <select
+                            <SelectField size="sm"
                               value={selectedLayer.animation ?? "none"}
                               onChange={(e) =>
                                 updateLayer(selectedLayer.id, {
                                   animation: e.target.value === "none" ? undefined : (e.target.value as LayerAnimation),
                                 })
                               }
-                              className="h-8 w-full rounded-lg border border-[#DFD7C8] bg-white px-2 text-xs"
+                              className="w-full"
                             >
                               {LAYER_ANIMATIONS.map((anim) => (
                                 <option key={anim} value={anim}>
                                   {ANIMATION_LABELS[anim]}
                                 </option>
                               ))}
-                            </select>
+                            </SelectField>
                           </label>
                           {selectedLayer.animation && selectedLayer.animation !== "none" && (
                             <label className="space-y-1 text-xs">
@@ -1875,7 +2215,7 @@ export function CanvasStudio({
                                 step={0.5}
                                 value={selectedLayer.animationDuration ?? 4}
                                 onChange={(e) => updateLayer(selectedLayer.id, { animationDuration: Number(e.target.value) })}
-                                className="w-full accent-[#8A6A2F]"
+                                className="w-full accent-[#8A6424]"
                               />
                             </label>
                           )}
@@ -1889,10 +2229,10 @@ export function CanvasStudio({
 
             {/* TAB 2: Colors, Texture & Style */}
             {toolTab === "colors" && (
-              <div className="space-y-5 rounded-2xl border border-[#E6DFD3] bg-white p-5">
+              <div className="space-y-5 rounded-2xl border border-[#EDE3CF] bg-white p-5">
                 <div>
-                  <h2 className="font-serif text-2xl font-medium text-[#15130F]">Palet Warna &amp; Gaya Visual</h2>
-                  <p className="text-xs text-[#6B6358]">Sesuaikan setiap warna atau pilih gaya bingkai dan tekstur kertas.</p>
+                  <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Palet Warna &amp; Gaya Visual</h2>
+                  <p className="text-xs text-[#6B5F50]">Sesuaikan setiap warna atau pilih gaya bingkai dan tekstur kertas.</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1907,7 +2247,7 @@ export function CanvasStudio({
                       ["onAccent", "Teks Tombol"],
                     ] as const
                   ).map(([key, label]) => (
-                    <label key={key} className="flex items-center gap-2.5 rounded-xl border border-[#EFEAE0] bg-[#FAF8F4] p-2.5 text-xs">
+                    <label key={key} className="flex items-center gap-2.5 rounded-xl border border-[#F3EBDB] bg-[#FCF8F1] p-2.5 text-xs">
                       <input
                         type="color"
                         value={theme.palette[key]}
@@ -1917,75 +2257,75 @@ export function CanvasStudio({
                             palette: { ...prev.palette, [key]: e.target.value },
                           }))
                         }
-                        className="h-8 w-8 shrink-0 cursor-pointer rounded border border-[#DFD7C8] bg-white p-0.5"
+                        className="h-8 w-8 shrink-0 cursor-pointer rounded border border-[#E9DDC6] bg-white p-0.5"
                       />
-                      <span className="min-w-0 truncate font-medium text-[#3F3A33]">{label}</span>
+                      <span className="min-w-0 truncate font-medium text-[#40372B]">{label}</span>
                     </label>
                   ))}
                 </div>
 
-                <div className="grid gap-4 border-t border-[#EFEAE0] pt-4 sm:grid-cols-2">
+                <div className="grid gap-4 border-t border-[#F3EBDB] pt-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Ornamen Sudut &amp; Pemisah Bawaan</Label>
-                    <select
+                    <SelectField
                       value={theme.ornament}
                       onChange={(e) => setTheme((prev) => ({ ...prev, ornament: e.target.value as AiTheme["ornament"] }))}
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {ORNAMENTS.map((o) => (
                         <option key={o} value={o}>
                           {o}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Tekstur Kertas</Label>
-                    <select
+                    <SelectField
                       value={theme.texture}
                       onChange={(e) => setTheme((prev) => ({ ...prev, texture: e.target.value as AiTheme["texture"] }))}
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {TEXTURES.map((t) => (
                         <option key={t} value={t}>
                           {t}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Bentuk Sudut &amp; Foto</Label>
-                    <select
+                    <SelectField
                       value={theme.corners}
                       onChange={(e) => setTheme((prev) => ({ ...prev, corners: e.target.value as AiTheme["corners"] }))}
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       <option value="arch">Arch (Lengkung)</option>
                       <option value="soft">Soft (Memudar)</option>
                       <option value="sharp">Sharp (Tegas)</option>
-                    </select>
+                    </SelectField>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Garis Bingkai Kartu</Label>
-                    <select
+                    <SelectField
                       value={theme.frame}
                       onChange={(e) => setTheme((prev) => ({ ...prev, frame: e.target.value as AiTheme["frame"] }))}
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       <option value="hairline">Hairline</option>
                       <option value="double">Double</option>
                       <option value="dotted">Dotted</option>
                       <option value="none">Tanpa Bingkai</option>
-                    </select>
+                    </SelectField>
                   </div>
                 </div>
 
-                <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3F3A33]">
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#40372B]">
                   <input
                     type="checkbox"
                     checked={theme.metallic}
                     onChange={(e) => setTheme((prev) => ({ ...prev, metallic: e.target.checked }))}
-                    className="h-4 w-4 accent-[#8A6A2F]"
+                    className="h-4 w-4 accent-[#8A6424]"
                   />
                   <span>Efek Foil Metalik pada nama mempelai &amp; ornamen aksen</span>
                 </label>
@@ -1994,61 +2334,61 @@ export function CanvasStudio({
 
             {/* TAB 3: Typography & Copy */}
             {toolTab === "type" && (
-              <div className="space-y-5 rounded-2xl border border-[#E6DFD3] bg-white p-5">
-                <h2 className="font-serif text-2xl font-medium text-[#15130F]">Tipografi &amp; Kata Pengantar</h2>
+              <div className="space-y-5 rounded-2xl border border-[#EDE3CF] bg-white p-5">
+                <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Tipografi &amp; Kata Pengantar</h2>
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Font Judul</Label>
-                    <select
+                    <SelectField
                       value={theme.typography.display}
                       onChange={(e) =>
                         setTheme((prev) => ({ ...prev, typography: { ...prev.typography, display: e.target.value as AiTheme["typography"]["display"] } }))
                       }
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {DISPLAY_FONTS.map((f) => (
                         <option key={f} value={f}>
                           {f}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Font Nama Mempelai</Label>
-                    <select
+                    <SelectField
                       value={theme.typography.names}
                       onChange={(e) =>
                         setTheme((prev) => ({ ...prev, typography: { ...prev.typography, names: e.target.value as AiTheme["typography"]["names"] } }))
                       }
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {[...SCRIPT_FONTS, ...DISPLAY_FONTS].map((f) => (
                         <option key={f} value={f}>
                           {f}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Font Teks Isi</Label>
-                    <select
+                    <SelectField
                       value={theme.typography.body}
                       onChange={(e) =>
                         setTheme((prev) => ({ ...prev, typography: { ...prev.typography, body: e.target.value as AiTheme["typography"]["body"] } }))
                       }
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {BODY_FONTS.map((f) => (
                         <option key={f} value={f}>
                           {f}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                 </div>
 
-                <div className="grid gap-3 border-t border-[#EFEAE0] pt-4 sm:grid-cols-2">
-                  <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#3F3A33]">
+                <div className="grid gap-3 border-t border-[#F3EBDB] pt-4 sm:grid-cols-2">
+                  <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[#40372B]">
                     <input
                       type="checkbox"
                       checked={theme.typography.displayItalic}
@@ -2058,13 +2398,13 @@ export function CanvasStudio({
                           typography: { ...prev.typography, displayItalic: e.target.checked },
                         }))
                       }
-                      className="h-4 w-4 accent-[#8A6A2F]"
+                      className="h-4 w-4 accent-[#8A6424]"
                     />
                     <span>Judul Miring (Italic)</span>
                   </label>
                   <div className="space-y-1">
                     <Label className="text-xs">Gaya Label Kecil (The Wedding of)</Label>
-                    <select
+                    <SelectField size="sm"
                       value={theme.typography.labelStyle}
                       onChange={(e) =>
                         setTheme((prev) => ({
@@ -2075,12 +2415,12 @@ export function CanvasStudio({
                           },
                         }))
                       }
-                      className="h-9 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-xs"
+                      className="w-full"
                     >
                       <option value="uppercase-tracked">KAPITAL BERJARAK</option>
                       <option value="small-caps">Small Caps Elegan</option>
                       <option value="plain">Normal Bersih</option>
-                    </select>
+                    </SelectField>
                   </div>
                 </div>
 
@@ -2126,10 +2466,10 @@ export function CanvasStudio({
 
             {/* TAB 4: Layout Variants & Standardized 11-Section Structure */}
             {toolTab === "layout" && (
-              <div className="space-y-5 rounded-2xl border border-[#E6DFD3] bg-white p-5">
+              <div className="space-y-5 rounded-2xl border border-[#EDE3CF] bg-white p-5">
                 <div>
-                  <h2 className="font-serif text-2xl font-medium text-[#15130F]">Variasi Layout &amp; Struktur Baku</h2>
-                  <p className="text-xs text-[#6B6358]">
+                  <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Variasi Layout &amp; Struktur Baku</h2>
+                  <p className="text-xs text-[#6B5F50]">
                     Tampilan tiap section bebas dikustomisasi, sementara struktur 11 section utama bersifat baku (tanpa penambahan/pengurangan).
                   </p>
                 </div>
@@ -2137,66 +2477,66 @@ export function CanvasStudio({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Layout Sampul</Label>
-                    <select
+                    <SelectField
                       value={theme.layout.cover}
                       onChange={(e) => setTheme((prev) => ({ ...prev, layout: { ...prev.layout, cover: e.target.value as AiTheme["layout"]["cover"] } }))}
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {COVER_LAYOUTS.map((l) => (
                         <option key={l} value={l}>
                           {l}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Layout Mempelai</Label>
-                    <select
+                    <SelectField
                       value={theme.layout.couple}
                       onChange={(e) => setTheme((prev) => ({ ...prev, layout: { ...prev.layout, couple: e.target.value as AiTheme["layout"]["couple"] } }))}
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {COUPLE_LAYOUTS.map((l) => (
                         <option key={l} value={l}>
                           {l}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Layout Acara</Label>
-                    <select
+                    <SelectField
                       value={theme.layout.events}
                       onChange={(e) => setTheme((prev) => ({ ...prev, layout: { ...prev.layout, events: e.target.value as AiTheme["layout"]["events"] } }))}
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {EVENT_LAYOUTS.map((l) => (
                         <option key={l} value={l}>
                           {l}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Layout Galeri</Label>
-                    <select
+                    <SelectField
                       value={theme.layout.gallery}
                       onChange={(e) => setTheme((prev) => ({ ...prev, layout: { ...prev.layout, gallery: e.target.value as AiTheme["layout"]["gallery"] } }))}
-                      className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
+                      className="w-full"
                     >
                       {GALLERY_LAYOUTS.map((l) => (
                         <option key={l} value={l}>
                           {l}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                 </div>
 
-                <div className="space-y-2 border-t border-[#EFEAE0] pt-4">
+                <div className="space-y-2 border-t border-[#F3EBDB] pt-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-[#8A6A2F]">Struktur Baku 11 Section</p>
-                    <span className="rounded-full bg-[#F5EFE3] px-2.5 py-0.5 text-[10px] font-semibold text-[#8A6A2F]">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#8A6424]">Struktur Baku 11 Section</p>
+                    <span className="rounded-full bg-[#F7F0E1] px-2.5 py-0.5 text-[10px] font-semibold text-[#8A6424]">
                       Standar Lengkap • Tetap
                     </span>
                   </div>
@@ -2213,14 +2553,14 @@ export function CanvasStudio({
                             }}
                             className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-xs transition ${
                               isSel
-                                ? "border-[#8A6A2F] bg-[#FBF6EB] font-semibold text-[#15130F]"
-                                : "border-[#EFEAE0] bg-[#FAF8F4]/70 font-medium text-[#3F3A33] hover:border-[#DFD2BC]"
+                                ? "border-[#8A6424] bg-[#FCF5E6] font-semibold text-[#1A1510]"
+                                : "border-[#F3EBDB] bg-[#FCF8F1]/70 font-medium text-[#40372B] hover:border-[#E6D5B2]"
                             }`}
                           >
                             <span>
                               {idx + 1}. {SECTION_LABELS[sec]}
                             </span>
-                            <span className="text-[10px] text-[#8A6A2F]">{isSel ? "Aktif" : "Atur gaya"}</span>
+                            <span className="text-[10px] text-[#8A6424]">{isSel ? "Aktif" : "Atur gaya"}</span>
                           </button>
                         </li>
                       );
@@ -2231,24 +2571,24 @@ export function CanvasStudio({
             )}
 
             {/* Daftar Desain & Draf Saya (bisa buat banyak template sekaligus) */}
-            <section className="space-y-4 rounded-2xl border border-[#E6DFD3] bg-white p-4 sm:p-5">
+            <section className="space-y-4 rounded-2xl border border-[#EDE3CF] bg-white p-4 sm:p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h3 className="font-serif text-xl font-medium text-[#15130F]">Daftar Desain Saya ({designs.length})</h3>
-                  <p className="text-xs text-[#6B6358]">Buat dan kelola beberapa konsep template sebelum dijual atau dipakai.</p>
+                  <h3 className="font-serif text-xl font-medium text-[#1A1510]">Daftar Desain Saya ({designs.length})</h3>
+                  <p className="text-xs text-[#6B5F50]">Buat dan kelola beberapa konsep template sebelum dijual atau dipakai.</p>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={loadBlankCanvas}
-                  className="h-9 rounded-full border-[#DFD7C8] bg-[#FAF8F4] px-3.5 text-xs font-medium text-[#15130F]"
+                  className="h-9 rounded-full border-[#E9DDC6] bg-[#FCF8F1] px-3.5 text-xs font-medium text-[#1A1510]"
                 >
                   <IconPlus size={14} className="mr-1" /> Buat Desain Baru
                 </Button>
               </div>
 
               {designs.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-[#DFD7C8] bg-[#FAF8F4]/60 px-4 py-6 text-center text-xs text-[#6B6358]">
+                <p className="rounded-xl border border-dashed border-[#E9DDC6] bg-[#FCF8F1]/60 px-4 py-6 text-center text-xs text-[#6B5F50]">
                   Belum ada draf desain tersimpan. Klik <strong>Simpan Draf</strong> di atas untuk menyimpan karya pertamamu ke daftar ini.
                 </p>
               ) : (
@@ -2261,8 +2601,8 @@ export function CanvasStudio({
                         key={d.id}
                         className={`flex flex-col justify-between gap-2.5 rounded-xl border p-2.5 transition ${
                           isEditing
-                            ? "border-[#8A6A2F] bg-[#FBF6EB] ring-1 ring-[#C9A45C]/40"
-                            : "border-[#EFEAE0] bg-[#FAF8F4]/50 hover:border-[#DFD2BC]"
+                            ? "border-[#8A6424] bg-[#FCF5E6] ring-1 ring-[#D9B56A]/40"
+                            : "border-[#F3EBDB] bg-[#FCF8F1]/50 hover:border-[#E6D5B2]"
                         }`}
                       >
                         <div className="flex items-start gap-2.5">
@@ -2270,18 +2610,18 @@ export function CanvasStudio({
                             <CoverThumb theme={d.theme} zoom={0.28} className="aspect-[9/16] w-full" />
                           </div>
                           <div className="min-w-0 flex-1 space-y-1">
-                            <p className="truncate font-serif text-base font-medium leading-tight text-[#15130F]">
+                            <p className="truncate font-serif text-base font-medium leading-tight text-[#1A1510]">
                               {d.theme.name}
                             </p>
                             <div className="flex flex-wrap items-center gap-1 text-[10px]">
-                              <span className="rounded-full bg-[#EFE8DC] px-2 py-0.5 font-medium text-[#5C4620]">
+                              <span className="rounded-full bg-[#F5EDDD] px-2 py-0.5 font-medium text-[#5C431A]">
                                 {d.source === "CANVAS" ? "Kanvas" : d.source === "AI" ? "AI" : "Katalog"}
                               </span>
                               {layerCount > 0 && (
-                                <span className="text-[#6B6358]">{layerCount} layer</span>
+                                <span className="text-[#6B5F50]">{layerCount} layer</span>
                               )}
                               {isEditing && (
-                                <span className="rounded-full bg-[#15130F] px-2 py-0.5 font-medium text-[#FAF8F4]">
+                                <span className="rounded-full bg-[#1A1510] px-2 py-0.5 font-medium text-[#FCF8F1]">
                                   Diedit
                                 </span>
                               )}
@@ -2289,7 +2629,7 @@ export function CanvasStudio({
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1 border-t border-[#EFEAE0] pt-2">
+                        <div className="flex flex-wrap items-center gap-1 border-t border-[#F3EBDB] pt-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -2298,7 +2638,7 @@ export function CanvasStudio({
                               setSelectedLayerId(null);
                               toast.success(`"${d.theme.name}" dibuka di kanvas`);
                             }}
-                            className="flex h-7 flex-1 items-center justify-center rounded-lg bg-[#15130F] px-2 text-[11px] font-medium text-[#FAF8F4] hover:bg-[#2A261F]"
+                            className="flex h-7 flex-1 items-center justify-center rounded-lg bg-[#1A1510] px-2 text-[11px] font-medium text-[#FCF8F1] hover:bg-[#2B241B]"
                           >
                             Edit
                           </button>
@@ -2307,21 +2647,21 @@ export function CanvasStudio({
                             disabled={saving}
                             onClick={() => void duplicateSavedDesign(d)}
                             title="Duplikat desain ini"
-                            className="flex h-7 items-center justify-center rounded-lg border border-[#DFD7C8] bg-white px-2 text-[11px] text-[#3F3A33] hover:bg-[#FAF8F4] disabled:opacity-45"
+                            className="flex h-7 items-center justify-center rounded-lg border border-[#E9DDC6] bg-white px-2 text-[11px] text-[#40372B] hover:bg-[#FCF8F1] disabled:opacity-45"
                           >
                             Duplikat
                           </button>
                           <button
                             type="button"
                             onClick={() => {
+                              const origin = d.source === "CATALOG" ? d.theme.name : null;
                               setTheme(d.theme);
                               setDesignId(d.source === "CANVAS" ? d.id : null);
-                              setSellName(d.theme.name);
-                              setSellDesc(d.theme.mood);
-                              setSellOpen(true);
+                              setTemplateOrigin(origin);
+                              openSell(d.theme, origin);
                             }}
                             title="Jual template ini"
-                            className="flex h-7 items-center justify-center rounded-lg bg-[#8A6A2F] px-2 text-[11px] font-medium text-white hover:bg-[#755925]"
+                            className="flex h-7 items-center justify-center rounded-lg bg-[#8A6424] px-2 text-[11px] font-medium text-white hover:bg-[#755925]"
                           >
                             Jual
                           </button>
@@ -2329,7 +2669,7 @@ export function CanvasStudio({
                             type="button"
                             onClick={() => setDeleteDesignTarget(d)}
                             aria-label={`Hapus ${d.theme.name}`}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#6B6358] hover:bg-red-50 hover:text-red-600"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#6B5F50] hover:bg-red-50 hover:text-red-600"
                           >
                             <IconTrash size={13} />
                           </button>
@@ -2343,21 +2683,21 @@ export function CanvasStudio({
 
             {/* Submitted Marketplace Templates */}
             {myTemplates.length > 0 && (
-              <section className="space-y-3 rounded-2xl border border-[#E6DFD3] bg-white p-5">
+              <section className="space-y-3 rounded-2xl border border-[#EDE3CF] bg-white p-5">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-serif text-xl font-medium text-[#15130F]">Template Saya di Marketplace</h3>
-                  <Link href="/dompet" className="text-xs font-medium text-[#8A6A2F] hover:underline">
+                  <h3 className="font-serif text-xl font-medium text-[#1A1510]">Template Saya di Marketplace</h3>
+                  <Link href="/dompet" className="text-xs font-medium text-[#8A6424] hover:underline">
                     Lihat penghasilan di Dompet →
                   </Link>
                 </div>
-                <div className="divide-y divide-[#EFEAE0]">
+                <div className="divide-y divide-[#F3EBDB]">
                   {myTemplates.map((t) => (
                     <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
                       <div>
-                        <p className="font-medium text-[#15130F]">
-                          {t.name} <span className="text-xs font-normal text-[#6B6358]">· {t.category}</span>
+                        <p className="font-medium text-[#1A1510]">
+                          {t.name} <span className="text-xs font-normal text-[#6B5F50]">· {t.category}</span>
                         </p>
-                        <p className="text-xs text-[#6B6358]">
+                        <p className="text-xs text-[#6B5F50]">
                           Harga {rupiah(t.price)} · Komisi platform {t.platformFeePct}% · Dipakai {t.usageCount}×
                         </p>
                         {t.reviewNote && t.reviewStatus === "REJECTED" && <p className="text-xs text-red-600">Catatan: {t.reviewNote}</p>}
@@ -2365,7 +2705,7 @@ export function CanvasStudio({
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                           t.reviewStatus === "APPROVED" && t.isActive
-                            ? "border border-[#DFD2BC] bg-[#F5EFE3] text-[#5C4620]"
+                            ? "border border-[#E6D5B2] bg-[#F7F0E1] text-[#5C431A]"
                             : t.reviewStatus === "REJECTED"
                               ? "bg-red-50 text-red-700"
                               : "bg-amber-50 text-amber-800"
@@ -2387,14 +2727,14 @@ export function CanvasStudio({
             <div className="mx-auto w-full max-w-[360px]">
               {/* Top artboard controls: Android vs PC preview + lock/duplicate/delete */}
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-0.5">
-                <div className="inline-flex items-center rounded-full border border-[#DFD2BC] bg-white p-0.5 text-[11px] font-medium">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#15130F] px-2.5 py-1 text-[#FAF8F4]">
+                <div className="inline-flex items-center rounded-full border border-[#E6D5B2] bg-white p-0.5 text-[11px] font-medium">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#1A1510] px-2.5 py-1 text-[#FCF8F1]">
                     <IconDeviceMobile size={12} /> Android
                   </span>
                   <button
                     type="button"
                     onClick={() => setPcPreviewOpen(true)}
-                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[#5E574D] transition hover:text-[#15130F]"
+                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[#5E5446] transition hover:text-[#1A1510]"
                   >
                     <IconDeviceDesktop size={12} /> Preview PC
                   </button>
@@ -2406,8 +2746,8 @@ export function CanvasStudio({
                       type="button"
                       onClick={() => updateLayer(selectedLayer.id, { locked: !selectedLayer.locked })}
                       title={selectedLayer.locked ? "Buka kunci layer" : "Kunci layer"}
-                      className={`flex h-7 w-7 items-center justify-center rounded-lg border bg-white text-[#15130F] ${
-                        selectedLayer.locked ? "border-[#8A6A2F] bg-[#FBF6EB] text-[#8A6A2F]" : "border-[#E6DFD3]"
+                      className={`flex h-7 w-7 items-center justify-center rounded-lg border bg-white text-[#1A1510] ${
+                        selectedLayer.locked ? "border-[#8A6424] bg-[#FCF5E6] text-[#8A6424]" : "border-[#EDE3CF]"
                       }`}
                     >
                       {selectedLayer.locked ? <IconLock size={13} /> : <IconLockOpen size={13} />}
@@ -2420,7 +2760,7 @@ export function CanvasStudio({
                         addLayer({ ...rest, locked: false, x: Math.min(92, rest.x + 6), y: Math.min(92, rest.y + 6) });
                       }}
                       title="Duplikat layer"
-                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E6DFD3] bg-white text-[#15130F]"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#EDE3CF] bg-white text-[#1A1510]"
                     >
                       <IconCopy size={13} />
                     </button>
@@ -2434,14 +2774,14 @@ export function CanvasStudio({
                     </button>
                   </div>
                 ) : (
-                  <span className="rounded-full border border-[#DFD2BC] bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#5C4620]">
+                  <span className="rounded-full border border-[#E6D5B2] bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#5C431A]">
                     {SECTION_LABELS[activeSection]}
                   </span>
                 )}
               </div>
 
               {/* Clean flat paper Canva-style artboard (no thick phone bezel) */}
-              <div className="relative overflow-hidden rounded-lg border-2 border-[#C9A45C]/70 bg-white shadow-sm">
+              <div className="relative overflow-hidden rounded-lg border-2 border-[#D9B56A]/70 bg-white shadow-sm">
                 <div className="h-[720px] overflow-y-auto overscroll-contain [scrollbar-width:thin]">
                   <AiDesignTemplate
                     data={previewData}
@@ -2486,6 +2826,8 @@ export function CanvasStudio({
                           x,
                           y,
                           size: payload.size,
+                          ...(payload.heightRatio ? { heightRatio: payload.heightRatio } : {}),
+                          ...(payload.color ? { color: payload.color } : {}),
                           rotation: 0,
                           opacity: payload.kind === "text" || payload.value.startsWith("frame-photo-") ? 1 : 0.88,
                           font: payload.font,
@@ -2500,7 +2842,7 @@ export function CanvasStudio({
                   />
                 </div>
               </div>
-              <p className="mt-2.5 text-center text-xs text-[#6B6358]">
+              <p className="mt-2.5 text-center text-xs text-[#6B5F50]">
                 Klik section untuk ubah layoutnya, seret elemen dari kiri ke kanvas, atau klik <strong>Preview PC</strong>.
               </p>
             </div>
@@ -2508,101 +2850,32 @@ export function CanvasStudio({
         </div>
       </div>
 
-      {/* Sell on Marketplace Dialog */}
-      <Dialog open={sellOpen} onOpenChange={setSellOpen}>
-        <DialogContent>
-          <form onSubmit={submitToMarketplace} className="space-y-4">
-            <DialogHeader>
-              <DialogTitle className="font-serif text-2xl">Jual Template di Marketplace</DialogTitle>
-              <DialogDescription>
-                Ajukan desain buatanmu untuk dijual ke pengguna UNDANGIN YUK. Penghasilan otomatis masuk ke Dompet setiap kali ada pembelian.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-1.5">
-              <Label htmlFor="sell-name">Nama Template</Label>
-              <Input id="sell-name" value={sellName} onChange={(e) => setSellName(e.target.value)} required />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="sell-cat">Kategori</Label>
-                <select
-                  id="sell-cat"
-                  value={sellCategory}
-                  onChange={(e) => setSellCategory(e.target.value as (typeof CATALOG_CATEGORIES)[number])}
-                  className="h-10 w-full rounded-xl border border-[#DFD7C8] bg-[#FAF8F4] px-3 text-sm"
-                >
-                  {CATALOG_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="sell-price">Harga Jual (Rp)</Label>
-                <Input
-                  id="sell-price"
-                  type="number"
-                  min={MARKETPLACE_MIN_PRICE}
-                  max={MARKETPLACE_MAX_PRICE}
-                  step={1000}
-                  value={sellPrice}
-                  onChange={(e) => setSellPrice(Number(e.target.value) || MARKETPLACE_MIN_PRICE)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="sell-desc">Deskripsi Singkat</Label>
-              <Textarea
-                id="sell-desc"
-                value={sellDesc}
-                onChange={(e) => setSellDesc(e.target.value)}
-                placeholder="Ceritakan konsep desain, nuansa warna, dan kecocokan acara..."
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5 rounded-xl border border-[#DFD2BC] bg-[#F5EFE3] p-3.5 text-xs text-[#5C4620]">
-              <div className="flex justify-between">
-                <span>Harga jual ke pembeli</span>
-                <span className="font-semibold">{rupiah(sellPrice)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Komisi platform UNDANGIN YUK ({DEFAULT_MARKETPLACE_FEE_PCT}%)</span>
-                <span>−{rupiah(feeEstimate)}</span>
-              </div>
-              <div className="flex justify-between border-t border-[#DFD2BC] pt-1.5 text-sm font-semibold text-[#15130F]">
-                <span>Pendapatan bersih Anda ({100 - DEFAULT_MARKETPLACE_FEE_PCT}%)</span>
-                <span>{rupiah(creatorEstimate)} / penjualan</span>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setSellOpen(false)}>
-                Batal
-              </Button>
-              <Button type="submit" disabled={submittingSell} className="rounded-full bg-[#15130F] text-[#FAF8F4]">
-                {submittingSell && <IconLoader2 size={15} className="mr-2 animate-spin" />}
-                Ajukan untuk Review
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* Sell on Marketplace Dialog with pre-sell AI plagiarism check */}
+      <MarketplaceSellDialog
+        open={sellTheme !== null}
+        onOpenChange={(open) => !open && setSellTheme(null)}
+        theme={sellTheme}
+        initialName={sellTheme?.name ?? ""}
+        initialDescription={sellTheme?.mood ?? ""}
+        previewData={previewData}
+        onSubmitted={(created) => {
+          setMyTemplates((prev) => [created, ...prev]);
+          router.refresh();
+        }}
+      />
 
       <AlertDialog open={deleteDesignTarget !== null} onOpenChange={(open) => !open && !deletingDesign && setDeleteDesignTarget(null)}>
-        <AlertDialogContent className="border-[#E6DFD3] bg-[#FFFDF9] text-[#15130F] sm:rounded-2xl">
+        <AlertDialogContent className="border-[#EDE3CF] bg-[#FFFDF9] text-[#1A1510] sm:rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#15130F]">
+            <AlertDialogTitle className="font-serif text-2xl font-medium text-[#1A1510]">
               Hapus desain &ldquo;{deleteDesignTarget?.theme.name}&rdquo;?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-[#5E574D]">
+            <AlertDialogDescription className="text-sm text-[#5E5446]">
               Draf desain ini akan dihapus dari daftar Anda. Template yang sudah terbit di Marketplace tetap aman.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel disabled={deletingDesign} className="rounded-full border-[#DFD7C8] bg-white text-[#3F3A33] hover:bg-[#FAF8F4]">
+            <AlertDialogCancel disabled={deletingDesign} className="rounded-full border-[#E9DDC6] bg-white text-[#40372B] hover:bg-[#FCF8F1]">
               Batal
             </AlertDialogCancel>
             <AlertDialogAction
@@ -2621,20 +2894,29 @@ export function CanvasStudio({
 
       {/* Live Desktop (PC) Preview Modal */}
       <Dialog open={pcPreviewOpen} onOpenChange={setPcPreviewOpen}>
-        <DialogContent className="flex! h-[88vh] max-h-[88vh] max-w-[94vw] flex-col gap-0 overflow-hidden border-[#E6DFD3] bg-[#FFFDF9] p-0 sm:max-w-5xl sm:rounded-2xl">
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#EFEAE0] px-5 py-3 pr-12">
-            <div className="flex items-center gap-2">
-              <IconDeviceDesktop size={18} className="text-[#8A6A2F]" />
-              <DialogTitle className="font-serif text-xl font-medium text-[#15130F]">
-                Pratinjau Layar PC / Desktop — {theme.name}
-              </DialogTitle>
-            </div>
-            <span className="rounded-full bg-[#F4EAD6] px-2.5 py-0.5 text-[11px] font-medium text-[#5C4620]">
-              Tampilan split desktop asli
-            </span>
+        <DialogContent
+          showCloseButton={false}
+          className="flex! top-0! left-0! h-dvh! max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col gap-0 overflow-hidden rounded-none! border-0 bg-[#1A1510] p-0"
+        >
+          <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-2.5 text-[#F6EEDD] sm:px-6">
+            <DialogTitle className="flex min-w-0 items-center gap-2 text-sm font-medium">
+              <IconDeviceDesktop size={18} className="shrink-0 text-[#D9B56A]" />
+              <span className="truncate">Pratinjau Layar PC / Desktop — {theme.name}</span>
+              <span className="hidden rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] text-[#CDBF9F] sm:inline">
+                Tampilan split desktop asli
+              </span>
+            </DialogTitle>
+            <DialogClose asChild>
+              <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3.5 text-xs font-medium hover:bg-white/20">
+                <IconX size={15} /> Tutup
+              </button>
+            </DialogClose>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F3EC]">
-            <AiDesignTemplate data={previewData} theme={theme} forceOpened />
+          <div
+            className={`min-h-0 flex-1 overscroll-contain bg-[#FCF8F1] ${theme.customHtml?.trim() ? "overflow-hidden" : "overflow-y-auto"}`}
+            style={{ ["--uy-stage-h" as string]: "calc(100dvh - 53px)" }}
+          >
+            <AiDesignTemplate data={previewData} theme={theme} forceOpened sampleMode />
           </div>
         </DialogContent>
       </Dialog>

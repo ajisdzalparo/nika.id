@@ -31,7 +31,7 @@ export default async function CatalogPreviewPage({ params }: { params: Promise<{
           Pakai desain
         </Link>
       </div>
-      <AiDesignTemplate data={previewData} theme={item.theme} />
+      <AiDesignTemplate data={previewData} theme={item.theme} sampleMode />
     </div>
   );
 }

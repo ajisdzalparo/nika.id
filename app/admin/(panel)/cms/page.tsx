@@ -15,9 +15,9 @@ export default async function AdminCmsPage() {
   return (
     <>
       <SiteHeader />
-      <div className="flex-1 p-6 md:p-8 max-w-5xl mx-auto w-full space-y-6">
+      <div className="flex-1 px-4 pb-16 pt-8 lg:px-8 w-full space-y-6">
         <div>
-          <h1 className="font-serif text-4xl font-medium text-[#1E1B17]">Tulisan landing page</h1>
+          <h1 className="font-serif text-4xl font-medium text-[#1F1A14]">Tulisan landing page</h1>
           <p className="text-muted-foreground">
             Ubah teks halaman depan (Hero, Cara Kerja, Fitur, FAQ, CTA, dan Footer) tanpa perlu menyentuh kode.
           </p>

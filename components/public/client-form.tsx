@@ -4,6 +4,7 @@ import { waLink } from "@/lib/phone";
 import { useState } from "react";
 import { toast } from "sonner";
 import { IconBrandWhatsapp, IconCheck, IconLoader2, IconMapPin, IconPlus, IconTrash } from "@tabler/icons-react";
+import { DatePickerField } from "@/components/common/date-time-picker";
 import { LocationPicker, mapsLink, type PickedLocation } from "@/components/common/location-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,7 +51,7 @@ interface ClientFormProps {
   };
 }
 
-const fieldCls = "h-11 rounded-xl border-[#E1D8C9] bg-[#FAF8F4] text-[15px] placeholder:text-[#A59B8C] focus:border-[#8A6A2F]";
+const fieldCls = "h-11 rounded-xl border-[#E9DDC6] bg-[#FCF8F1] text-[15px] placeholder:text-[#A59B8C] focus:border-[#8A6424]";
 
 export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp, clientName, initial }: ClientFormProps) {
   const [groom, setGroom] = useState<PersonForm>(initial.groom);
@@ -118,22 +119,22 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F3EC] px-4 py-8 text-[#1E1B17] sm:py-12">
+    <div className="min-h-screen bg-[#FCF8F1] px-4 py-8 text-[#1F1A14] sm:py-12">
       <div className="mx-auto max-w-2xl space-y-6">
-        <header className="space-y-2 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A6A2F]">
+        <header className="space-y-2 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8A6424]">
             Pengisian Data Undangan · {agencyName}
           </p>
-          <h1 className="font-serif text-3xl font-medium text-[#15130F] sm:text-4xl">{invitationTitle}</h1>
-          <p className="text-sm leading-relaxed text-[#5E574D]">
+          <h1 className="font-serif text-3xl font-medium text-[#1A1510] sm:text-4xl">{invitationTitle}</h1>
+          <p className="text-sm leading-relaxed text-[#5E5446]">
             {clientName ? `Halo ${clientName}, silakan ` : "Silakan "}lengkapi data mempelai, jadwal acara, dan rekening amplop digital di bawah ini. Perubahan langsung tersimpan ke draf undangan Anda tanpa perlu membuat akun.
           </p>
         </header>
 
         {savedAt && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#DFD2BC] bg-[#F5EFE3] px-5 py-3.5 text-sm text-[#5C4620]">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E6D5B2] bg-[#F7F0E1] px-5 py-3.5 text-sm text-[#5C431A]">
             <span className="flex items-center gap-2 font-medium">
-              <IconCheck size={17} className="text-[#8A6A2F]" /> Data tersimpan pada pukul {savedAt}. Tim {agencyName} dapat langsung memproses desainnya.
+              <IconCheck size={17} className="text-[#8A6424]" /> Data tersimpan pada pukul {savedAt}. Tim {agencyName} dapat langsung memproses desainnya.
             </span>
             {agencyWhatsapp && (
               <a
@@ -156,8 +157,8 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
               ["bride", "Mempelai Wanita", bride],
             ] as const
           ).map(([key, heading, person]) => (
-            <section key={key} className="space-y-4 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-6">
-              <h2 className="font-serif text-2xl font-medium text-[#15130F]">{heading}</h2>
+            <section key={key} className="space-y-4 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-5 sm:p-6">
+              <h2 className="font-serif text-2xl font-medium text-[#1A1510]">{heading}</h2>
               <div className="grid gap-3.5 sm:grid-cols-2">
                 <label className="block space-y-1.5">
                   <span className="block text-sm font-medium leading-none">Nama Panggilan</span>
@@ -211,9 +212,9 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
           ))}
 
           {/* Events */}
-          <section className="space-y-4 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-6">
+          <section className="space-y-4 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-5 sm:p-6">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="font-serif text-2xl font-medium text-[#15130F]">Jadwal & Lokasi Acara</h2>
+              <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Jadwal & Lokasi Acara</h2>
               {events.length < 4 && (
                 <button
                   type="button"
@@ -223,7 +224,7 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
                       { id: `ev-${Date.now()}`, title: "Acara Tambahan", date: "", time: "", venue: "", address: "", mapUrl: "" },
                     ])
                   }
-                  className="inline-flex h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#DFD7C8] px-3.5 text-xs font-medium text-[#15130F] hover:bg-[#FAF8F4]"
+                  className="inline-flex h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#E9DDC6] px-3.5 text-xs font-medium text-[#1A1510] hover:bg-[#FCF8F1]"
                 >
                   <IconPlus size={14} /> Tambah Acara
                 </button>
@@ -232,9 +233,9 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
 
             <div className="space-y-5">
               {events.map((ev, idx) => (
-                <div key={ev.id} className="space-y-3 rounded-xl border border-[#EFEAE0] bg-[#FAF8F4]/70 p-4">
+                <div key={ev.id} className="space-y-3 rounded-xl border border-[#F3EBDB] bg-[#FCF8F1]/70 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-[#8A6A2F]">Acara {idx + 1}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[#8A6424]">Acara {idx + 1}</span>
                     {events.length > 1 && (
                       <button
                         type="button"
@@ -250,10 +251,10 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
                       <span className="block text-sm font-medium leading-none">Nama Acara</span>
                       <Input className={fieldCls} value={ev.title} onChange={(e) => updateEvent(idx, "title", e.target.value)} placeholder="Contoh: Akad Nikah" />
                     </label>
-                    <label className="block space-y-1">
+                    <div className="space-y-1">
                       <span className="block text-sm font-medium leading-none">Tanggal</span>
-                      <Input className={fieldCls} type="date" value={ev.date} onChange={(e) => updateEvent(idx, "date", e.target.value)} />
-                    </label>
+                      <DatePickerField className={fieldCls} value={ev.date} onChange={(v) => updateEvent(idx, "date", v)} />
+                    </div>
                     <label className="block space-y-1">
                       <span className="block text-sm font-medium leading-none">Jam</span>
                       <Input className={fieldCls} value={ev.time} onChange={(e) => updateEvent(idx, "time", e.target.value)} placeholder="Contoh: 08.00 - 10.00 WIB" />
@@ -269,15 +270,15 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
                   </label>
                   <div className="space-y-2 pt-1">
                     <p className="flex items-center gap-1.5 text-sm font-medium leading-none">
-                      <IconMapPin size={14} className="text-[#8A6A2F]" /> Cari Lokasi di Google Maps
+                      <IconMapPin size={14} className="text-[#8A6424]" /> Cari Lokasi di Google Maps
                     </p>
                     <LocationPicker
                       value={{ lat: ev.lat, lng: ev.lng }}
                       initialQuery={[ev.venue, ev.address].filter(Boolean).join(", ")}
                       onChange={(loc) => setEventLocation(idx, loc)}
                     />
-                    <details className="text-xs text-[#6B6358]">
-                      <summary className="flex min-h-8 cursor-pointer items-center hover:text-[#1E1B17]">
+                    <details className="text-xs text-[#6B5F50]">
+                      <summary className="flex min-h-8 cursor-pointer items-center hover:text-[#1F1A14]">
                         Atau tempel link Google Maps sendiri
                       </summary>
                       <Input
@@ -294,17 +295,17 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
           </section>
 
           {/* Digital Gift */}
-          <section className="space-y-4 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-6">
+          <section className="space-y-4 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-5 sm:p-6">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <h2 className="font-serif text-2xl font-medium text-[#15130F]">Amplop Digital (Opsional)</h2>
-                <p className="text-xs text-[#6B6358]">Rekening bank atau e-wallet untuk hadiah dari tamu.</p>
+                <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Amplop Digital (Opsional)</h2>
+                <p className="text-xs text-[#6B5F50]">Rekening bank atau e-wallet untuk hadiah dari tamu.</p>
               </div>
               {banks.length < 4 && (
                 <button
                   type="button"
                   onClick={() => setBanks((prev) => [...prev, { bankName: "", accountHolder: "", accountNumber: "" }])}
-                  className="inline-flex h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#DFD7C8] px-3.5 text-xs font-medium text-[#15130F] hover:bg-[#FAF8F4]"
+                  className="inline-flex h-10 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#E9DDC6] px-3.5 text-xs font-medium text-[#1A1510] hover:bg-[#FCF8F1]"
                 >
                   <IconPlus size={14} /> Tambah Rekening
                 </button>
@@ -312,11 +313,11 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
             </div>
 
             {banks.length === 0 ? (
-              <p className="text-xs text-[#6B6358]">Belum ada rekening ditambahkan.</p>
+              <p className="text-xs text-[#6B5F50]">Belum ada rekening ditambahkan.</p>
             ) : (
               <div className="space-y-3">
                 {banks.map((b, idx) => (
-                  <div key={idx} className="grid gap-2.5 rounded-xl border border-[#EFEAE0] bg-[#FAF8F4]/70 p-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+                  <div key={idx} className="grid gap-2.5 rounded-xl border border-[#F3EBDB] bg-[#FCF8F1]/70 p-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
                     <label className="block space-y-1">
                       <span className="block text-xs font-medium leading-none">Bank / E-wallet</span>
                       <Input
@@ -359,13 +360,13 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
           </section>
 
           {/* Story & Quote */}
-          <section className="space-y-4 rounded-2xl border border-[#E1D8C9] bg-[#FFFDF9] p-5 sm:p-6">
-            <h2 className="font-serif text-2xl font-medium text-[#15130F]">Kutipan & Cerita Singkat (Opsional)</h2>
+          <section className="space-y-4 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-5 sm:p-6">
+            <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Kutipan & Cerita Singkat (Opsional)</h2>
             <div className="space-y-3">
               <label className="block space-y-1">
                 <span className="block text-sm font-medium leading-none">Ayat / Kutipan Pernikahan</span>
                 <Textarea
-                  className="min-h-20 border-[#E1D8C9] bg-[#FAF8F4] placeholder:text-[#A59B8C]"
+                  className="min-h-20 border-[#E9DDC6] bg-[#FCF8F1] placeholder:text-[#A59B8C]"
                   value={quote.text}
                   onChange={(e) => setQuote((prev) => ({ ...prev, text: e.target.value }))}
                   placeholder="Dan di antara tanda-tanda kekuasaan-Nya..."
@@ -378,7 +379,7 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
               <label className="block space-y-1">
                 <span className="block text-sm font-medium leading-none">Kisah Pertemuan Singkat</span>
                 <Textarea
-                  className="min-h-24 border-[#E1D8C9] bg-[#FAF8F4] placeholder:text-[#A59B8C]"
+                  className="min-h-24 border-[#E9DDC6] bg-[#FCF8F1] placeholder:text-[#A59B8C]"
                   value={story.content}
                   onChange={(e) => setStory((prev) => ({ ...prev, content: e.target.value }))}
                   placeholder="Ceritakan singkat awal pertemuan kalian..."
@@ -390,7 +391,7 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
           <button
             type="submit"
             disabled={saving}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#15130F] px-6 text-sm font-semibold text-[#FAF8F4] transition hover:bg-[#2A261F] disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#1A1510] px-6 text-sm font-semibold text-[#FCF8F1] transition hover:bg-[#2B241B] disabled:opacity-50"
           >
             {saving ? <IconLoader2 size={17} className="animate-spin" /> : <IconCheck size={17} />}
             {saving ? "Menyimpan..." : "Simpan Data Undangan"}

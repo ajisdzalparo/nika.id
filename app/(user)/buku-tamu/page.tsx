@@ -1,158 +1,115 @@
 import { redirect } from "next/navigation";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { IconMessage, IconQuote, IconUsers } from "@tabler/icons-react";
 import { SiteHeader } from "@/components/site-header";
 import { InvitationSwitcher } from "@/components/user/active-invitation-context";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { RsvpManager } from "@/components/user/rsvp-manager";
+import { PageHeader } from "@/components/common/studio-ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
 import { getSession } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
-import { IconMessage, IconUsers, IconCheck, IconX, IconQuote } from "@tabler/icons-react";
+import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 
 export default async function BukuTamuPage() {
   const session = await getSession(undefined, "user");
-
   if (!session) redirect("/login");
 
   const active = await getActiveInvitation(session.user.id);
 
-  const [attendees, messages] = await Promise.all([
-    prisma.rSVP.findMany({
+  const [attendees, messages, guestRows] = await Promise.all([
+    prisma.rSVP.findMany({ where: { invitationId: active.id }, orderBy: { createdAt: "desc" } }),
+    prisma.guestMessage.findMany({ where: { invitationId: active.id }, orderBy: { createdAt: "desc" } }),
+    prisma.guest.findMany({
       where: { invitationId: active.id },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.guestMessage.findMany({
-      where: { invitationId: active.id },
-      orderBy: { createdAt: "desc" },
+      select: { name: true, phone: true, openedAt: true, openCount: true },
     }),
   ]);
 
-  const stats = {
-    total: attendees.length,
-    present: attendees.filter((a) => a.attendance.toUpperCase() === "HADIR").length,
-    absent: attendees.filter((a) => a.attendance.toUpperCase() === "TIDAK HADIR").length,
-  };
+  const raw = (active.data ?? {}) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const data = mapInvitationToWeddingData(raw, "Tamu", active.weddingDate ?? undefined);
+  const hasCouple = Boolean(raw.groom?.nickname || raw.groom?.fullName || raw.groom?.name) && Boolean(raw.bride?.nickname || raw.bride?.fullName || raw.bride?.name);
+  const hasAnyCheckIn = attendees.some((a) => Boolean(a.checkedInAt));
+  // Check-in tracking is always visible because every invitation has a printable venue QR in /check-in
+  const qrEnabled = Boolean(data.rsvp?.qrCheckIn) || hasAnyCheckIn || true;
+  const ev = data.events?.[0] ?? data.event;
+  const eventDate = ev?.date ? new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(ev.date)) : null;
 
   return (
     <>
       <SiteHeader />
-      <div className="flex flex-1 flex-col min-h-screen">
-        <div className="flex flex-col gap-8 py-10 px-4 lg:px-8 w-full">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-[#8A6A2F]">{active.title}</p>
-              <h1 className="font-serif text-3xl md:text-4xl font-medium text-zinc-900 dark:text-zinc-50 tracking-tight">Komentar & Kehadiran</h1>
-              <p className="text-zinc-500 dark:text-zinc-400 mt-1">Pantau siapa saja yang akan hadir di hari bahagiamu.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <InvitationSwitcher compact />
-              <Button asChild className="rounded-full px-6 shadow-none bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200">
-                <a href="/api/user/rsvp/export" download>
-                  Download Data (CSV)
-                </a>
-              </Button>
-            </div>
-          </div>
-
-          {/* Stats Cards - Glass & Minimalist */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-6 rounded-xl bg-white border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
-              <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Total Respon</span>
-              <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.total}</span>
-            </div>
-            <div className="p-6 rounded-xl bg-white border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
-              <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Hadir</span>
-              <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.present}</span>
-            </div>
-            <div className="p-6 rounded-xl bg-white border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center shadow-sm">
-              <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Berhalangan</span>
-              <span className="font-serif text-4xl text-zinc-900 dark:text-zinc-100">{stats.absent}</span>
-            </div>
-          </div>
+      <div className="flex-1 px-4 pb-16 pt-6 lg:px-8 lg:pt-8">
+        <div className="w-full space-y-6">
+          <PageHeader
+            eyebrow={active.title}
+            title="RSVP & Ucapan"
+            description="Pantau konfirmasi tamu, ucapan doa, dan kedatangan dari QR meja tamu atau QR check-in pribadi."
+            actions={<InvitationSwitcher compact />}
+          />
 
           <Tabs defaultValue="attendance" className="w-full">
-            <TabsList className="bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-full h-auto mb-8 w-fit mx-auto md:mx-0">
-              <TabsTrigger value="attendance" className="rounded-full py-2.5 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm font-medium transition-all">
-                <IconUsers className="w-4 h-4 mr-2" />
-                Daftar Kehadiran
+            <TabsList className="mb-5 h-auto w-fit rounded-full bg-[#F6EEDF] p-1">
+              <TabsTrigger value="attendance" className="rounded-full px-5 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <IconUsers className="mr-2 size-4" /> Daftar RSVP
               </TabsTrigger>
-              <TabsTrigger value="messages" className="rounded-full py-2.5 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm font-medium transition-all">
-                <IconMessage className="w-4 h-4 mr-2" />
-                Ucapan Doa
+              <TabsTrigger value="messages" className="rounded-full px-5 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <IconMessage className="mr-2 size-4" /> Ucapan ({messages.length})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="attendance">
-              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white overflow-hidden shadow-sm">
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {attendees.map((attendee) => (
-                    <div key={attendee.id} className="p-5 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                            attendee.attendance.toUpperCase() === "HADIR" ? "bg-primary/10 border-primary/20 text-primary" : "bg-zinc-100 border-zinc-200 text-zinc-400 dark:bg-zinc-800 dark:border-zinc-700"
-                          }`}
-                        >
-                          {attendee.attendance.toUpperCase() === "HADIR" ? <IconCheck size={18} /> : <IconX size={18} />}
-                        </div>
-                        <div>
-                          <p className="font-bold text-zinc-900 dark:text-zinc-100">{attendee.guestName}</p>
-                          <p className="text-xs text-zinc-500">{format(new Date(attendee.createdAt), "dd MMM, HH:mm", { locale: idLocale })}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge
-                          variant="outline"
-                          className={`rounded-full px-3 py-0.5 border ${
-                            attendee.attendance.toUpperCase() === "HADIR" ? "border-primary/20 bg-primary/5 text-primary" : "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
-                          }`}
-                        >
-                          {attendee.guests} Orang
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  {attendees.length === 0 && (
-                    <div className="p-16 text-center">
-                      <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
-                        <IconUsers size={32} />
-                      </div>
-                      <p className="text-zinc-500">Belum ada konfirmasi kehadiran tamu.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <RsvpManager
+                qrEnabled={qrEnabled}
+                card={{
+                  couple: hasCouple ? `${data.groom.nickname} & ${data.bride.nickname}` : active.title,
+                  date: eventDate,
+                  venue: ev?.venue && ev.venue !== "Nama Tempat Acara" ? ev.venue : null,
+                }}
+                initialRows={attendees.map((a) => {
+                  const matchedGuest = guestRows.find(
+                    (g) =>
+                      g.name.trim().toLowerCase() === a.guestName.trim().toLowerCase() ||
+                      (a.phone && g.phone && g.phone === a.phone),
+                  );
+                  return {
+                    id: a.id,
+                    guestName: a.guestName,
+                    attendance: a.attendance,
+                    guests: a.guests,
+                    phone: a.phone,
+                    companions: a.companions,
+                    customAnswer: a.customAnswer,
+                    note: a.note,
+                    checkInToken: a.checkInToken,
+                    checkedInAt: a.checkedInAt?.toISOString() ?? null,
+                    webOpenedAt: matchedGuest?.openedAt?.toISOString() ?? a.createdAt.toISOString(),
+                    webOpenCount: matchedGuest?.openCount ? Math.max(1, matchedGuest.openCount) : 1,
+                    createdAt: a.createdAt.toISOString(),
+                  };
+                })}
+              />
             </TabsContent>
 
             <TabsContent value="messages">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {messages.map((msg) => (
-                  <Card key={msg.id} className="border-none shadow-sm hover:shadow-md transition-all bg-white border border-zinc-100 dark:border-zinc-800 rounded-xl overflow-hidden group">
-                    <CardContent className="p-6 relative">
-                      <IconQuote className="absolute top-6 right-6 text-primary/10 w-10 h-10 rotate-180" />
-                      <p className="text-zinc-600 dark:text-zinc-300 italic mb-6 relative z-10 leading-relaxed min-h-[60px]">&rdquo;{msg.message}&rdquo;</p>
-                      <div className="flex items-center gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                        <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-500 text-xs font-bold font-serif">
-                          {msg.guestName.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{msg.guestName}</p>
-                          <p className="text-[10px] text-zinc-400 uppercase tracking-wider">{format(new Date(msg.createdAt), "dd MMM yyyy", { locale: idLocale })}</p>
-                        </div>
+                  <div key={msg.id} className="relative rounded-2xl border border-[#EDE3CF] bg-white p-6 shadow-[0_1px_2px_rgba(26,21,16,.04)]">
+                    <IconQuote className="absolute right-6 top-6 size-10 rotate-180 text-[#D9B56A]/25" />
+                    <p className="relative min-h-[60px] leading-relaxed text-[#40372B]">&ldquo;{msg.message}&rdquo;</p>
+                    <div className="mt-5 flex items-center gap-3 border-t border-[#F3EBDB] pt-4">
+                      <span className="flex size-9 items-center justify-center rounded-full bg-[#F6EEDF] font-(family-name:--font-landing-display) text-[#8A6424]">{msg.guestName.charAt(0).toUpperCase()}</span>
+                      <div>
+                        <p className="text-sm font-medium text-[#1F1A14]">{msg.guestName}</p>
+                        <p className="text-[11px] uppercase tracking-wider text-[#8E8268]">{format(new Date(msg.createdAt), "dd MMM yyyy", { locale: idLocale })}</p>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
                 {messages.length === 0 && (
-                  <div className="col-span-2 p-16 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
-                    <div className="w-16 h-16 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-300">
-                      <IconMessage size={32} />
-                    </div>
-                    <p className="text-zinc-500">Belum ada ucapan doa dari tamu.</p>
+                  <div className="col-span-full rounded-2xl border border-dashed border-[#E9DDC6] p-16 text-center text-[#6B5F50]">
+                    <IconMessage size={30} className="mx-auto mb-3 text-[#D9B56A]" />
+                    Belum ada ucapan doa dari tamu.
                   </div>
                 )}
               </div>

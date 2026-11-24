@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Open laurel-and-eucalyptus wreath with a small white rose at the base -->
+  <defs>
+    <linearGradient id="ol" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#A9B693"/><stop offset="1" stop-color="#617252"/></linearGradient>
+    <radialGradient id="wr" cx=".45" cy=".4" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E2D9CA"/></radialGradient>
+    <ellipse id="lf" cx="0" cy="0" rx="4" ry="12"/>
+  </defs>
+  <path d="M100 176 C40 170 22 110 46 60" stroke="#617252" stroke-width="1.6" fill="none"/>
+  <path d="M100 176 C160 170 178 110 154 60" stroke="#617252" stroke-width="1.6" fill="none"/>
+  <g fill="url(#ol)">
+    <use href="#lf" transform="translate(84 172) rotate(80)"/><use href="#lf" transform="translate(66 164) rotate(60)"/>
+    <use href="#lf" transform="translate(50 150) rotate(40)"/><use href="#lf" transform="translate(40 130) rotate(20)"/>
+    <use href="#lf" transform="translate(36 108) rotate(5)"/><use href="#lf" transform="translate(38 86) rotate(-12)"/>
+    <use href="#lf" transform="translate(46 66) rotate(-28)"/>
+    <use href="#lf" transform="translate(116 172) rotate(-80)"/><use href="#lf" transform="translate(134 164) rotate(-60)"/>
+    <use href="#lf" transform="translate(150 150) rotate(-40)"/><use href="#lf" transform="translate(160 130) rotate(-20)"/>
+    <use href="#lf" transform="translate(164 108) rotate(-5)"/><use href="#lf" transform="translate(162 86) rotate(12)"/>
+    <use href="#lf" transform="translate(154 66) rotate(28)"/>
+  </g>
+  <g fill="url(#wr)" stroke="#CFC3B0" stroke-width=".6">
+    <circle cx="100" cy="172" r="12"/><circle cx="92" cy="168" r="8"/><circle cx="108" cy="168" r="8"/>
+  </g>
+  <path d="M96 172 C96 167 104 166 104 172" stroke="#C9BBA4" stroke-width="1.2" fill="none"/>
+</svg>

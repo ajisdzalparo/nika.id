@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { IconGift, IconHeartHandshake, IconMusic, IconPlus, IconTrash, IconUsersGroup } from "@tabler/icons-react";
+import { IconClipboardCheck, IconGift, IconHeartHandshake, IconMusic, IconPlus, IconTrash, IconUsersGroup } from "@tabler/icons-react";
 import { MusicSourcePicker } from "@/components/common/music-source-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select";
 import { WeddingData } from "@/types/wedding";
 
 interface FiturSectionProps {
@@ -18,15 +19,15 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
   return (
     <div className="space-y-6">
       {/* Music Section */}
-      <section className="rounded-2xl border border-[#E1D8C9] bg-[#F7F3EC]/55 p-5 sm:p-6 space-y-5">
+      <section className="rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1]/55 p-5 sm:p-6 space-y-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFE8DC] text-[#8A6A2F]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5EDDD] text-[#8A6424]">
               <IconMusic size={20} stroke={1.7} />
             </span>
             <div>
-              <h3 className="font-serif text-xl font-medium text-[#1E1B17]">Musik Latar</h3>
-              <p className="text-xs text-[#6B6358]">Putar musik otomatis dari link YouTube atau file audio yang diunggah ke S3.</p>
+              <h3 className="font-serif text-xl font-medium text-[#1F1A14]">Musik Latar</h3>
+              <p className="text-xs text-[#6B5F50]">Putar musik otomatis dari link YouTube atau file audio yang diunggah ke S3.</p>
             </div>
           </div>
           <button
@@ -35,7 +36,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
             aria-checked={Boolean(data.music?.enabled)}
             aria-label="Aktifkan musik latar"
             onClick={() => setData((prev) => ({ ...prev, music: { ...prev.music!, enabled: !prev.music?.enabled } }))}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${data.music?.enabled ? "bg-[#1E1B17]" : "bg-[#CFC5B4]"}`}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${data.music?.enabled ? "bg-[#1F1A14]" : "bg-[#D9CBAE]"}`}
           >
             <span className={`inline-block h-4.5 w-4.5 transform rounded-full bg-[#FFFDF9] transition-transform ${data.music?.enabled ? "translate-x-5.5" : "translate-x-1"}`} />
           </button>
@@ -51,16 +52,107 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
         )}
       </section>
 
+      {/* RSVP form options */}
+      <section className="rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1]/55 p-5 sm:p-6 space-y-5">
+        <div className="flex items-center gap-3.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5EDDD] text-[#8A6424]">
+            <IconClipboardCheck size={20} stroke={1.7} />
+          </span>
+          <div>
+            <h3 className="font-serif text-xl font-medium text-[#1F1A14]">Formulir RSVP</h3>
+            <p className="text-xs text-[#6B5F50]">Atur apa yang diisi tamu saat konfirmasi kehadiran.</p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex items-start justify-between gap-4 rounded-xl border border-[#E9DDC6] bg-[#FFFDF9] p-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-[#1F1A14]">Minta nomor WhatsApp</p>
+              <p className="text-xs leading-relaxed text-[#6B5F50]">Tampilkan kolom nomor WA agar tamu mudah dihubungi atau dikirim kartu QR.</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={data.rsvp?.askPhone !== false}
+              aria-label="Minta nomor WhatsApp tamu"
+              onClick={() => setData((prev) => ({ ...prev, rsvp: { ...prev.rsvp, askPhone: prev.rsvp?.askPhone === false } }))}
+              className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${data.rsvp?.askPhone !== false ? "bg-[#1F1A14]" : "bg-[#D9CBAE]"}`}
+            >
+              <span className={`inline-block h-4.5 w-4.5 transform rounded-full bg-[#FFFDF9] transition-transform ${data.rsvp?.askPhone !== false ? "translate-x-5.5" : "translate-x-1"}`} />
+            </button>
+          </div>
+          <div className="flex items-start justify-between gap-4 rounded-xl border border-[#E9DDC6] bg-[#FFFDF9] p-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-[#1F1A14]">QR check-in pribadi setelah RSVP</p>
+              <p className="text-xs leading-relaxed text-[#6B5F50]">Opsional untuk mode panitia: tamu mendapat QR pribadi setelah RSVP. (QR cetak meja tamu di menu Check-in Tamu selalu aktif otomatis.)</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={Boolean(data.rsvp?.qrCheckIn)}
+              aria-label="Aktifkan QR check-in tamu"
+              onClick={() => setData((prev) => ({ ...prev, rsvp: { ...prev.rsvp, qrCheckIn: !prev.rsvp?.qrCheckIn } }))}
+              className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${data.rsvp?.qrCheckIn ? "bg-[#1F1A14]" : "bg-[#D9CBAE]"}`}
+            >
+              <span className={`inline-block h-4.5 w-4.5 transform rounded-full bg-[#FFFDF9] transition-transform ${data.rsvp?.qrCheckIn ? "translate-x-5.5" : "translate-x-1"}`} />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <label className="block space-y-1.5">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Maksimal tamu per RSVP</span>
+            <SelectField
+              value={String(data.rsvp?.maxGuests ?? 5)}
+              onChange={(e) => setData((prev) => ({ ...prev, rsvp: { ...prev.rsvp, maxGuests: Number(e.target.value) } }))}
+              className="h-11 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
+            >
+              {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
+                <option key={n} value={String(n)}>
+                  {n === 1 ? "1 orang (tanpa pendamping)" : `${n} orang`}
+                </option>
+              ))}
+            </SelectField>
+          </label>
+          <label className="block space-y-1.5">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Pertanyaan tambahan (opsional)</span>
+            <Input
+              value={data.rsvp?.question?.label ?? ""}
+              onChange={(e) =>
+                setData((prev) => ({ ...prev, rsvp: { ...prev.rsvp, question: { label: e.target.value, options: prev.rsvp?.question?.options ?? [] } } }))
+              }
+              placeholder="Contoh: Apakah ada alergi makanan?"
+              maxLength={80}
+              className="h-11 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Pilihan jawaban</span>
+            <Input
+              value={(data.rsvp?.question?.options ?? []).join(", ")}
+              onChange={(e) =>
+                setData((prev) => ({
+                  ...prev,
+                  rsvp: { ...prev.rsvp, question: { label: prev.rsvp?.question?.label ?? "", options: e.target.value.split(",").map((o) => o.trimStart()).slice(0, 6) } },
+                }))
+              }
+              placeholder="Tidak ada, Seafood, Kacang"
+              className="h-11 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
+            />
+            <span className="block text-[11px] text-[#8E8268]">Pisahkan dengan koma, maks. 6 pilihan.</span>
+          </label>
+        </div>
+      </section>
+
       {/* Gift Section */}
-      <section className="rounded-2xl border border-[#E1D8C9] bg-[#F7F3EC]/55 p-5 sm:p-6 space-y-5">
+      <section className="rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1]/55 p-5 sm:p-6 space-y-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFE8DC] text-[#8A6A2F]">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5EDDD] text-[#8A6424]">
               <IconGift size={20} stroke={1.7} />
             </span>
             <div>
-              <h3 className="font-serif text-xl font-medium text-[#1E1B17]">Kado Digital (Amplop)</h3>
-              <p className="text-xs text-[#6B6358]">Tampilkan nomor rekening atau e-wallet agar tamu mudah mengirim tanda kasih.</p>
+              <h3 className="font-serif text-xl font-medium text-[#1F1A14]">Kado Digital (Amplop)</h3>
+              <p className="text-xs text-[#6B5F50]">Tampilkan nomor rekening atau e-wallet agar tamu mudah mengirim tanda kasih.</p>
             </div>
           </div>
           <button
@@ -69,7 +161,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
             aria-checked={Boolean(data.gifts.enabled)}
             aria-label="Aktifkan amplop digital"
             onClick={() => setData((prev) => ({ ...prev, gifts: { ...prev.gifts, enabled: !prev.gifts.enabled } }))}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${data.gifts.enabled ? "bg-[#1E1B17]" : "bg-[#CFC5B4]"}`}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${data.gifts.enabled ? "bg-[#1F1A14]" : "bg-[#D9CBAE]"}`}
           >
             <span className={`inline-block h-4.5 w-4.5 transform rounded-full bg-[#FFFDF9] transition-transform ${data.gifts.enabled ? "translate-x-5.5" : "translate-x-1"}`} />
           </button>
@@ -78,7 +170,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
         {data.gifts.enabled && (
           <div className="space-y-4">
             {data.gifts.bankAccounts.map((account, index) => (
-              <div key={index} className="relative rounded-xl border border-[#E1D8C9] bg-[#FFFDF9] p-4 space-y-3">
+              <div key={index} className="relative rounded-xl border border-[#E9DDC6] bg-[#FFFDF9] p-4 space-y-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -86,13 +178,13 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                     setData((prev) => ({ ...prev, gifts: { ...prev.gifts, bankAccounts: newAccounts } }));
                   }}
                   aria-label="Hapus rekening"
-                  className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-lg text-[#6B6358] transition-colors hover:bg-[#EFE8DC] hover:text-red-600"
+                  className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-lg text-[#6B5F50] transition-colors hover:bg-[#F5EDDD] hover:text-red-600"
                 >
                   <IconTrash className="h-4 w-4" />
                 </button>
                 <div className="grid grid-cols-1 gap-3 pr-8 @md:grid-cols-2">
                   <label className="block space-y-1.5">
-                    <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama Bank / E-Wallet</span>
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Nama Bank / E-Wallet</span>
                     <Input
                       value={account.bankName}
                       onChange={(e) => {
@@ -101,11 +193,11 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                         setData((prev) => ({ ...prev, gifts: { ...prev.gifts, bankAccounts: newAccounts } }));
                       }}
                       placeholder="BCA / Mandiri / GoPay"
-                      className="h-10 rounded-xl border-[#E1D8C9] bg-[#F7F3EC]/40"
+                      className="h-10 rounded-xl border-[#E9DDC6] bg-[#FCF8F1]/40"
                     />
                   </label>
                   <label className="block space-y-1.5">
-                    <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Atas Nama</span>
+                    <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Atas Nama</span>
                     <Input
                       value={account.accountHolder}
                       onChange={(e) => {
@@ -114,12 +206,12 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                         setData((prev) => ({ ...prev, gifts: { ...prev.gifts, bankAccounts: newAccounts } }));
                       }}
                       placeholder="Nama pemilik rekening"
-                      className="h-10 rounded-xl border-[#E1D8C9] bg-[#F7F3EC]/40"
+                      className="h-10 rounded-xl border-[#E9DDC6] bg-[#FCF8F1]/40"
                     />
                   </label>
                 </div>
                 <label className="block space-y-1.5">
-                  <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nomor Rekening</span>
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Nomor Rekening</span>
                   <Input
                     value={account.accountNumber}
                     onChange={(e) => {
@@ -128,7 +220,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                       setData((prev) => ({ ...prev, gifts: { ...prev.gifts, bankAccounts: newAccounts } }));
                     }}
                     placeholder="1234567890"
-                    className="h-10 rounded-xl border-[#E1D8C9] bg-[#F7F3EC]/40"
+                    className="h-10 rounded-xl border-[#E9DDC6] bg-[#FCF8F1]/40"
                   />
                 </label>
               </div>
@@ -136,7 +228,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
             <Button
               type="button"
               variant="outline"
-              className="h-11 w-full rounded-xl border-dashed border-[#CFC5B4] bg-[#FFFDF9] text-[#1E1B17] hover:bg-[#EFE8DC]"
+              className="h-11 w-full rounded-xl border-dashed border-[#D9CBAE] bg-[#FFFDF9] text-[#1F1A14] hover:bg-[#F5EDDD]"
               onClick={() => {
                 setData((prev) => ({
                   ...prev,
@@ -152,29 +244,29 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
       </section>
 
       {/* Turut Mengundang */}
-      <section className="rounded-2xl border border-[#E1D8C9] bg-[#F7F3EC]/55 p-5 sm:p-6 space-y-4">
+      <section className="rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1]/55 p-5 sm:p-6 space-y-4">
         <div className="flex items-center gap-3.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFE8DC] text-[#8A6A2F]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5EDDD] text-[#8A6424]">
             <IconUsersGroup size={20} stroke={1.7} />
           </span>
           <div>
-            <h3 className="font-serif text-xl font-medium text-[#1E1B17]">Turut Mengundang</h3>
-            <p className="text-xs text-[#6B6358]">Daftar keluarga atau kerabat yang turut mengundang.</p>
+            <h3 className="font-serif text-xl font-medium text-[#1F1A14]">Turut Mengundang</h3>
+            <p className="text-xs text-[#6B5F50]">Daftar keluarga atau kerabat yang turut mengundang.</p>
           </div>
         </div>
 
         <label className="block space-y-1.5">
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Label Section</span>
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Label Section</span>
           <Input
             value={data.extendedFamily?.title || ""}
             onChange={(e) => setData((prev) => ({ ...prev, extendedFamily: { ...prev.extendedFamily!, title: e.target.value } }))}
             placeholder="Turut Mengundang / Kel. Besar"
-            className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+            className="h-11 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
           />
         </label>
 
         <div className="space-y-2.5">
-          <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Nama-nama Keluarga</Label>
+          <Label className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Nama-nama Keluarga</Label>
           <div className="space-y-2">
             {data.extendedFamily?.members?.map((member, index) => (
               <div key={index} className="flex gap-2">
@@ -186,7 +278,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                     setData((prev) => ({ ...prev, extendedFamily: { ...prev.extendedFamily!, members: newMembers } }));
                   }}
                   placeholder="Nama Keluarga"
-                  className="h-10 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+                  className="h-10 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
                 />
                 <button
                   type="button"
@@ -195,7 +287,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
                     setData((prev) => ({ ...prev, extendedFamily: { ...prev.extendedFamily!, members: newMembers } }));
                   }}
                   aria-label="Hapus anggota keluarga"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E1D8C9] bg-[#FFFDF9] text-[#6B6358] transition-colors hover:text-red-600"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E9DDC6] bg-[#FFFDF9] text-[#6B5F50] transition-colors hover:text-red-600"
                 >
                   <IconTrash className="h-4 w-4" />
                 </button>
@@ -204,7 +296,7 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
             <Button
               type="button"
               variant="outline"
-              className="h-10 w-full rounded-xl border-dashed border-[#CFC5B4] bg-[#FFFDF9] text-[#1E1B17] hover:bg-[#EFE8DC]"
+              className="h-10 w-full rounded-xl border-dashed border-[#D9CBAE] bg-[#FFFDF9] text-[#1F1A14] hover:bg-[#F5EDDD]"
               onClick={() => {
                 setData((prev) => ({
                   ...prev,
@@ -219,34 +311,34 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
       </section>
 
       {/* Love Story */}
-      <section className="rounded-2xl border border-[#E1D8C9] bg-[#F7F3EC]/55 p-5 sm:p-6 space-y-4">
+      <section className="rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1]/55 p-5 sm:p-6 space-y-4">
         <div className="flex items-center gap-3.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EFE8DC] text-[#8A6A2F]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5EDDD] text-[#8A6424]">
             <IconHeartHandshake size={20} stroke={1.7} />
           </span>
           <div>
-            <h3 className="font-serif text-xl font-medium text-[#1E1B17]">Perjalanan Cinta</h3>
-            <p className="text-xs text-[#6B6358]">Ceritakan momen singkat pertemuan kalian hingga menuju pelaminan.</p>
+            <h3 className="font-serif text-xl font-medium text-[#1F1A14]">Perjalanan Cinta</h3>
+            <p className="text-xs text-[#6B5F50]">Ceritakan momen singkat pertemuan kalian hingga menuju pelaminan.</p>
           </div>
         </div>
 
         <label className="block space-y-1.5">
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Judul Cerita</span>
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Judul Cerita</span>
           <Input
             value={data.story.title || ""}
             onChange={(e) => handleUpdate("story", "title", e.target.value)}
             placeholder="Awal Bertemu..."
-            className="h-11 rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+            className="h-11 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
           />
         </label>
         <label className="block space-y-1.5">
-          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B6358]">Isi Cerita</span>
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Isi Cerita</span>
           <Textarea
             value={data.story.content || ""}
             onChange={(e) => handleUpdate("story", "content", e.target.value)}
             rows={5}
             placeholder="Tuliskan kisah singkat perjalanan cinta kalian..."
-            className="rounded-xl border-[#E1D8C9] bg-[#FFFDF9]"
+            className="rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
           />
         </label>
       </section>

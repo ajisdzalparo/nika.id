@@ -36,7 +36,7 @@ function timeAgo(iso: string) {
 function TypeIcon({ type }: { type: string }) {
   switch (type) {
     case "TEMPLATE":
-      return <IconPalette size={15} className="text-[#8A6A2F]" />;
+      return <IconPalette size={15} className="text-[#8A6424]" />;
     case "TRANSACTION":
       return <IconReceipt size={15} className="text-emerald-700" />;
     case "RSVP":
@@ -151,11 +151,11 @@ export function NotificationBell({ portal }: { portal: "admin" | "user" }) {
           variant="ghost"
           size="icon"
           aria-label="Notifikasi"
-          className="relative h-9 w-9 rounded-full text-[#4E473E] hover:bg-[#E6DECF] hover:text-[#15130F]"
+          className="relative h-9 w-9 rounded-full text-[#4E473E] hover:bg-[#EEE2C9] hover:text-[#1A1510]"
         >
           <IconBell size={19} />
           {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#B45309] px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-[#F7F3EC]">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#B45309] px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-[#FCF8F1]">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -166,7 +166,7 @@ export function NotificationBell({ portal }: { portal: "admin" | "user" }) {
           <DropdownMenuLabel className="flex items-center gap-1.5 p-0 text-sm font-semibold">
             Notifikasi
             {unreadCount > 0 && (
-              <span className="rounded-full bg-[#F4EAD6] px-2 py-0.5 text-[10px] font-semibold text-[#6E5426]">
+              <span className="rounded-full bg-[#F5E8CA] px-2 py-0.5 text-[10px] font-semibold text-[#6E4F1C]">
                 {unreadCount} baru
               </span>
             )}
@@ -175,7 +175,7 @@ export function NotificationBell({ portal }: { portal: "admin" | "user" }) {
             <button
               type="button"
               onClick={() => markRead()}
-              className="inline-flex items-center gap-1 text-xs font-medium text-[#8A6A2F] hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#8A6424] hover:underline"
             >
               <IconCheck size={13} /> Tandai dibaca
             </button>
@@ -194,7 +194,7 @@ export function NotificationBell({ portal }: { portal: "admin" | "user" }) {
                 key={item.id}
                 type="button"
                 onClick={() => handleOpenItem(item)}
-                className={`flex w-full items-start gap-3 px-3.5 py-3 text-left transition hover:bg-[#FAF8F4] ${
+                className={`flex w-full items-start gap-3 px-3.5 py-3 text-left transition hover:bg-[#FCF8F1] ${
                   !item.read ? "bg-[#FBF7EE]" : "bg-white"
                 }`}
               >
@@ -203,12 +203,12 @@ export function NotificationBell({ portal }: { portal: "admin" | "user" }) {
                 </span>
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-xs font-semibold text-[#15130F]">{item.title}</p>
+                    <p className="truncate text-xs font-semibold text-[#1A1510]">{item.title}</p>
                     <span className="shrink-0 text-[10px] text-zinc-400">{timeAgo(item.createdAt)}</span>
                   </div>
                   <p className="line-clamp-2 text-xs leading-relaxed text-zinc-600">{item.message}</p>
                 </div>
-                {!item.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#8A6A2F]" />}
+                {!item.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#8A6424]" />}
               </button>
             ))
           )}

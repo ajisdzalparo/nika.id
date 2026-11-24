@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { IconChevronDown } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
+import { SelectField } from "@/components/ui/select";
 import { PHONE_COUNTRIES, joinPhone, normalizeLocalPhone, splitPhone } from "@/lib/phone";
 
 /**
@@ -44,9 +44,9 @@ export function PhoneInput({
         className,
       )}
     >
-      <label className="relative flex shrink-0 items-center border-r border-input">
-        <span className="sr-only">Kode negara</span>
-        <select
+      <div className="flex shrink-0 items-stretch border-r border-input">
+        <SelectField
+          aria-label="Kode negara"
           value={country}
           disabled={disabled}
           onChange={(e) => {
@@ -54,16 +54,15 @@ export function PhoneInput({
             setEmptyCountry(next);
             onChange(joinPhone(next, normalizeLocalPhone(local, next)));
           }}
-          className="h-full appearance-none bg-transparent pl-3 pr-7 text-sm tabular-nums text-foreground outline-none"
+          className="h-full! w-auto rounded-none border-0 bg-transparent pl-3 pr-2.5 tabular-nums shadow-none focus-visible:ring-0"
         >
           {PHONE_COUNTRIES.map((c) => (
             <option key={c.code} value={c.code}>
               {c.short} +{c.code}
             </option>
           ))}
-        </select>
-        <IconChevronDown size={14} className="pointer-events-none absolute right-2 text-muted-foreground" />
-      </label>
+        </SelectField>
+      </div>
       <input
         id={id}
         type="tel"

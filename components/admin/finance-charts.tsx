@@ -7,7 +7,7 @@ import type { FinanceReport } from "@/lib/finance";
 
 // Categorical palette validated for the light surface #FFFDF9 (dataviz validator, all checks pass).
 // Fixed order: slot 1 = revenue, slot 2 = expense. Never reassigned by rank.
-const C = { revenue: "#A8741A", expense: "#2D5FC4", net: "#1E1B17" };
+const C = { revenue: "#A8741A", expense: "#2D5FC4", net: "#1F1A14" };
 
 const rupiah = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 const compact = (n: number) => {
@@ -95,10 +95,10 @@ export function FinanceCharts({ report }: { report: FinanceReport }) {
             </div>
             <ChartContainer config={cashConfig} className="mt-3 aspect-auto h-64 w-full">
               <BarChart data={data} barGap={2} margin={{ left: 4, right: 4, top: 8 }}>
-                <CartesianGrid vertical={false} stroke="#EFE8DC" />
+                <CartesianGrid vertical={false} stroke="#F5EDDD" />
                 <XAxis dataKey="period" {...axis} tickFormatter={(v) => periodLabel(v)} minTickGap={16} />
                 <YAxis {...axis} width={44} tickFormatter={compact} />
-                <Tooltip cursor={{ fill: "#F7F3EC" }} content={<Tip week={week} names={{ revenue: "Pendapatan", expense: "Pengeluaran" }} />} />
+                <Tooltip cursor={{ fill: "#FCF8F1" }} content={<Tip week={week} names={{ revenue: "Pendapatan", expense: "Pengeluaran" }} />} />
                 <Bar dataKey="revenue" fill={C.revenue} radius={[4, 4, 0, 0]} maxBarSize={22} />
                 <Bar dataKey="expense" fill={C.expense} radius={[4, 4, 0, 0]} maxBarSize={22} />
               </BarChart>
@@ -140,7 +140,7 @@ export function FinanceCharts({ report }: { report: FinanceReport }) {
         {hasData ? (
           <ChartContainer config={netConfig} className="mt-4 aspect-auto h-64 w-full">
             <LineChart data={data} margin={{ left: 4, right: 8, top: 8 }}>
-              <CartesianGrid vertical={false} stroke="#EFE8DC" />
+              <CartesianGrid vertical={false} stroke="#F5EDDD" />
               <XAxis dataKey="period" {...axis} tickFormatter={(v) => periodLabel(v)} minTickGap={24} />
               <YAxis {...axis} width={44} tickFormatter={compact} />
               <ReferenceLine y={0} stroke="#C9BBA6" />

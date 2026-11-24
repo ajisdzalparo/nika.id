@@ -99,7 +99,7 @@ export const CUSTOM_HTML_PLACEHOLDERS: ReadonlyArray<{ token: string; label: str
   { token: "{{bridePhoto}}", label: "URL Foto Wanita" },
 ];
 
-export const ADMIN_AI_HTML_CONTEXT_PROMPT = `Kamu adalah desainer undangan pernikahan digital. Buat SATU template undangan HTML + CSS (tanpa JavaScript) untuk platform UNDANGIN YUK. Ikuti SEMUA aturan berikut, karena kode yang melanggar akan dibersihkan otomatis dan tampilannya rusak.
+export const ADMIN_AI_HTML_CONTEXT_PROMPT = `Kamu adalah desainer undangan pernikahan digital. Buat SATU template undangan HTML + CSS (tanpa JavaScript) untuk platform SatuMoment. Ikuti SEMUA aturan berikut, karena kode yang melanggar akan dibersihkan otomatis dan tampilannya rusak.
 
 FORMAT JAWABAN
 - Balas HANYA dengan kode, tanpa penjelasan dan tanpa \`\`\`.
@@ -122,7 +122,15 @@ Atribut data-section HANYA di 11 <section> itu, tidak di elemen lain. Untuk styl
 
 PLACEHOLDER (tulis persis, termasuk kurung kurawal ganda)
 {{groomName}} {{brideName}} {{groomFullName}} {{brideFullName}} {{guestName}} {{weddingDate}} {{eventTitle}} {{eventTime}} {{eventVenue}} {{eventAddress}} {{openingText}} {{closingText}} {{coverPhoto}} {{groomPhoto}} {{bridePhoto}}
-Foto hanya dari placeholder foto (contoh: <img src="{{groomPhoto}}" alt="{{groomName}}">). Jangan memakai URL gambar lain; untuk hiasan gunakan SVG inline atau gradien CSS.
+Foto hanya dari placeholder foto (contoh: <img src="{{groomPhoto}}" alt="{{groomName}}">). Untuk hiasan pakai ILUSTRASI PLATFORM di bawah, SVG inline, atau gradien CSS. Jangan memakai URL gambar dari situs lain.
+
+ILUSTRASI PLATFORM (boleh dipakai sebagai <img src="..."> atau background-image, latar transparan)
+Pilih SATU set yang cocok dengan suasana, jangan dicampur:
+- Taman Kayon (adat Jawa/Sunda, taman): /templates/art/taman-kayon/gebyok.svg (gapura atas, lebar penuh), rangkaian-bunga.svg (buket sudut kiri bawah; untuk kanan pakai transform: scaleX(-1)), sulur-gantung.svg (sulur tepi), kayon.svg (lambang gunungan), taman-kabut.svg (latar penuh)
+- Kebun Sage (garden, rustic): /templates/art/kebun-sage/garland.svg, buket.svg, sulur.svg, lingkar.svg, latar.svg
+- Mawar Vintage (romantis, blush, burgundy): /templates/art/mawar-vintage/garland.svg, buket.svg, sulur.svg, pita.svg, latar.svg
+- Kamboja Tropis (pantai, Bali, boho): /templates/art/kamboja-tropis/garland.svg, buket.svg, sulur.svg, matahari.svg, latar.svg
+Untuk tema gelap/mewah atau minimalis, buat ornamen garis sendiri dengan SVG inline berwarna aksen (emas, perak).
 
 DILARANG (pasti dihapus)
 <script>, <iframe>, <video>, <form>, <input>, <button>, <select>, <textarea>, <object>, <embed>, atribut on* (onclick, onload, …), URL javascript:, @import di CSS, dan <link> selain fonts.googleapis.com. Tombol dibuat dengan <a href="#events" class="...">.
@@ -133,17 +141,26 @@ DESAIN
 - Teks isi minimal 16px dengan line-height 1.6; kontras teks terhadap latar cukup tinggi.
 - Bahasa Indonesia yang sopan dan hangat.
 
+KOMPOSISI PREMIUM (wajib, standar platform)
+- Undangan harus terasa berlapis, bukan halaman polos: di sampul ada bingkai/gapura di atas, buket bunga di kedua sudut bawah, sulur di tepi kiri-kanan, foto {{coverPhoto}} dalam bingkai (lengkung, oval, atau penuh layar dengan gradasi gelap), lalu nama besar di tengah.
+- Hiasan diletakkan dengan position:absolute di dalam section yang position:relative; overflow:hidden pada section supaya tidak keluar layar; hiasan TIDAK BOLEH menutupi teks (beri z-index lebih rendah dari teks, letakkan di tepi dan sudut).
+- Ulangi motif yang sama (lebih kecil) di section Mempelai, Acara dan Penutup supaya seluruh undangan satu keluarga desain.
+- Teks di atas foto atau latar ramai wajib diberi panel kaca/gelap tipis (background semi-transparan + backdrop-filter: blur) agar tetap terbaca.
+
 ANIMASI (wajib, hanya CSS)
 - Sampul: nama pasangan, tanggal dan tombol muncul bergantian saat halaman dibuka (@keyframes fade + naik 12px, 500–700ms, animation-delay bertahap 0.1s, animation-fill-mode: both).
 - Bagian lain muncul saat di-scroll, HANYA di dalam:
   @supports (animation-timeline: view()) { .reveal { animation: muncul linear both; animation-timeline: view(); animation-range: entry 0% cover 30%; } }
   Di luar @supports itu, jangan pernah memberi opacity:0, supaya isi tetap terlihat di browser lama.
-- Hiasan (SVG bunga/ornamen) boleh bergerak pelan terus-menerus: melayang 6–10px atau berayun 2–4 derajat, durasi 6–10 detik.
+- Hiasan wajib hidup pelan terus-menerus: buket dan sulur berayun 2–4 derajat (transform-origin di pangkal), lambang melayang 6–10px, durasi 6–11 detik, delay berbeda tiap hiasan.
+- Foto sampul dan latar bergerak sangat pelan (Ken Burns): scale 1.02 → 1.1 dalam 20–26 detik, alternate.
+- Nama pasangan muncul dengan blur yang hilang perlahan (filter: blur(8px) → none, letter-spacing menyempit), 1.2–1.6 detik.
+- Partikel suasana di sampul dan penutup: 6–10 kelopak (SVG inline kecil) atau bintik emas yang jatuh pelan dari atas ke bawah (14–20 detik, delay berbeda, rotate), di belakang teks dan pointer-events:none.
 - Gerakan tenang: translate 8–16px, tanpa memantul, tanpa berkedip, tanpa parallax berlebihan.
 - Wajib: @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
 CEK SEBELUM MENJAWAB
-1) Ada tepat 11 <section data-section> dengan id di atas. 2) Tidak ada tag/atribut dari daftar DILARANG. 3) Semua 15 placeholder dipakai minimal sekali. 4) Tidak ada <html>/<head>/<body>/<meta>. 5) Ada animasi sampul, reveal saat scroll di dalam @supports, dan aturan prefers-reduced-motion.`;
+1) Ada tepat 11 <section data-section> dengan id di atas. 2) Tidak ada tag/atribut dari daftar DILARANG. 3) Semua 15 placeholder dipakai minimal sekali. 4) Tidak ada <html>/<head>/<body>/<meta>. 5) Ada animasi sampul, reveal saat scroll di dalam @supports, dan aturan prefers-reduced-motion. 6) Sampul berlapis (bingkai atas, buket sudut, sulur, partikel) dan motifnya diulang di Mempelai, Acara dan Penutup tanpa menutupi teks.`;
 
 export const SAMPLE_WEDDING_HTML_STARTER = `<style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -488,7 +505,10 @@ function fmtDateId(d?: string | Date | null): string {
  * in :where() (zero specificity), so any animation or style the template defines itself wins.
  */
 export const PLATFORM_HTML_BASE_CSS = `
-html, body { margin: 0; overflow-x: hidden; }
+html { overflow-x: hidden; overflow-y: auto; }
+/* Only the document scrolls: overflow-x:hidden on <body> (ours or the template's) would turn it into a
+   second scroll box and show two scrollbars. "clip" trims sideways overflow without that. */
+body { margin: 0; overflow-x: clip !important; overflow-y: visible !important; }
 :where(img, svg, video) { max-width: 100%; height: auto; }
 @keyframes uy-section-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @supports (animation-timeline: view()) {
@@ -523,7 +543,7 @@ function toFragment(html: string): string {
 /**
  * Compiles sanitized HTML template with HTML-escaped wedding fields and wraps inside a clean HTML5 document.
  */
-export function compileSafeWeddingHtml(rawHtml: string, data: WeddingData): string {
+export function compileSafeWeddingHtml(rawHtml: string, data: WeddingData, { hideScrollbar = false } = {}): string {
   const { html } = sanitizeCustomHtml(rawHtml);
   const ev = data.events?.[0] ?? data.event;
 
@@ -557,7 +577,7 @@ export function compileSafeWeddingHtml(rawHtml: string, data: WeddingData): stri
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap">
-<style>${PLATFORM_HTML_BASE_CSS}</style>
+<style>${PLATFORM_HTML_BASE_CSS}${hideScrollbar ? " html { scrollbar-width: none; } html::-webkit-scrollbar { display: none; }" : ""}</style>
 </head>
 <body>
 ${rendered}

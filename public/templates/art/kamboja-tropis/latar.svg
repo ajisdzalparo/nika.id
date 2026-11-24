@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
+  <!-- Warm sand-and-sky backdrop with faint palm shadows at the edges -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF6EC"/><stop offset=".6" stop-color="#FBEBDC"/><stop offset="1" stop-color="#F3DCC6"/></linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="4"/></filter>
+  </defs>
+  <rect width="400" height="800" fill="url(#bg)"/>
+  <g fill="#7E9A72" opacity=".12" filter="url(#blur)">
+    <path d="M-10 100 C40 140 70 200 80 280 L60 280 C50 220 20 170 -10 150Z"/>
+    <path d="M410 140 C360 180 330 240 320 320 L340 320 C350 260 380 210 410 190Z"/>
+    <path d="M-10 600 C50 620 90 660 110 720 L90 720 C70 680 30 650 -10 640Z"/>
+  </g>
+</svg>
