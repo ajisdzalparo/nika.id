@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
+import { checkChatRateLimit } from "@/lib/chat-security";
 import { normalizeTheme } from "@/lib/ai-design/color";
 import { checkTemplatePlagiarism, loadComparisonCatalog } from "@/lib/ai-design/plagiarism-ai";
 import { ensureCatalogSeeded } from "@/lib/catalog";
@@ -13,7 +14,14 @@ const CheckOriginalitySchema = z.object({
 // POST /api/user/marketplace/check-originality — pre-sell AI + structural originality inspection
 export async function POST(request: Request) {
   try {
-    await requireAuth(request);
+    const session = await requireAuth(request);
+    // Every check can call the paid AI model: cap it per account
+    if (!checkChatRateLimit(`check-originality:${session.user.id}`, 8, 10 * 60_000)) {
+      return NextResponse.json(
+        { error: "RATE_LIMITED", message: "Terlalu sering memeriksa. Coba lagi beberapa menit lagi." },
+        { status: 429 },
+      );
+    }
     const parsed = CheckOriginalitySchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) {
       return NextResponse.json(

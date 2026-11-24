@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { checkChatRateLimit } from "@/lib/chat-security";
+import { checkChatRateLimit, clientIp } from "@/lib/chat-security";
 
 const OpenTrackSchema = z.object({
   slug: z.string().trim().min(1).max(120),
@@ -21,8 +21,8 @@ export async function POST(req: Request) {
     }
 
     const { slug, guestId } = parsed.data;
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-    if (!checkChatRateLimit(`guest-open:${clientIp}:${guestId}`, 10, 60_000)) {
+    const ip = clientIp(req);
+    if (!checkChatRateLimit(`guest-open:${ip}:${guestId}`, 10, 60_000)) {
       return NextResponse.json({ ok: true });
     }
 

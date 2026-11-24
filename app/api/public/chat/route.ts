@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
-import { checkChatRateLimit, sanitizeChatText } from "@/lib/chat-security";
+import { checkChatRateLimit, clientIp, sanitizeChatText } from "@/lib/chat-security";
 import { generateSupportAiReply } from "@/lib/support-chat";
 
 export async function POST(request: Request) {
   try {
-    const clientIp =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
-
-    if (!checkChatRateLimit(`public-chat:${clientIp}`, 20, 60_000)) {
+    if (!checkChatRateLimit(`public-chat:${clientIp(request)}`, 20, 60_000)) {
       return NextResponse.json(
         { error: "RATE_LIMITED", message: "Terlalu banyak pertanyaan. Silakan tunggu sebentar." },
         { status: 429 },

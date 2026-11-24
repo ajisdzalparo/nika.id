@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { checkChatRateLimit } from "@/lib/chat-security";
+import { checkChatRateLimit, clientIp } from "@/lib/chat-security";
 import { createNotification } from "@/lib/notifications";
 import { NextResponse } from "next/server";
 import { isValidPhoneDigits, normalizePhoneDigits } from "@/lib/phone";
@@ -19,8 +19,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "SLUG_REQUIRED" }, { status: 400 });
     }
 
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-    if (!checkChatRateLimit(`public-submit:${clientIp}:${slug}`, 15, 60_000)) {
+    const ip = clientIp(req);
+    if (!checkChatRateLimit(`public-submit:${ip}:${slug}`, 15, 60_000)) {
       return NextResponse.json({ error: "RATE_LIMITED", message: "Terlalu banyak kiriman. Coba lagi nanti." }, { status: 429 });
     }
 

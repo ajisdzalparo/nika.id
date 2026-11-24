@@ -432,7 +432,7 @@ export function CheckInScanner({
       </div>
 
       {/* Mode Tabs */}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "print" | "scanner")} className="w-full scroll-mt-20" id="checkin-tabs">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "print" | "scanner")} className="w-full">
         <TabsList className="mb-5 h-auto max-w-full flex-wrap rounded-full bg-[#F6EEDF] p-1 sm:w-fit">
           <TabsTrigger
             value="print"

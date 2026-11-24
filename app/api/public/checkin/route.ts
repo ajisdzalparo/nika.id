@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth-helpers";
-import { checkChatRateLimit } from "@/lib/chat-security";
+import { checkChatRateLimit, clientIp } from "@/lib/chat-security";
 import { createNotification } from "@/lib/notifications";
 import { isValidPhoneDigits, normalizePhoneDigits } from "@/lib/phone";
 import { newCheckInToken } from "@/lib/checkin";
@@ -33,8 +33,8 @@ export async function POST(req: Request) {
     const phone = phoneDigits && isValidPhoneDigits(phoneDigits) ? phoneDigits : null;
 
     // Generous rate limit per IP+slug because venue guests often share hotel/venue Wi-Fi NAT
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-    if (!checkChatRateLimit(`public-checkin:${clientIp}:${slug}`, 60, 60_000)) {
+    const ip = clientIp(req);
+    if (!checkChatRateLimit(`public-checkin:${ip}:${slug}`, 60, 60_000)) {
       return NextResponse.json(
         { error: "RATE_LIMITED", message: "Terlalu banyak kiriman dalam waktu singkat. Coba sebentar lagi." },
         { status: 429 },
