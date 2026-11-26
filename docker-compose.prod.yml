@@ -2,7 +2,7 @@ services:
   app:
     # `satumoment` = prod branch, `satumoment-staging` = staging branch. Staging: set APP_IMAGE=ghcr.io/ajisdzalparo/satumoment-staging:latest in .env.staging
     image: ${APP_IMAGE:-ghcr.io/ajisdzalparo/satumoment:latest}
-    container_name: nikaid-app
+    container_name: satumoment-app
     restart: unless-stopped
     # Pick the environment with `--env-file`: docker compose --env-file .env.staging -f docker-compose.prod.yml up -d
     # (that file sets APP_ENV_FILE to itself). Without the flag this stays `.env`, as the CI deploy expects.
@@ -16,12 +16,15 @@ services:
       minio:
         condition: service_started
     networks:
-      - internal
-      - caddy_net
+      internal:
+      caddy_net:
+        # Old name kept as an alias so a Caddyfile still pointing at nikaid-app keeps working
+        aliases:
+          - nikaid-app
 
   postgres:
     image: postgres:16-alpine
-    container_name: nikaid-postgres
+    container_name: satumoment-postgres
     restart: unless-stopped
     ports:
       # Exposed publicly on host port 5434 (avoids port 5433 used by velomock-postgres)
@@ -43,7 +46,7 @@ services:
 
   minio:
     image: pgsty/silo:latest
-    container_name: nikaid-minio
+    container_name: satumoment-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
@@ -56,14 +59,21 @@ services:
     volumes:
       - nikaid_minio_data:/data
     networks:
-      - internal
-      - caddy_net
+      internal:
+      caddy_net:
+        aliases:
+          - nikaid-minio
 
 networks:
   internal:
   caddy_net:
     external: true
 
+# Pinned to the real volume names on the VPS (compose prefixed them with the folder name `undangin-yuk`),
+# so renaming containers or moving the folder never points the app at a new, empty volume.
+# Never change these without migrating the data; override per server with POSTGRES_VOLUME / MINIO_VOLUME.
 volumes:
   nikaid_postgres_data:
+    name: ${POSTGRES_VOLUME:-undangin-yuk_nikaid_postgres_data}
   nikaid_minio_data:
+    name: ${MINIO_VOLUME:-undangin-yuk_nikaid_minio_data}
