@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/ajisdzalparo/nika.id:latest
+    image: ghcr.io/ajisdzalparo/satumoment:latest
     container_name: nikaid-app
     restart: unless-stopped
     env_file:

@@ -4,10 +4,20 @@ import { admin } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
 import nodemailer from "nodemailer";
 
-// Gmail SMTP (needs a Google App Password, not the normal account password).
-// Only initialized when both values are set; otherwise links are logged to the console.
-const mailer =
-  process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
+// Outgoing mail. Preferred: any SMTP server (domain mailbox from the hosting provider, Zoho,
+// Resend, Brevo, ...) via SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS. Fallback: Gmail with a Google
+// App Password. When neither is configured, links are logged to the console instead.
+const smtpPort = Number(process.env.SMTP_PORT) || 465;
+
+const mailer = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: smtpPort,
+      // 465 = implicit TLS; 587/25 start plain and upgrade with STARTTLS
+      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : smtpPort === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    })
+  : process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
     ? nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -16,6 +26,9 @@ const mailer =
         },
       })
     : null;
+
+/** Sender address: must be a mailbox (or verified alias) of the account that authenticates. */
+const mailFromAddress = process.env.EMAIL_FROM || (process.env.SMTP_HOST ? process.env.SMTP_USER : process.env.GMAIL_USER);
 
 function escapeHtml(value: string): string {
   return value
@@ -119,8 +132,7 @@ async function sendAuthEmail({
   `;
 
   await mailer.sendMail({
-    // Gmail always sends from GMAIL_USER; EMAIL_FROM only sets the display name
-    from: `"${process.env.EMAIL_FROM_NAME || "SatuMoment"}" <${process.env.GMAIL_USER}>`,
+    from: `"${process.env.EMAIL_FROM_NAME || "SatuMoment"}" <${mailFromAddress}>`,
     to,
     subject,
     html: emailHtml,

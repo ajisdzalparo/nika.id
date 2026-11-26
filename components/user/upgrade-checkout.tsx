@@ -1229,31 +1229,35 @@ export function UpgradeCheckout({
                       </Link>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-2 gap-3.5 sm:grid-cols-3">
+                    <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
                       {includedTemplates.preview.map((item) => (
                         <Link
                           key={item.id}
                           href={`/preview/t/${item.slug}`}
                           target="_blank"
-                          className="group space-y-2"
+                          className="group flex flex-col gap-2.5"
                         >
-                          <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border border-[#ECE6DA] bg-[#EFECE5] p-2.5 transition group-hover:border-[#D9B56A]">
-                            {/* Mini badge */}
-                            {(item.isNew || item.usageCount > 0 || item.tier === "Premium") && (
-                              <span className="absolute left-2 top-2 z-10 inline-flex items-center rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-medium text-[#1A1510] shadow-xs">
-                                {item.isNew ? "Terbaru" : item.usageCount > 0 ? "Banyak dipakai" : item.tier}
-                              </span>
+                          {/* Full-bleed portrait cover, same card language as the template picker */}
+                          <div className="relative overflow-hidden rounded-2xl border border-[#E6D7BC] bg-white shadow-[0_10px_24px_-18px_rgba(26,21,16,0.35)] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:border-[#C9A24E] group-hover:shadow-[0_20px_40px_-22px_rgba(26,21,16,0.4)]">
+                            {item.kind === "ENGINE" && item.theme ? (
+                              <CoverThumb theme={item.theme} className="aspect-[9/15.5] w-full" />
+                            ) : (
+                              <div className="relative aspect-[9/15.5] w-full bg-[#F6EEDF]">
+                                <SafeImg src={item.thumbnail} alt={item.name} className="absolute inset-0 h-full w-full object-cover" />
+                              </div>
                             )}
-                            <div className="relative aspect-[9/16] h-full overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm transition-transform duration-300 group-hover:scale-[1.03]">
-                              {item.kind === "ENGINE" && item.theme ? (
-                                <CoverThumb theme={item.theme} zoom={0.28} className="h-full w-full" />
-                              ) : (
-                                <SafeImg src={item.thumbnail} alt={item.name} className="h-full w-full object-cover" />
-                              )}
-                            </div>
+                            {item.isNew ? (
+                              <span className="absolute left-2 top-2 rounded-full bg-[#8A6424] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white shadow-xs">
+                                Baru
+                              </span>
+                            ) : item.usageCount > 0 ? (
+                              <span className="absolute left-2 top-2 rounded-full border border-white/60 bg-white/90 px-2 py-0.5 text-[10px] font-medium text-[#40372B] backdrop-blur-xs">
+                                Populer
+                              </span>
+                            ) : null}
                           </div>
                           <div className="px-0.5">
-                            <p className="truncate text-xs font-semibold text-[#1A1510]">{item.name}</p>
+                            <p className="truncate text-[13px] font-semibold text-[#1A1510]">{item.name}</p>
                             <p className="truncate text-[11px] text-[#6B5F50]">
                               {item.usageCount > 0 ? `Dipakai ${item.usageCount} undangan` : `${item.category} · ${item.tier}`}
                             </p>

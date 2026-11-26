@@ -12,7 +12,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Pinned instead of github.repository so a future repo rename doesn't silently change the image
+  IMAGE_NAME: ${{ github.repository_owner }}/satumoment
 
 jobs:
   verify:
@@ -114,6 +115,8 @@ jobs:
             cd ~/projects/undangin-yuk
             COMPOSE_FILE="docker-compose.prod.yml"
             [ -f "$COMPOSE_FILE" ] || COMPOSE_FILE="docker-compose.yml"
+            # The repo was renamed nika.id -> satumoment; point the VPS compose at the new image (no-op once done)
+            sed -i 's#ghcr.io/ajisdzalparo/nika.id:#ghcr.io/ajisdzalparo/satumoment:#' "$COMPOSE_FILE"
             docker compose -f "$COMPOSE_FILE" pull app
             docker compose -f "$COMPOSE_FILE" up -d
             docker exec nikaid-app sh -c 'npx --yes prisma@6 db push --skip-generate || bunx prisma@6 db push --skip-generate' || true

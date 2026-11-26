@@ -42,6 +42,53 @@ const INSPIRATIONS = [
 
 const STEPS = ["Membaca konsep Anda…", "Memilih palet warna…", "Memadukan tipografi…", "Menata ornamen dan layout…", "Menulis kata pengantar…"];
 
+/** Portrait design card for the preset and history grids: full cover, name and an optional subtitle/badge. */
+function DesignCard({
+  theme,
+  data,
+  title,
+  subtitle,
+  selected,
+  badge,
+  onClick,
+}: {
+  theme: AiTheme;
+  data: WeddingData;
+  title: string;
+  subtitle?: string;
+  selected: boolean;
+  badge?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick} className="group flex flex-col gap-2.5 text-left">
+      <div
+        className={`relative w-full overflow-hidden rounded-2xl border bg-white transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:shadow-[0_20px_40px_-22px_rgba(26,21,16,0.4)] ${
+          selected
+            ? "border-[#8A6424] ring-2 ring-[#8A6424]/25 shadow-[0_14px_30px_-18px_rgba(138,100,36,0.5)]"
+            : "border-[#E6D7BC] shadow-[0_10px_24px_-18px_rgba(26,21,16,0.35)] group-hover:border-[#C9A24E]"
+        }`}
+      >
+        <CoverThumb theme={theme} data={data} className="aspect-[9/15.5] w-full" />
+        {badge && (
+          <span className="absolute left-2 top-2 rounded-full bg-[#8A6424] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white shadow-xs">
+            {badge}
+          </span>
+        )}
+        {selected && (
+          <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[#8A6424] text-white shadow-xs">
+            <IconCheck size={14} />
+          </span>
+        )}
+      </div>
+      <div className="px-0.5">
+        <p className="truncate text-[13px] font-semibold text-[#1A1510]">{title}</p>
+        {subtitle && <p className="truncate text-[11px] text-[#6B5F50]">{subtitle}</p>}
+      </div>
+    </button>
+  );
+}
+
 function Swatches({ theme, size = "h-5 w-5" }: { theme: AiTheme; size?: string }) {
   const p = theme.palette;
   return (
@@ -309,16 +356,16 @@ export function AiDesignStudio({
           {!designs.length && !generating && (
             <section className="space-y-3">
               <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Contoh hasil desain AI</h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                 {Object.entries(AI_THEME_PRESETS).map(([key, { label, theme }]) => (
-                  <button
+                  <DesignCard
                     key={key}
+                    theme={theme}
+                    data={previewData}
+                    title={label}
+                    selected={key === presetKey}
                     onClick={() => setPresetKey(key)}
-                    className={`overflow-hidden rounded-xl border text-left transition ${key === presetKey ? "border-primary ring-2 ring-primary/20" : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800"}`}
-                  >
-                    <CoverThumb theme={theme} data={previewData} zoom={0.42} className="h-52 w-full" />
-                    <p className="bg-white px-3 py-2 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">{label}</p>
-                  </button>
+                  />
                 ))}
               </div>
             </section>
@@ -327,22 +374,18 @@ export function AiDesignStudio({
           {designs.length > 1 && (
             <section className="space-y-3">
               <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Riwayat desain</h3>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
                 {designs.map((d) => (
-                  <button
+                  <DesignCard
                     key={d.id}
+                    theme={d.theme}
+                    data={previewData}
+                    title={d.theme.name}
+                    subtitle={d.prompt}
+                    badge={d.id === activeId ? "Aktif" : undefined}
+                    selected={d.id === selectedId}
                     onClick={() => setSelectedId(d.id)}
-                    className={`group overflow-hidden rounded-xl border text-left transition ${d.id === selectedId ? "border-primary ring-2 ring-primary/20" : "border-zinc-200 hover:border-zinc-300 dark:border-zinc-800"}`}
-                  >
-                    <CoverThumb theme={d.theme} data={previewData} zoom={0.42} className="h-52 w-full" />
-                    <div className="space-y-1 bg-white p-3 dark:bg-zinc-900">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">{d.theme.name}</p>
-                        {d.id === activeId && <span className="shrink-0 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[10px] font-medium text-[#6E4F1C]">Aktif</span>}
-                      </div>
-                      <p className="line-clamp-1 text-xs text-zinc-500">{d.prompt}</p>
-                    </div>
-                  </button>
+                  />
                 ))}
               </div>
             </section>
