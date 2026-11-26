@@ -50,7 +50,7 @@ export default async function WaBlastPage() {
     : "Sabtu, 28 November 2026";
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://undanginyuk.ajisdzalparo.com";
+    process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://satumoment.com";
 
   return (
     <>

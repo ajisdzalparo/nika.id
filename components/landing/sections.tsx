@@ -411,7 +411,7 @@ export function Features({ content = DEFAULT_LANDING_CONTENT.features }: { conte
             <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-[#DCF3C8] p-3 text-[14px] leading-relaxed text-[#1E2A1A] shadow-sm">
               <p>Kepada Yth. Bapak Andi Wijaya,</p>
               <p className="mt-2">Tanpa mengurangi rasa hormat, kami mengundang Bapak untuk hadir di pernikahan kami.</p>
-              <p className="mt-2 break-all text-[#1C6EA4] underline">satumoment.id/adit-sarah?to=Bapak+Andi</p>
+              <p className="mt-2 break-all text-[#1C6EA4] underline">satumoment.com/adit-sarah?to=Bapak+Andi</p>
               <p className="mt-1 text-right text-[11px] text-[#6B7A63]">09.41 ✓✓</p>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: L.muted }}>

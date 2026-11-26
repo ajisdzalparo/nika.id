@@ -63,7 +63,7 @@ export default async function CheckInPage() {
   }));
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://undanginyuk.ajisdzalparo.com";
+    process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://satumoment.com";
   const isPublished = active.plan !== "FREE" && active.isPublic !== false;
 
   return (

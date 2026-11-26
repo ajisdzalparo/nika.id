@@ -60,7 +60,7 @@ export default async function UserDashboardPage() {
   const template = active.templateSlug ? getTemplateBySlug(active.templateSlug) : undefined;
   const aiTheme = active.templateSlug === "ai-design" ? await getActiveAiTheme(active.activeAiDesignId) : null;
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://undanginyuk.ajisdzalparo.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://satumoment.com";
   const url = `${baseUrl}/${active.slug ?? ""}`;
 
   const hasCouple = Boolean(raw.groom?.fullName || raw.groom?.name) && Boolean(raw.bride?.fullName || raw.bride?.name);

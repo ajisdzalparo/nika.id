@@ -805,7 +805,7 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
                 <span className="h-2 w-2 rounded-full bg-[#F06A5D]" />
                 <span className="h-2 w-2 rounded-full bg-[#F4BE4F]" />
                 <span className="h-2 w-2 rounded-full bg-[#61C454]" />
-                <span className="ml-2 h-4 flex-1 truncate rounded bg-white/10 px-2 text-[9px] leading-4 text-white/50">satumoment.id/{d.slug || "template"}</span>
+                <span className="ml-2 h-4 flex-1 truncate rounded bg-white/10 px-2 text-[9px] leading-4 text-white/50">satumoment.com/{d.slug || "template"}</span>
               </div>
               <div className="relative aspect-[16/10] overflow-hidden bg-white">
                 <div className="pointer-events-none absolute left-0 top-0 origin-top-left" style={{ width: 1280, height: 800, transform: `scale(${DESKTOP_THUMB_SCALE})` }}>
