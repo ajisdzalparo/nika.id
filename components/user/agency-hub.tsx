@@ -9,6 +9,7 @@ import {
   IconBuildingStore,
   IconChartBar,
   IconCheck,
+  IconLock,
   IconCopy,
   IconEdit,
   IconExternalLink,
@@ -344,16 +345,20 @@ export function AgencyHub({
               </section>
 
               <section className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-serif text-2xl font-medium text-[#1A1510]">Paket Kuota Mitra</h3>
-                  <span className="text-xs text-[#6B5F50]">Bisa dibeli setelah disetujui</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-3 py-1 text-xs font-medium text-[#5C431A]">
+                    <IconLock size={13} className="text-[#8A6424]" /> Terbuka setelah pengajuan Mitra disetujui
+                  </span>
                 </div>
-                <div className="grid gap-3.5 sm:grid-cols-3">
+                {/* Preview only: packs stay locked until the account is an approved Mitra (the API enforces this too) */}
+                <div className="grid gap-3.5 sm:grid-cols-3" aria-disabled="true">
                   {AGENCY_PACKS.map((p) => (
                     <div
                       key={p.id}
-                      className={`rounded-2xl border p-4 ${p.popular ? "border-[#8A6424] bg-[#FCF9F2]" : "border-[#EDE3CF] bg-white"}`}
+                      className="relative cursor-not-allowed select-none rounded-2xl border border-dashed border-[#E3D8C4] bg-[#FAF7F1] p-4 opacity-70"
                     >
+                      <IconLock size={15} className="absolute right-4 top-4 text-[#A8977C]" aria-hidden="true" />
                       <p className="font-serif text-xl font-medium text-[#1A1510]">{p.label}</p>
                       <p className="mt-1 text-xs text-[#6B5F50]">{p.tagline}</p>
                       <p className="mt-4 font-serif text-2xl font-semibold tabular-nums text-[#1A1510]">{rupiah(p.price)}</p>
