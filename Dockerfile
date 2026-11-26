@@ -35,12 +35,13 @@ RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" \
 FROM base AS runner
 WORKDIR /app
 
-RUN apk add --no-cache nodejs npm
+RUN apk add --no-cache nodejs npm icu-data-full tzdata
 
 # Prisma CLI for running migrations at startup (the standalone build does not include it)
 RUN mkdir -p /opt/db && cd /opt/db && npm init -y >/dev/null &&     npm install --omit=dev --no-audit --no-fund prisma@6.19.2 &&     chown -R 1001:1001 /opt/db
 
 ENV NODE_ENV=production
+ENV TZ=Asia/Jakarta
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

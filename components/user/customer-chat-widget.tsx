@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import {
   IconHeadset,
@@ -247,11 +248,17 @@ export function CustomerChatWidget() {
   };
 
   const isAdminMode = thread?.mode === "ADMIN";
+  const pathname = usePathname();
+  const hasMobileBottomBar = pathname === "/upgrade" || pathname.startsWith("/upgrade/");
   const isClosed = thread?.status === "CLOSED";
   const inQueue = isAdminMode && !isClosed && Boolean(thread?.waitingInQueue);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div
+      className={`fixed right-4 z-50 flex flex-col items-end gap-3 sm:right-6 ${
+        hasMobileBottomBar ? "bottom-20 lg:bottom-6" : "bottom-4 sm:bottom-6"
+      }`}
+    >
       {open && (
         <div className="flex h-[540px] max-h-[calc(100vh-5.5rem)] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1] shadow-2xl sm:w-[410px]">
           {/* Header */}
@@ -313,7 +320,7 @@ export function CustomerChatWidget() {
           )}
 
           {/* Messages */}
-          <div className="flex-1 space-y-3.5 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
+          <div className="flex-1 space-y-3.5 overflow-y-auto px-4 py-4">
             {messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <IconLoader2 className="animate-spin text-[#8A6424]" />
