@@ -1,6 +1,6 @@
 services:
   app:
-    # Tag `latest`/`production` = prod branch, `staging` = dev branch. Staging: set APP_IMAGE_TAG=staging in .env.staging
+    # Tag `latest`/`production` = prod branch, `staging` = staging branch. Staging: set APP_IMAGE_TAG=staging in .env.staging
     image: ghcr.io/ajisdzalparo/satumoment:${APP_IMAGE_TAG:-latest}
     container_name: nikaid-app
     restart: unless-stopped
