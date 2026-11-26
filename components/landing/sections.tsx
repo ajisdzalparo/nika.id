@@ -24,6 +24,9 @@ import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PAID_PLANS, PLAN_LIMITS, type Plan
 import { DEFAULT_LANDING_CONTENT, type LandingContent } from "@/lib/landing-content-shared";
 import { Display, Eyebrow, L, Phone, Reveal, Rule } from "./primitives";
 import { Wordmark } from "./navbar";
+import { MitraApplicationForm } from "@/components/common/mitra-application-form";
+import { SUPPORT_EMAIL } from "./legal-page";
+import { AGENCY_PACKS, DEFAULT_PLAN_PRICES, MITRA_BONUS_EVERY, type PaidPlan, type PlanPrices } from "@/lib/limits";
 
 // ─── Desain AI demo ──────────────────────────────────────────────────────
 
@@ -304,9 +307,6 @@ export function Collection({ items }: { items: CatalogItem[] }) {
                     {t.category}
                   </p>
                 </div>
-                <span className="mt-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[11px]" style={{ borderColor: L.line, color: t.tier === "Premium" ? L.accent : L.muted }}>
-                  {t.tier}
-                </span>
               </div>
             </Link>
           ))}
@@ -469,7 +469,7 @@ function planFeatures(key: PlanType) {
   return f.filter(Boolean);
 }
 
-export function Pricing() {
+export function Pricing({ prices = DEFAULT_PLAN_PRICES }: { prices?: PlanPrices }) {
   const keys = PAID_PLANS;
   const featured = "EKSKLUSIF";
   return (
@@ -500,7 +500,7 @@ export function Pricing() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-6 font-(family-name:--font-landing-display) text-5xl lining-nums">{rupiah(p.price)}</p>
+                  <p className="mt-6 font-(family-name:--font-landing-display) text-5xl lining-nums">{rupiah(prices[k as PaidPlan])}</p>
                   <p className="mt-1 text-sm" style={{ color: hot ? "#CDBF9F" : L.muted }}>
                     per acara
                   </p>
@@ -542,20 +542,42 @@ export interface PartnerVendor {
 /** Below this many partners the logos sit still instead of running. */
 const MARQUEE_MIN = 6;
 
-/** One partner in the strip: the logo only (muted until hovered), or the business name as a wordmark when there is no logo. */
+/** One partner in the strip: uniform stationery badge with prominent logo (or gold monogram), business name, and IG handle. */
 function PartnerLogo({ partner, focusable }: { partner: PartnerVendor; focusable: boolean }) {
-  const mark = partner.agencyLogo ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={partner.agencyLogo}
-      alt={partner.agencyName}
-      loading="lazy"
-      className="h-10 w-auto max-w-[140px] object-contain opacity-60 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0 md:h-12 md:max-w-[160px]"
-    />
-  ) : (
-    <span className="whitespace-nowrap font-(family-name:--font-landing-display) text-2xl font-medium opacity-70 transition duration-300 group-hover:opacity-100 md:text-[1.7rem]" style={{ color: L.ink }}>
-      {partner.agencyName}
-    </span>
+  const initials = partner.agencyName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("") || "M";
+  const igHandle = partner.agencyInstagram ? `@${partner.agencyInstagram.replace(/^@/, "")}` : null;
+
+  const badge = (
+    <div className="flex h-24 items-center gap-4 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] px-5 py-3 shadow-[0_1px_2px_rgba(26,21,16,.04)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-[#C9A24E] group-hover:shadow-[0_16px_34px_-22px_rgba(26,21,16,.4)]">
+      {partner.agencyLogo ? (
+        <span className="flex h-16 min-w-16 max-w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#EFE6D4] bg-[#FCF8F1] p-1.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={partner.agencyLogo}
+            alt={partner.agencyName}
+            loading="lazy"
+            className="h-full w-auto max-w-full object-contain mix-blend-multiply"
+          />
+        </span>
+      ) : (
+        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-[#E6D5B2] bg-[#F7F0E1] font-(family-name:--font-landing-display) text-2xl font-medium tracking-tight text-[#8A6424]">
+          {initials}
+        </span>
+      )}
+      <div className="min-w-0 pr-1 text-left">
+        <p className="whitespace-nowrap font-(family-name:--font-landing-display) text-xl leading-tight text-[#1F1A14]">
+          {partner.agencyName}
+        </p>
+        <p className="mt-1 whitespace-nowrap text-xs text-[#7D7161]">
+          {igHandle ?? (partner.agencyVerified ? "Mitra Terverifikasi" : "Mitra SatuMoment")}
+        </p>
+      </div>
+    </div>
   );
   const title = partner.agencyVerified ? `${partner.agencyName} · Mitra terverifikasi` : partner.agencyName;
 
@@ -566,13 +588,13 @@ function PartnerLogo({ partner, focusable }: { partner: PartnerVendor; focusable
       rel="noreferrer"
       title={title}
       tabIndex={focusable ? undefined : -1}
-      className="group flex h-14 items-center rounded-lg outline-offset-4"
+      className="group inline-flex rounded-2xl outline-offset-4"
     >
-      {mark}
+      {badge}
     </a>
   ) : (
-    <span title={title} className="group flex h-14 items-center">
-      {mark}
+    <span title={title} className="group inline-flex">
+      {badge}
     </span>
   );
 }
@@ -589,13 +611,13 @@ export function PartnerVendors({ partners }: { partners: PartnerVendor[] }) {
               Vendor yang terdaftar di program Mitra SatuMoment otomatis tampil di sini untuk menjangkau lebih banyak calon pengantin.
             </p>
           </div>
-          <Link
-            href="/mitra"
+          <a
+            href="#gabung-mitra"
             className="inline-flex h-11 w-fit shrink-0 items-center gap-2 rounded-full border px-5 text-sm font-medium transition-colors hover:bg-black/5"
             style={{ borderColor: L.line, color: L.ink }}
           >
             Gabung jadi Mitra <IconArrowRight size={16} />
-          </Link>
+          </a>
         </div>
 
         {partners.length > 0 ? (
@@ -610,7 +632,7 @@ export function PartnerVendors({ partners }: { partners: PartnerVendor[] }) {
             >
               <div className="uy-marquee flex w-max" style={{ ["--uy-marquee-duration" as string]: `${Math.max(30, partners.length * 5)}s` }}>
                 {[0, 1].map((copy) => (
-                  <ul key={copy} aria-hidden={copy === 1 ? true : undefined} className="flex shrink-0 items-center gap-14 pr-14">
+                  <ul key={copy} aria-hidden={copy === 1 ? true : undefined} className="flex shrink-0 items-center gap-4 pr-4">
                     {partners.map((p) => (
                       <li key={p.id} className="shrink-0">
                         <PartnerLogo partner={p} focusable={copy === 0} />
@@ -622,7 +644,7 @@ export function PartnerVendors({ partners }: { partners: PartnerVendor[] }) {
             </div>
           ) : (
             // Few partners: a calm static row; looping 1–3 logos looks thin
-            <ul className="flex flex-wrap items-center justify-center gap-x-14 gap-y-8 py-2">
+            <ul className="flex flex-wrap items-center justify-center gap-3.5 py-2 sm:justify-start">
               {partners.map((p) => (
                 <li key={p.id}>
                   <PartnerLogo partner={p} focusable />
@@ -636,17 +658,60 @@ export function PartnerVendors({ partners }: { partners: PartnerVendor[] }) {
             style={{ borderColor: L.line, background: L.surface }}
           >
             <p className="text-sm" style={{ color: L.muted }}>
-              Punya usaha Wedding Organizer, MUA, fotografer, atau percetakan? Daftar di halaman Mitra dan logo usaha Anda otomatis tampil di sini.
+              Punya usaha Wedding Organizer, MUA, fotografer, atau percetakan? Setelah disetujui jadi Mitra, logo usaha Anda tampil di sini.
             </p>
-            <Link
-              href="/mitra"
+            <a
+              href="#gabung-mitra"
               className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-5 text-xs font-medium"
               style={{ background: L.ink, color: L.bg }}
             >
-              Aktifkan Akun Mitra <IconArrowRight size={14} />
-            </Link>
+              Ajukan jadi Mitra <IconArrowRight size={14} />
+            </a>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+// ─── Mitra application ──────────────────────────────────────────────────
+
+/** Join form for the Mitra program: admin reviews every request (or the vendor chats the admin on WhatsApp). */
+export function MitraJoin({ whatsapp }: { whatsapp?: string | null }) {
+  const cheapest = AGENCY_PACKS[AGENCY_PACKS.length - 1];
+  const perInvite = Math.round(cheapest.price / cheapest.quota / 100) / 10;
+  const points = [
+    "Mulai dengan uji coba gratis untuk beberapa undangan klien",
+    `Bonus 1 undangan gratis setiap ${MITRA_BONUS_EVERY} klien membeli lewat kodemu`,
+    `Kuota grosir mulai Rp${perInvite.toLocaleString("id-ID")}rb per undangan, harga ke klien kamu yang tentukan`,
+    "Link isi data untuk klien tanpa perlu buat akun, nama usahamu di footer undangan",
+  ];
+  return (
+    <section id="gabung-mitra" className="scroll-mt-16 py-20 md:py-28" style={{ background: L.night, color: L.nightText }}>
+      <div className="mx-auto grid max-w-6xl gap-12 px-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
+        <Reveal className="space-y-6">
+          <p className="text-[11px] font-medium uppercase tracking-[0.26em]" style={{ color: L.accentBright }}>
+            Program Mitra
+          </p>
+          <Display className="text-[2.1rem] text-[#F6EEDD] sm:text-5xl">Jual undangan digital dengan namamu sendiri.</Display>
+          <p className="max-w-md text-[15px] leading-relaxed" style={{ color: L.nightMuted }}>
+            Untuk wedding organizer, MUA, fotografer, percetakan, atau perorangan yang ingin ikut menjual. Isi form, admin meninjau dan
+            menghubungimu lewat WhatsApp.
+          </p>
+          <ul className="space-y-3">
+            {points.map((p) => (
+              <li key={p} className="flex items-start gap-3 text-[15px]" style={{ color: L.nightText }}>
+                <IconCheck size={18} className="mt-0.5 shrink-0" style={{ color: L.accentBright }} />
+                {p}
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+        <Reveal delay={120}>
+          <div className="rounded-3xl border border-[#3A3122] bg-white/[.03] p-5 sm:p-7">
+            <MitraApplicationForm tone="dark" adminWhatsapp={whatsapp} />
+          </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -723,7 +788,7 @@ export function LandingFooter({ content = DEFAULT_LANDING_CONTENT.footer }: { co
           {[
             ["Produk", [["Desain AI", "/#desain-ai"], ["Template", "/desain"], ["Harga", "/#harga"]]],
             ["Akun", [["Masuk", "/login"], ["Daftar", "/register"]]],
-            ["Bantuan", [["FAQ", "/#faq"]]],
+            ["Bantuan", [["FAQ", "/#faq"], ["Garansi 7 hari", "/garansi"], ["Kebijakan Privasi", "/kebijakan-privasi"], ["Syarat Layanan", "/syarat-layanan"]]],
           ].map(([title, links]) => (
             <div key={title as string} className="space-y-1">
               <p className="pb-1 font-medium" style={{ color: L.ink }}>
@@ -738,8 +803,11 @@ export function LandingFooter({ content = DEFAULT_LANDING_CONTENT.footer }: { co
           ))}
         </div>
       </div>
-      <p className="mx-auto mt-12 max-w-6xl px-4 text-xs md:px-6" style={{ color: L.muted }}>
-        {content.copyright}
+      <p className="mx-auto mt-12 flex max-w-6xl flex-wrap justify-between gap-2 px-4 text-xs md:px-6" style={{ color: L.muted }}>
+        <span>{content.copyright}</span>
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:underline">
+          {SUPPORT_EMAIL}
+        </a>
       </p>
     </footer>
   );
