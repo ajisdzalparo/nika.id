@@ -5,6 +5,7 @@ import { LegalPage, SUPPORT_EMAIL } from "@/components/landing/legal-page";
 export const metadata: Metadata = {
   title: "Syarat Layanan · SatuMoment",
   description: "Ketentuan memakai SatuMoment: akun, paket, pembayaran, konten, dan Program Mitra.",
+  alternates: { canonical: "/syarat-layanan" },
 };
 
 export default function SyaratLayananPage() {

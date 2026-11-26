@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Old mock template gallery; the real catalog lives at /desain
+  async redirects() {
+    return [{ source: "/templates", destination: "/desain", permanent: true }];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

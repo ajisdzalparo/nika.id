@@ -9,6 +9,7 @@ import { landingFontClass } from "@/lib/studio";
 export const metadata: Metadata = {
   title: "Template undangan pernikahan · SatuMoment",
   description: "Semua template undangan pernikahan digital: adat, minimalis, floral, luxury, dan lainnya. Coba langsung di HP sebelum memilih.",
+  alternates: { canonical: "/desain" },
 };
 
 export const dynamic = "force-dynamic";
