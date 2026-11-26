@@ -1,6 +1,7 @@
 services:
   app:
-    image: ghcr.io/ajisdzalparo/satumoment:latest
+    # Tag `latest`/`production` = prod branch, `staging` = dev branch. Staging: set APP_IMAGE_TAG=staging in .env.staging
+    image: ghcr.io/ajisdzalparo/satumoment:${APP_IMAGE_TAG:-latest}
     container_name: nikaid-app
     restart: unless-stopped
     # Pick the environment with `--env-file`: docker compose --env-file .env.staging -f docker-compose.prod.yml up -d
