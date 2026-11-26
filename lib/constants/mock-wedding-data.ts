@@ -1,5 +1,9 @@
 import { WeddingData } from "@/types/wedding";
 
+// Fixed sample date (noon WIB) so server and browser render the same day: a "now + 30 days" date
+// differs between the server (UTC) and the browser around midnight and breaks hydration.
+const SAMPLE_DATE = "2026-12-26T05:00:00.000Z";
+
 export const MOCK_WEDDING_DATA: WeddingData = {
   guestName: "Tamu Undangan",
   groom: {
@@ -19,7 +23,7 @@ export const MOCK_WEDDING_DATA: WeddingData = {
     photo: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=600&auto=format&fit=crop",
   },
   event: {
-    date: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    date: new Date(SAMPLE_DATE),
     time: "09:00 - 11:00",
     venue: "Gedung Serbaguna Jakarta",
     address: "Jl. M.H. Thamrin No. 1, Menteng, Jakarta Pusat",
@@ -29,7 +33,7 @@ export const MOCK_WEDDING_DATA: WeddingData = {
     {
       id: "1",
       title: "Akad Nikah",
-      date: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
+      date: new Date(SAMPLE_DATE),
       time: "08:00 - 10:00",
       venue: "Masjid Agung Jakarta",
       address: "Jl. Lapangan Banteng Barat No.1, Jakarta Pusat",
@@ -40,7 +44,7 @@ export const MOCK_WEDDING_DATA: WeddingData = {
     {
       id: "2",
       title: "Resepsi",
-      date: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
+      date: new Date(SAMPLE_DATE),
       time: "11:00 - 14:00",
       venue: "Ballroom Hotel Indonesia",
       address: "Jl. M.H. Thamrin No. 1, Jakarta Pusat",

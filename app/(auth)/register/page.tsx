@@ -38,7 +38,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [referralInfo, setReferralInfo] = useState<{ code: string; referrerName: string } | null>(null);
+  const [referralInfo, setReferralInfo] = useState<{ code: string; referrerName: string; isAgency?: boolean } | null>(null);
 
   useEffect(() => {
     const urlRef = new URLSearchParams(window.location.search).get("ref")?.trim() ?? "";
@@ -48,7 +48,7 @@ export default function RegisterPage() {
     fetch(`/api/referral/validate?code=${encodeURIComponent(code)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (d?.valid && d.code) setReferralInfo({ code: d.code, referrerName: d.referrerName });
+        if (d?.valid && d.code) setReferralInfo({ code: d.code, referrerName: d.referrerName, isAgency: d.isAgency });
       })
       .catch(() => {});
   }, []);
@@ -122,7 +122,15 @@ export default function RegisterPage() {
         {referralInfo && (
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-3.5 py-1.5 text-xs font-medium text-[#5C431A]">
             <IconCheck className="h-3.5 w-3.5 text-[#8A6424]" />
-            Referral <strong>{referralInfo.code}</strong> aktif ({referralInfo.referrerName}) · Diskon 10% di transaksi pertama
+            {referralInfo.isAgency ? (
+              <>
+                Dibantu mitra <strong>{referralInfo.referrerName}</strong> (kode {referralInfo.code})
+              </>
+            ) : (
+              <>
+                Referral <strong>{referralInfo.code}</strong> aktif ({referralInfo.referrerName}) · Diskon 10% di transaksi pertama
+              </>
+            )}
           </div>
         )}
       </div>

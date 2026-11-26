@@ -23,9 +23,6 @@ function Badges({ item, popular }: { item: CatalogItem; popular: boolean }) {
     <div className="flex flex-wrap gap-1.5">
       {popular && <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-[#1F1A14]" style={{ background: L.foil }}>Populer</span>}
       {item.isNew && <span className="rounded-full bg-[#8A6424] px-2 py-0.5 text-[10px] font-semibold text-white">Baru</span>}
-      <span className="rounded-full border px-2 py-0.5 text-[10px]" style={{ borderColor: L.line, color: item.tier === "Premium" ? L.accent : L.muted }}>
-        {item.tier}
-      </span>
     </div>
   );
 }

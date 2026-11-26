@@ -5,9 +5,13 @@ import type { PlanType } from "@/lib/limits";
 import { AiQuotaExceededError, consumeAiOrnamentCredit, getAiQuota } from "@/lib/ai-design/server";
 import { generateAiOrnament } from "@/lib/ai-design/ornament-generate";
 import { AiDesignError } from "@/lib/ai-design/generate";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 // POST /api/ai/ornament { prompt } — generates a vector SVG ornament (uses 1 AI credit)
 export async function POST(request: Request) {
+  const blocked = await featureBlockedResponse("KANVAS");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const active = await getActiveInvitation(session.user.id);

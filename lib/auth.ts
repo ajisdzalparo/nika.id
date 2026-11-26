@@ -4,10 +4,20 @@ import { admin } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
 import nodemailer from "nodemailer";
 
-// Gmail SMTP (needs a Google App Password, not the normal account password).
-// Only initialized when both values are set; otherwise links are logged to the console.
-const mailer =
-  process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
+// Outgoing mail. Preferred: any SMTP server (domain mailbox from the hosting provider, Zoho,
+// Resend, Brevo, ...) via SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS. Fallback: Gmail with a Google
+// App Password. When neither is configured, links are logged to the console instead.
+const smtpPort = Number(process.env.SMTP_PORT) || 465;
+
+const mailer = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: smtpPort,
+      // 465 = implicit TLS; 587/25 start plain and upgrade with STARTTLS
+      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : smtpPort === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    })
+  : process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
     ? nodemailer.createTransport({
         service: "gmail",
         auth: {
@@ -16,6 +26,9 @@ const mailer =
         },
       })
     : null;
+
+/** Sender address: must be a mailbox (or verified alias) of the account that authenticates. */
+const mailFromAddress = process.env.EMAIL_FROM || (process.env.SMTP_HOST ? process.env.SMTP_USER : process.env.GMAIL_USER);
 
 function escapeHtml(value: string): string {
   return value
@@ -119,8 +132,7 @@ async function sendAuthEmail({
   `;
 
   await mailer.sendMail({
-    // Gmail always sends from GMAIL_USER; EMAIL_FROM only sets the display name
-    from: `"${process.env.EMAIL_FROM_NAME || "SatuMoment"}" <${process.env.GMAIL_USER}>`,
+    from: `"${process.env.EMAIL_FROM_NAME || "SatuMoment"}" <${mailFromAddress}>`,
     to,
     subject,
     html: emailHtml,
@@ -173,7 +185,10 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendVerificationEmail: async ({ user, url }: { user: { name: string; email: string }; url: string }) => {
+    sendVerificationEmail: async ({ user, url, token }) => {
+      // Send people to the app's /verify-email page instead of the raw API link: that page verifies the
+      // token, then opens the user portal (cookie) so the auto sign-in actually lands on the dashboard.
+      const verifyPageUrl = `${new URL(url).origin}/verify-email?token=${encodeURIComponent(token)}`;
       await sendAuthEmail({
         to: user.email,
         subject: "Verifikasi Email Anda - SatuMoment",
@@ -181,12 +196,14 @@ export const auth = betterAuth({
         greetingName: user.name || "Pengguna",
         message: "Terima kasih telah mendaftar di SatuMoment. Klik tombol di bawah untuk memverifikasi alamat email Anda dan mulai membuat undangan pernikahan digital.",
         ctaLabel: "Verifikasi Email Saya",
-        ctaUrl: url,
+        ctaUrl: verifyPageUrl,
         footerNote: "Email ini dikirim oleh SatuMoment. Jika Anda tidak mendaftar, abaikan email ini.",
         consoleLabel: "EMAIL VERIFICATION LINK",
       });
     },
     sendOnSignUp: true,
+    // Signing in with an unverified account sends a fresh activation link (the old one may have expired)
+    sendOnSignIn: true,
     autoSignInAfterVerification: true,
   },
   ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET

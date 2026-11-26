@@ -12,6 +12,7 @@ import {
   sanitizeSlug,
 } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
+import { mitraQuotaUnitCost } from "@/lib/mitra";
 import { normalizePhoneDigits } from "@/lib/phone";
 
 export async function GET(request: Request) {
@@ -83,9 +84,9 @@ export async function POST(request: Request) {
       if (activateWithQuota) {
         const owner = await tx.user.findUnique({
           where: { id: session.user.id },
-          select: { agencyQuota: true, agencyQuotaExpiresAt: true },
+          select: { agencyQuota: true, agencyQuotaExpiresAt: true, accountType: true },
         });
-        if (!owner || owner.agencyQuota < 1) {
+        if (!owner || owner.accountType !== "AGENCY" || owner.agencyQuota < 1) {
           throw new Error("NO_QUOTA");
         }
         if (owner.agencyQuotaExpiresAt && owner.agencyQuotaExpiresAt.getTime() <= Date.now()) {
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
           isPublic: typeof body?.isPublic === "boolean" ? body.isPublic : true,
           plan,
           planExpiresAt,
+          ...(plan === "PREMIUM" ? { mitraCost: await mitraQuotaUnitCost(session.user.id, tx), activatedAt: new Date() } : {}),
           clientName,
           clientWhatsapp,
           clientEditToken,

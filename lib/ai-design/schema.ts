@@ -198,6 +198,8 @@ export const CanvasLayerSchema = z.object({
   animationDuration: z.number().min(1).max(15).optional(),
   animationDelay: z.number().min(0).max(5).optional(),
   flipX: z.boolean().optional(),
+  /** Mirror top-to-bottom, e.g. to reuse a bottom-corner flower in a top corner */
+  flipY: z.boolean().optional(),
   color: z.string().optional(),
   bgColor: z.string().optional(),
   borderRadius: z.number().min(0).max(60).optional(),

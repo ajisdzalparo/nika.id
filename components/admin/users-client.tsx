@@ -103,7 +103,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
       toast.success("Berhasil masuk sebagai user");
 
       // Force reload to switch context to that user
-      window.location.href = "/";
+      window.location.assign(new URL("/", window.location.origin));
     } catch (error) {
       console.error(error);
       toast.error("Gagal melakukan impersonasi");
@@ -112,17 +112,18 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
     }
   };
 
-  const handleToggleAgencyVerified = async (user: User) => {
-    const next = !user.agencyVerified;
+  // Mitra status is admin-only (after a WhatsApp chat or an approved application)
+  const handleToggleMitra = async (user: User) => {
+    const makeMitra = user.accountType !== "AGENCY";
     setIsUpdatingRole(user.id);
     try {
       const res = await fetch(`/api/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agencyVerified: next }),
+        body: JSON.stringify({ accountType: makeMitra ? "AGENCY" : "PERSONAL" }),
       });
       if (!res.ok) throw new Error("Gagal memperbarui status mitra");
-      toast.success(next ? `${user.agencyName || user.name} ditandai Mitra Terverifikasi` : "Verifikasi mitra dicabut");
+      toast.success(makeMitra ? `${user.agencyName || user.name || user.email} sekarang Mitra` : "Status mitra dicabut");
       router.refresh();
     } catch {
       toast.error("Gagal memperbarui status mitra");
@@ -292,17 +293,39 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                       <Badge variant={user.role?.toLowerCase() === "admin" ? "default" : "secondary"} className="w-fit">
                         {user.role?.toLowerCase() === "admin" ? "Admin" : user.role}
                       </Badge>
-                      {user.accountType === "AGENCY" && (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAgencyVerified(user)}
-                          disabled={isUpdatingRole === user.id}
-                          title="Klik untuk toggle verifikasi mitra"
-                          className="inline-flex w-fit items-center gap-1 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[10px] font-medium text-[#5C431A] hover:bg-[#ECE2CE]"
-                        >
-                          {user.agencyVerified ? "Mitra Terverifikasi" : "Mitra"} · {user.agencyQuota ?? 0} kuota
-                        </button>
-                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={isUpdatingRole === user.id}
+                            className={
+                              user.accountType === "AGENCY"
+                                ? "inline-flex w-fit items-center gap-1 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[10px] font-medium text-[#5C431A] hover:bg-[#ECE2CE]"
+                                : "inline-flex w-fit items-center gap-1 rounded-full border border-dashed border-[#D9C9A6] px-2 py-0.5 text-[10px] font-medium text-[#8A6424] hover:bg-[#F7F0E1]"
+                            }
+                          >
+                            {user.accountType === "AGENCY" ? `Mitra · ${user.agencyQuota ?? 0} kuota` : "+ Jadikan Mitra"}
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {user.accountType === "AGENCY" ? `Cabut status Mitra ${user.agencyName || user.name || user.email}?` : `Jadikan ${user.name || user.email} Mitra?`}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {user.accountType === "AGENCY"
+                                ? "Menu Mitra, link mitra, dan pemakaian kuota ditutup. Sisa kuota tetap tersimpan dan bisa dipakai lagi kalau status Mitra dikembalikan."
+                                : "Akun ini mendapat menu Mitra: dashboard klien, link mitra dengan bonus kuota, dan paket kuota grosir. Pakai ini untuk mitra yang mendaftar lewat WhatsApp."}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleToggleMitra(user)}>
+                              {user.accountType === "AGENCY" ? "Cabut Mitra" : "Jadikan Mitra"}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

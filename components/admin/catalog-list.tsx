@@ -15,6 +15,7 @@ import {
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SafeImg } from "@/components/common/safe-img";
+import { onlyDigits } from "@/components/common/number-input";
 import { toast } from "sonner";
 import {
   IconAlertTriangle,
@@ -29,7 +30,6 @@ import {
   IconShieldCheck,
   IconShieldSearch,
   IconShieldX,
-  IconSparkles,
   IconTrash,
   IconX,
 } from "@tabler/icons-react";
@@ -521,10 +521,14 @@ export function CatalogList({ initial }: { initial: AdminCatalogRow[] }) {
                         <label className="flex items-center gap-1.5 text-[11px] text-zinc-600">
                           Fee Platform (%):
                           <input
-                            type="number"
-                            min={0}
-                            max={70}
+                            type="text"
+                            inputMode="numeric"
+                            aria-label="Fee platform dalam persen (0-70)"
                             defaultValue={r.platformFeePct ?? 30}
+                            // Uncontrolled (saved on blur): keep only digits as they are typed or pasted
+                            onInput={(e) => {
+                              e.currentTarget.value = onlyDigits(e.currentTarget.value).slice(0, 2);
+                            }}
                             onBlur={(e) => {
                               const val = Math.max(0, Math.min(70, Number(e.target.value) || 30));
                               if (val !== (r.platformFeePct ?? 30)) patch(r.id, { platformFeePct: val });
@@ -689,8 +693,8 @@ export function CatalogList({ initial }: { initial: AdminCatalogRow[] }) {
                               : "Aman — Orisinal"}
                         </span>
                         <span className="text-lg font-semibold text-[#1A1510]">{inspectReport.score}% kemiripan</span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#5C431A]">
-                          <IconSparkles size={11} /> {inspectReport.source === "AI" ? "Analisis AI" : "Analisis Visual"}
+                        <span className="inline-flex items-center rounded-full bg-white/85 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#5C431A]">
+                          {inspectReport.source === "AI" ? "Analisis AI" : "Analisis Visual"}
                         </span>
                       </div>
                       <p className="text-sm text-[#352C22]">{inspectReport.summary}</p>

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
 import { getMaxGuests, type PlanType } from "@/lib/limits";
-import { isValidPhoneDigits, normalizePhoneDigits } from "@/lib/phone";
+import { isValidPhoneDigits, maskPhone, normalizePhoneDigits } from "@/lib/phone";
 
 export const GuestPayloadSchema = z.object({
   name: z.string().trim().min(1, "Nama tamu wajib diisi.").max(120, "Nama tamu maksimal 120 karakter."),
@@ -23,12 +23,19 @@ export const GuestPayloadSchema = z.object({
 export async function GET(request: Request) {
   try {
     const session = await requireAuth(request);
-    const invitation = await getActiveInvitation(session.user.id);
+    const [invitation, viewer] = await Promise.all([
+      getActiveInvitation(session.user.id),
+      prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } }),
+    ]);
 
     const guests = await prisma.guest.findMany({
       where: { invitationId: invitation.id },
       orderBy: { createdAt: "desc" },
     });
+
+    if (viewer?.accountType === "AGENCY") {
+      return NextResponse.json(guests.map((g) => ({ ...g, phone: maskPhone(g.phone) })));
+    }
 
     return NextResponse.json(guests);
   } catch (error) {
@@ -40,6 +47,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireAuth(request);
+    const viewer = await prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } });
+    if (viewer?.accountType === "AGENCY") {
+      return NextResponse.json(
+        { error: "MITRA_MONITORING_ONLY", message: "Daftar tamu dikelola langsung oleh akun klien. Mitra hanya dapat memantau daftar tamu." },
+        { status: 403 },
+      );
+    }
     const parsed = GuestPayloadSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
       return NextResponse.json(
@@ -71,7 +85,8 @@ export async function POST(request: Request) {
 
     const guest = await prisma.guest.create({
       data: {
-        userId: session.user.id,
+        // Rows belong to the invitation owner, also when a mitra's client adds them
+        userId: invitation.userId,
         invitationId: invitation.id,
         name: d.name,
         recipientType: d.recipientType,

@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   if (!session) {
     const referrer = await prisma.user.findUnique({
       where: { referralCode: clean },
-      select: { name: true, referralCode: true },
+      select: { name: true, referralCode: true, accountType: true },
     });
     if (!referrer) {
       return NextResponse.json({ valid: false, message: "Kode referral tidak ditemukan." }, { status: 404 });
@@ -24,6 +24,7 @@ export async function GET(request: Request) {
       valid: true,
       code: referrer.referralCode,
       referrerName: referrer.name || "Mitra SatuMoment",
+      isAgency: referrer.accountType === "AGENCY",
     });
   }
 
@@ -41,5 +42,6 @@ export async function GET(request: Request) {
     valid: true,
     code: res.code,
     referrerName: res.referrerName,
+    isAgency: res.referrerIsAgency,
   });
 }

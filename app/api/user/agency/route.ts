@@ -4,6 +4,7 @@ import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { isValidPhoneDigits, normalizePhoneDigits } from "@/lib/phone";
 import { getUserReferralSummary } from "@/lib/referral";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 const AgencyProfileSchema = z.object({
   agencyName: z.string().trim().min(2, "Nama usaha minimal 2 karakter").max(80),
@@ -78,8 +79,11 @@ export async function GET(request: Request) {
   }
 }
 
-// PATCH /api/user/agency — 1-step activation & update of Agency profile
+// PATCH /api/user/agency — update the business profile of an approved mitra
 export async function PATCH(request: Request) {
+  const blocked = await featureBlockedResponse("MITRA");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const parsed = AgencyProfileSchema.safeParse(await request.json().catch(() => ({})));
@@ -87,6 +91,15 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         { error: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Data tidak valid" },
         { status: 400 },
+      );
+    }
+
+    // Only an admin turns an account into a mitra (application form or WhatsApp); this only edits the profile
+    const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } });
+    if (me?.accountType !== "AGENCY") {
+      return NextResponse.json(
+        { error: "NOT_MITRA", message: "Akun ini belum Mitra. Kirim pengajuan Mitra dan tunggu persetujuan admin." },
+        { status: 403 },
       );
     }
 
@@ -100,7 +113,6 @@ export async function PATCH(request: Request) {
     const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        accountType: "AGENCY",
         agencyName: parsed.data.agencyName,
         agencyWhatsapp: cleanWa,
         agencyInstagram: cleanIg,

@@ -5,6 +5,7 @@ import { checkChatRateLimit } from "@/lib/chat-security";
 import { normalizeTheme } from "@/lib/ai-design/color";
 import { checkTemplatePlagiarism, loadComparisonCatalog } from "@/lib/ai-design/plagiarism-ai";
 import { ensureCatalogSeeded } from "@/lib/catalog";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 const CheckOriginalitySchema = z.object({
   name: z.string().trim().max(80).optional(),
@@ -13,6 +14,9 @@ const CheckOriginalitySchema = z.object({
 
 // POST /api/user/marketplace/check-originality — pre-sell AI + structural originality inspection
 export async function POST(request: Request) {
+  const blocked = await featureBlockedResponse("MARKETPLACE");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     // Every check can call the paid AI model: cap it per account

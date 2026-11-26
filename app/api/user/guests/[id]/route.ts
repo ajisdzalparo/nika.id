@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
-import { getActiveInvitation } from "@/lib/active-invitation";
+import { getActiveInvitation, invitationAccessWhere } from "@/lib/active-invitation";
 import { isValidPhoneDigits, normalizePhoneDigits } from "@/lib/phone";
 
 const UpdateGuestSchema = z.object({
@@ -22,6 +22,13 @@ const UpdateGuestSchema = z.object({
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuth(request);
+    const viewer = await prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } });
+    if (viewer?.accountType === "AGENCY") {
+      return NextResponse.json(
+        { error: "MITRA_MONITORING_ONLY", message: "Daftar tamu dikelola langsung oleh akun klien. Mitra hanya dapat memantau daftar tamu." },
+        { status: 403 },
+      );
+    }
     const { id } = await params;
     const parsed = UpdateGuestSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
@@ -47,7 +54,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const active = await getActiveInvitation(session.user.id);
     const existing = await prisma.guest.findFirst({
-      where: { id, userId: session.user.id, invitationId: active.id },
+      where: { id, invitationId: active.id },
     });
     if (!existing) {
       return NextResponse.json({ error: "NOT_FOUND", message: "Tamu tidak ditemukan." }, { status: 404 });
@@ -79,10 +86,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuth(request);
+    const viewer = await prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } });
+    if (viewer?.accountType === "AGENCY") {
+      return NextResponse.json(
+        { error: "MITRA_MONITORING_ONLY", message: "Daftar tamu dikelola langsung oleh akun klien. Mitra hanya dapat memantau daftar tamu." },
+        { status: 403 },
+      );
+    }
     const { id } = await params;
 
     await prisma.guest.deleteMany({
-      where: { id, userId: session.user.id },
+      where: { id, invitation: invitationAccessWhere(session.user.id) },
     });
 
     return NextResponse.json({ success: true });

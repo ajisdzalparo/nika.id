@@ -426,7 +426,7 @@ export function WaBlastStudio({
             <h2 className="font-(family-name:--font-landing-display) text-2xl leading-tight text-[#F6EEDD] sm:text-3xl">Kirim otomatis ke semua tamu</h2>
             <p className="max-w-xl text-sm leading-relaxed text-[#CDBF9F]">Sementara itu, kirim satu per satu gratis dari halaman ini.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5 lg:flex-col lg:items-stretch">
+          <div data-feature-allow="true" className="flex flex-wrap items-center gap-2.5 lg:flex-col lg:items-stretch">
             <Button
               type="button"
               variant="gold"
@@ -444,17 +444,15 @@ export function WaBlastStudio({
                 </>
               )}
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setActiveTab("send");
-                setStep(2);
-              }}
-              className="h-10 rounded-full border border-white/20 bg-white/5 px-4 text-xs text-[#F6EEDD] hover:bg-white/10 hover:text-white"
+            <Link
+              href="/manajemen-tamu"
+              className={buttonVariants({
+                variant: "ghost",
+                className: "h-10 rounded-full border border-white/20 bg-white/5 px-4 text-xs text-[#F6EEDD] hover:bg-white/10 hover:text-white",
+              })}
             >
               <IconBrandWhatsapp size={15} /> Kirim manual
-            </Button>
+            </Link>
           </div>
         </div>
       </Panel>

@@ -8,17 +8,21 @@ import {
   IconCheck,
   IconCopy,
   IconCrown,
+  IconDownload,
   IconEyeCheck,
   IconPencil,
   IconPlus,
+  IconQrcode,
   IconSearch,
   IconSend,
+  IconShieldLock,
   IconTrash,
   IconUserPlus,
   IconUsers,
 } from "@tabler/icons-react";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { GuestImportDialog } from "@/components/user/guest-import-dialog";
 import { SelectField } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -32,7 +36,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PhoneInput } from "@/components/common/phone-input";
+import { NumberInput } from "@/components/common/number-input";
 import { Panel, StatTile } from "@/components/common/studio-ui";
+import { CheckInQr, downloadQrCard, downloadStandardQr, renderQrCard, renderStandardQr, shareQrOnWhatsapp } from "@/components/common/qr-code";
 import { PlanType, getMaxGuests, getPlanLimits } from "@/lib/limits";
 import { waLink } from "@/lib/phone";
 
@@ -52,6 +58,7 @@ export interface GuestItem {
   openedAt: string | null;
   lastOpenedAt: string | null;
   openCount: number;
+  checkInToken?: string | null;
 }
 
 interface GuestListProps {
@@ -61,6 +68,9 @@ interface GuestListProps {
   eventOptions: string[];
   userPlan: PlanType;
   extraGuestQuota?: number;
+  monitoringOnly?: boolean;
+  qrEnabled?: boolean;
+  card?: { couple: string; date?: string | null; venue?: string | null };
 }
 
 interface GuestFormState {
@@ -81,7 +91,13 @@ const DEFAULT_LABELS = ["Keluarga", "Teman Kantor", "Teman Kuliah", "Blast", "Ma
 const GREETING_PRESETS = ["Bapak/Ibu", "Saudara/i", "Kak", "Dear"];
 const CUSTOM_LABEL_VALUE = "__CUSTOM__";
 const fmt = new Intl.NumberFormat("id-ID");
-const shortDateFmt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const shortDateFmt = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Jakarta",
+});
 
 /** Strips redundant leading "Kepada Yth." / "Kepada" / "Yth." for the `?to=` param since the cover prints "Kepada Yth." above it. */
 function cleanGreetingForCover(greeting: string | null | undefined): string {
@@ -153,6 +169,9 @@ export function GuestList({
   eventOptions,
   userPlan,
   extraGuestQuota = 0,
+  monitoringOnly = false,
+  qrEnabled = false,
+  card,
 }: GuestListProps) {
   const defaultEvent = eventOptions[0] || "Umum";
   const [guests, setGuests] = useState<GuestItem[]>(initialGuests);
@@ -164,6 +183,11 @@ export function GuestList({
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GuestItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [qrTarget, setQrTarget] = useState<GuestItem | null>(null);
+  const [qrKind, setQrKind] = useState<"card" | "standard">("card");
+  const [qrLoadingId, setQrLoadingId] = useState<string | null>(null);
+  const [qrBusy, setQrBusy] = useState(false);
+  const qrCardMeta = card ?? { couple: coupleName };
 
   const limits = getPlanLimits(userPlan);
   const maxGuestsLimit = getMaxGuests(userPlan, extraGuestQuota);
@@ -357,6 +381,86 @@ export function GuestList({
     toast.success("Link umum berhasil disalin");
   };
 
+  const openGuestQr = async (g: GuestItem) => {
+    if (g.checkInToken) {
+      setQrTarget(g);
+      return;
+    }
+    setQrLoadingId(g.id);
+    try {
+      const res = await fetch(`/api/user/guests/${g.id}/qr`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.checkInToken) {
+        toast.error(data.message || "Gagal menyiapkan QR check-in");
+        return;
+      }
+      const updated: GuestItem = { ...g, checkInToken: data.checkInToken };
+      setGuests((prev) => prev.map((x) => (x.id === g.id ? updated : x)));
+      setQrTarget(updated);
+    } catch {
+      toast.error("Terjadi kesalahan saat membuat QR");
+    } finally {
+      setQrLoadingId(null);
+    }
+  };
+
+  const downloadGuestQr = async () => {
+    if (!qrTarget?.checkInToken) return;
+    setQrBusy(true);
+    try {
+      const guestDisplay = displayRecipient(qrTarget);
+      if (qrKind === "standard") {
+        await downloadStandardQr(qrTarget.checkInToken, guestDisplay);
+      } else {
+        await downloadQrCard(qrTarget.checkInToken, {
+          guestName: guestDisplay,
+          note: qrTarget.note,
+          ...qrCardMeta,
+        });
+      }
+      setQrTarget(null);
+    } finally {
+      setQrBusy(false);
+    }
+  };
+
+  const sendGuestQrOnWhatsapp = async () => {
+    if (!qrTarget?.checkInToken) return;
+    setQrBusy(true);
+    try {
+      const guestDisplay = displayRecipient(qrTarget);
+      const img =
+        qrKind === "standard"
+          ? await renderStandardQr(qrTarget.checkInToken, guestDisplay)
+          : await renderQrCard(qrTarget.checkInToken, {
+              guestName: guestDisplay,
+              note: qrTarget.note,
+              ...qrCardMeta,
+            });
+      const link = guestInviteLink(qrTarget);
+      const salutation = formatWaSalutation(qrTarget);
+      const message = [
+        `${salutation},`,
+        "",
+        `Dengan memohon rahmat dan ridho-Nya, kami bermaksud mengundang Anda untuk menghadiri hari bahagia ${coupleName}.`,
+        "",
+        `Buka undangan digital di sini:\n${link}`,
+        "",
+        "Terlampir juga QR check-in pribadi Anda untuk ditunjukkan kepada penerima tamu saat tiba di lokasi acara.",
+      ].join("\n");
+      const how = await shareQrOnWhatsapp(img, qrTarget.phone, message);
+      markGuestSent(qrTarget);
+      if (how === "manual") {
+        toast.success("QR diunduh. Lampirkan gambarnya di chat WhatsApp yang terbuka.");
+      }
+      setQrTarget(null);
+    } catch {
+      toast.error("Gagal menyiapkan QR");
+    } finally {
+      setQrBusy(false);
+    }
+  };
+
   const effectiveEventOptions = useMemo(() => {
     if (form.eventName && !eventOptions.includes(form.eventName)) {
       return [...eventOptions, form.eventName];
@@ -379,29 +483,41 @@ export function GuestList({
         <StatTile label="Tamu VIP" value={fmt.format(stats.vip)} hint={`${fmt.format(stats.withPhone)} punya nomor WA`} icon={IconCrown} delay={180} />
       </div>
 
-      {/* Quick share general link strip */}
-      <Panel tone="night" className="p-5 sm:p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {/* Quick share general link strip (hidden in Mitra monitoring mode) */}
+      {monitoringOnly ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-[#E6D5B2] bg-[#FAF4E8] px-4 py-3.5 text-sm text-[#40372B]">
+          <IconShieldLock size={19} className="mt-0.5 shrink-0 text-[#8A6424]" />
           <div>
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[#D9B56A]">Tautan umum & grup</p>
-            <p className="mt-1 font-(family-name:--font-landing-display) text-2xl text-[#F6EEDD]">Bagikan ke grup WhatsApp atau media sosial</p>
-            <p className="mt-1 text-xs text-[#CDBF9F]">Untuk tamu perorangan, tambahkan nomor WA mereka di daftar agar bisa dikirim langsung dari tombol WA atau WA Blast.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              onClick={copyGeneralLink}
-              variant="secondary"
-              className="h-10 rounded-full border border-white/15 bg-white/10 px-4 text-[#F6EEDD] hover:bg-white/15"
-            >
-              <IconCopy size={16} /> Salin Link Umum
-            </Button>
-            <Button type="button" onClick={shareGroupWA} variant="gold" className="h-10 px-4">
-              <IconBrandWhatsapp size={16} /> Share ke Grup
-            </Button>
+            <p className="font-medium text-[#1F1A14]">Mode Pemantauan Mitra</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-[#5E5446]">
+              Daftar tamu dikelola langsung oleh akun klien. Untuk menjaga privasi tamu, nomor WhatsApp disensor sebagian dan aksi tambah, ubah, hapus, maupun kirim pesan dinonaktifkan.
+            </p>
           </div>
         </div>
-      </Panel>
+      ) : (
+        <Panel tone="night" className="p-5 sm:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-[#D9B56A]">Tautan umum & grup</p>
+              <p className="mt-1 font-(family-name:--font-landing-display) text-2xl text-[#F6EEDD]">Bagikan ke grup WhatsApp atau media sosial</p>
+              <p className="mt-1 text-xs text-[#CDBF9F]">Untuk tamu perorangan, tambahkan nomor WA mereka di daftar agar bisa dikirim langsung dari tombol WA atau WA Blast.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                onClick={copyGeneralLink}
+                variant="secondary"
+                className="h-10 rounded-full border border-white/15 bg-white/10 px-4 text-[#F6EEDD] hover:bg-white/15"
+              >
+                <IconCopy size={16} /> Salin Link Umum
+              </Button>
+              <Button type="button" onClick={shareGroupWA} variant="gold" className="h-10 px-4">
+                <IconBrandWhatsapp size={16} /> Share ke Grup
+              </Button>
+            </div>
+          </div>
+        </Panel>
+      )}
 
       {/* Main Guest Table Card */}
       <div className="rounded-2xl border border-[#EDE3CF] bg-white shadow-[0_1px_2px_rgba(26,21,16,.04)]">
@@ -414,20 +530,23 @@ export function GuestList({
               onChange={(e) => setSearch(e.target.value)}
               type="search"
               aria-label="Cari tamu"
-              placeholder="Cari nama, nomor WA, label, acara, atau catatan…"
+              placeholder={monitoringOnly ? "Cari nama tamu, label, acara, atau catatan…" : "Cari nama, nomor WA, label, acara, atau catatan…"}
               className="w-full min-w-0 bg-transparent text-sm outline-none"
             />
           </label>
-          <div className="flex flex-wrap items-center gap-2">
-            {isLimitReached && (
-              <Link href="/upgrade" className={buttonVariants({ variant: "outline", className: "h-10 rounded-full border-[#E9DDC6] text-[#8A6424]" })}>
-                Tambah kuota tamu
-              </Link>
-            )}
-            <Button type="button" variant="gold" onClick={openAdd} disabled={isLimitReached} className="h-10 px-5">
-              <IconUserPlus size={16} /> {isLimitReached ? "Batas tamu tercapai" : "Tambah Tamu"}
-            </Button>
-          </div>
+          {!monitoringOnly && (
+            <div className="flex flex-wrap items-center gap-2">
+              {isLimitReached && (
+                <Link href="/upgrade" className={buttonVariants({ variant: "outline", className: "h-10 rounded-full border-[#E9DDC6] text-[#8A6424]" })}>
+                  Tambah kuota tamu
+                </Link>
+              )}
+              <GuestImportDialog disabled={isLimitReached} />
+              <Button type="button" variant="gold" onClick={openAdd} disabled={isLimitReached} className="h-10 px-5">
+                <IconUserPlus size={16} /> {isLimitReached ? "Batas tamu tercapai" : "Tambah Tamu"}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Filter chips */}
@@ -467,12 +586,12 @@ export function GuestList({
                 <th className="px-4 py-3 font-medium">Label & Acara</th>
                 <th className="px-4 py-3 font-medium">Kuota & RSVP</th>
                 <th className="px-4 py-3 font-medium">Catatan</th>
-                <th className="px-4 py-3 text-right font-medium">Aksi</th>
+                {!monitoringOnly && <th className="px-4 py-3 text-right font-medium">Aksi</th>}
               </tr>
             </thead>
             <tbody>
               {filteredGuests.map((g) => {
-                const directWa = waLink(g.phone);
+                const directWa = monitoringOnly ? null : waLink(g.phone);
                 return (
                   <tr key={g.id} className="border-t border-[#F3EBDB] align-top transition-colors hover:bg-[#FCF8F1]">
                     <td className="px-4 py-3.5">
@@ -494,7 +613,13 @@ export function GuestList({
                               </span>
                             )}
                           </div>
-                          {directWa ? (
+                          {monitoringOnly ? (
+                            g.phone ? (
+                              <p className="mt-0.5 text-xs tabular-nums text-[#6B5F50]">{g.phone}</p>
+                            ) : (
+                              <p className="mt-0.5 text-xs text-[#8E8268]">Belum ada nomor WA</p>
+                            )
+                          ) : directWa ? (
                             <p className="mt-0.5 text-xs tabular-nums text-[#8A6424]">+{g.phone}</p>
                           ) : (
                             <p className="mt-0.5 text-xs text-[#8E8268]">Belum ada nomor WA</p>
@@ -541,46 +666,60 @@ export function GuestList({
                       <p className="mt-0.5 text-xs text-[#8E8268]">{g.rsvpEnabled ? "RSVP aktif" : "RSVP nonaktif"}</p>
                     </td>
                     <td className="max-w-52 px-4 py-3.5 text-xs text-[#6B5F50]">{g.note || "–"}</td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => copyLink(g)}
-                          className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] transition-colors hover:bg-[#F6EEDF] hover:text-[#1F1A14]"
-                          title="Salin link personal"
-                          aria-label={`Salin link untuk ${g.name}`}
-                        >
-                          <IconCopy size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => shareWA(g)}
-                          className="flex size-9 items-center justify-center rounded-full text-[#3F6B3A] transition-colors hover:bg-[#EEF4EA]"
-                          title={g.phone ? `Kirim WA ke +${g.phone}` : "Bagikan via WhatsApp"}
-                          aria-label={`Kirim WA untuk ${g.name}`}
-                        >
-                          <IconBrandWhatsapp size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openEdit(g)}
-                          className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] transition-colors hover:bg-[#F6EEDF] hover:text-[#1F1A14]"
-                          title="Ubah data tamu"
-                          aria-label={`Ubah ${g.name}`}
-                        >
-                          <IconPencil size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(g)}
-                          className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] transition-colors hover:bg-[#F6E7E4] hover:text-[#9A3B2E]"
-                          title="Hapus tamu"
-                          aria-label={`Hapus ${g.name}`}
-                        >
-                          <IconTrash size={18} />
-                        </button>
-                      </div>
-                    </td>
+                    {!monitoringOnly && (
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => copyLink(g)}
+                            className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] transition-colors hover:bg-[#F6EEDF] hover:text-[#1F1A14]"
+                            title="Salin link personal"
+                            aria-label={`Salin link untuk ${g.name}`}
+                          >
+                            <IconCopy size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => shareWA(g)}
+                            className="flex size-9 items-center justify-center rounded-full text-[#8A6424] transition-colors hover:bg-[#F6EEDF] hover:text-[#1F1A14]"
+                            title={g.phone ? `Kirim WA ke +${g.phone}` : "Bagikan via WhatsApp"}
+                            aria-label={`Kirim WA untuk ${g.name}`}
+                          >
+                            <IconBrandWhatsapp size={18} />
+                          </button>
+                          {qrEnabled && (
+                            <button
+                              type="button"
+                              disabled={qrLoadingId === g.id}
+                              onClick={() => void openGuestQr(g)}
+                              className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] transition-colors hover:bg-[#F6EEDF] hover:text-[#1F1A14] disabled:opacity-45"
+                              title="QR check-in tamu (unduh atau kirim bersama undangan)"
+                              aria-label={`QR check-in untuk ${g.name}`}
+                            >
+                              <IconQrcode size={18} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => openEdit(g)}
+                            className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] transition-colors hover:bg-[#F6EEDF] hover:text-[#1F1A14]"
+                            title="Ubah data tamu"
+                            aria-label={`Ubah ${g.name}`}
+                          >
+                            <IconPencil size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(g)}
+                            className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] transition-colors hover:bg-[#F6E7E4] hover:text-[#9A3B2E]"
+                            title="Hapus tamu"
+                            aria-label={`Hapus ${g.name}`}
+                          >
+                            <IconTrash size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -602,8 +741,8 @@ export function GuestList({
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-[#6B5F50]">
-                    {g.phone ? `+${g.phone}` : "Belum ada No. WA"} · Maks. {g.maxGuests} orang
+                  <p className="mt-0.5 text-xs tabular-nums text-[#6B5F50]">
+                    {g.phone ? (monitoringOnly ? g.phone : `+${g.phone}`) : "Belum ada No. WA"} · Maks. {g.maxGuests} orang
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
@@ -630,30 +769,44 @@ export function GuestList({
                   {[g.eventName, g.note].filter(Boolean).join(" · ")}
                 </p>
               )}
-              <div className="flex items-center justify-end gap-1 pt-1">
-                <Button type="button" variant="outline" size="sm" onClick={() => copyLink(g)} className="h-9 rounded-full border-[#E9DDC6] px-3 text-xs">
-                  <IconCopy size={14} /> Salin
-                </Button>
-                <Button type="button" variant="ink" size="sm" onClick={() => shareWA(g)} className="h-9 px-3 text-xs">
-                  <IconBrandWhatsapp size={14} /> Kirim WA
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => openEdit(g)}
-                  className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] hover:bg-[#F6EEDF]"
-                  aria-label={`Ubah ${g.name}`}
-                >
-                  <IconPencil size={17} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(g)}
-                  className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] hover:bg-[#F6E7E4] hover:text-[#9A3B2E]"
-                  aria-label={`Hapus ${g.name}`}
-                >
-                  <IconTrash size={17} />
-                </button>
-              </div>
+              {!monitoringOnly && (
+                <div className="flex items-center justify-end gap-1 pt-1">
+                  <Button type="button" variant="outline" size="sm" onClick={() => copyLink(g)} className="h-9 rounded-full border-[#E9DDC6] px-3 text-xs">
+                    <IconCopy size={14} /> Salin
+                  </Button>
+                  <Button type="button" variant="ink" size="sm" onClick={() => shareWA(g)} className="h-9 px-3 text-xs">
+                    <IconBrandWhatsapp size={14} /> Kirim WA
+                  </Button>
+                  {qrEnabled && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={qrLoadingId === g.id}
+                      onClick={() => void openGuestQr(g)}
+                      className="h-9 rounded-full border-[#E9DDC6] px-3 text-xs"
+                    >
+                      <IconQrcode size={14} /> QR
+                    </Button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => openEdit(g)}
+                    className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] hover:bg-[#F6EEDF]"
+                    aria-label={`Ubah ${g.name}`}
+                  >
+                    <IconPencil size={17} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(g)}
+                    className="flex size-9 items-center justify-center rounded-full text-[#6B5F50] hover:bg-[#F6E7E4] hover:text-[#9A3B2E]"
+                    aria-label={`Hapus ${g.name}`}
+                  >
+                    <IconTrash size={17} />
+                  </button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -664,9 +817,13 @@ export function GuestList({
               <IconUsers size={26} stroke={1.6} />
             </span>
             <p className="text-[15px]">
-              {guests.length ? "Tidak ada tamu yang cocok dengan filter atau pencarian ini." : "Belum ada tamu di daftar undanganmu."}
+              {guests.length
+                ? "Tidak ada tamu yang cocok dengan filter atau pencarian ini."
+                : monitoringOnly
+                  ? "Belum ada tamu yang ditambahkan oleh klien."
+                  : "Belum ada tamu di daftar undanganmu."}
             </p>
-            {!guests.length && (
+            {!guests.length && !monitoringOnly && (
               <Button type="button" variant="gold" onClick={openAdd} className="mt-4 h-10 px-5">
                 <IconPlus size={16} /> Tambah tamu pertama
               </Button>
@@ -799,12 +956,12 @@ export function GuestList({
 
               <label className="block space-y-1.5">
                 <span className="block text-xs font-medium text-[#1F1A14]">Jumlah Tamu</span>
-                <Input
-                  type="number"
-                  min={1}
+                <NumberInput
                   max={20}
-                  value={form.maxGuests}
-                  onChange={(e) => setForm((f) => ({ ...f, maxGuests: e.target.value }))}
+                  maxDigits={2}
+                  placeholder="1"
+                  value={String(form.maxGuests)}
+                  onValueChange={(maxGuests) => setForm((f) => ({ ...f, maxGuests }))}
                   className="h-10 rounded-xl border-[#E9DDC6] bg-white"
                 />
                 <span className="block text-[11px] text-[#8E8268]">Batas maksimal jumlah tamu untuk 1 undangan ini.</span>
@@ -892,6 +1049,71 @@ export function GuestList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* QR Check-in modal for manual share (when qrCheckIn is active) */}
+      <Dialog open={Boolean(qrTarget)} onOpenChange={(o) => !o && !qrBusy && setQrTarget(null)}>
+        <DialogContent className="border-[#EDE3CF] bg-[#FFFDF9] sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-(family-name:--font-landing-display) text-2xl font-normal text-[#1F1A14]">
+              QR Check-in untuk {qrTarget ? displayRecipient(qrTarget) : ""}
+            </DialogTitle>
+            <DialogDescription>
+              Pilih tampilan kartu QR, lalu kirim bersama tautan undangan ke WhatsApp tamu atau unduh gambarnya.
+            </DialogDescription>
+          </DialogHeader>
+          {qrTarget?.checkInToken && (
+            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Bentuk QR">
+              {(
+                [
+                  ["card", "Kartu undangan mini"],
+                  ["standard", "QR standar"],
+                ] as const
+              ).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={qrKind === k}
+                  onClick={() => setQrKind(k)}
+                  className={`flex flex-col items-center gap-3 rounded-2xl border p-3 transition ${
+                    qrKind === k ? "border-[#8A6424] ring-2 ring-[#8A6424]/20" : "border-[#E9DDC6] hover:border-[#8A6424]"
+                  }`}
+                >
+                  <span
+                    className={`flex h-44 w-full items-center justify-center rounded-xl ${
+                      k === "card" ? "bg-[linear-gradient(180deg,#FCF8F1,#F3E8D3)]" : "bg-[#F6EEDF]"
+                    }`}
+                  >
+                    {k === "card" ? (
+                      <span className="flex flex-col items-center gap-1 rounded-lg border border-[#8A6424]/40 bg-[#FCF8F1] px-3 py-2">
+                        <span className="text-[8px] tracking-[0.2em] text-[#8A6424]">THE WEDDING OF</span>
+                        <span className="max-w-28 truncate font-(family-name:--font-landing-display) text-sm text-[#1F1A14]">
+                          {qrCardMeta.couple}
+                        </span>
+                        <CheckInQr token={qrTarget.checkInToken ?? ""} size={76} />
+                      </span>
+                    ) : (
+                      <CheckInQr token={qrTarget.checkInToken ?? ""} size={130} />
+                    )}
+                  </span>
+                  <span className="text-sm font-medium text-[#1F1A14]">{label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={() => setQrTarget(null)} disabled={qrBusy} className="rounded-full">
+              Batal
+            </Button>
+            <Button type="button" variant="outline" disabled={qrBusy} onClick={() => void downloadGuestQr()} className="h-10 rounded-full px-5">
+              <IconDownload size={16} /> Unduh
+            </Button>
+            <Button type="button" variant="gold" disabled={qrBusy} onClick={() => void sendGuestQrOnWhatsapp()} className="h-10 px-5">
+              <IconBrandWhatsapp size={16} /> Kirim WA + QR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { checkChatRateLimit, clientIp } from "@/lib/chat-security";
 import { createNotification } from "@/lib/notifications";
 import { isValidPhoneDigits, normalizePhoneDigits } from "@/lib/phone";
 import { newCheckInToken } from "@/lib/checkin";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 const SelfCheckInSchema = z.object({
   slug: z.string().trim().min(1).max(120),
@@ -18,6 +19,9 @@ const SelfCheckInSchema = z.object({
 
 // POST /api/public/checkin — guest scans printed venue QR and records their own arrival
 export async function POST(req: Request) {
+  const blocked = await featureBlockedResponse("CHECK_IN");
+  if (blocked) return blocked;
+
   try {
     const parsed = SelfCheckInSchema.safeParse(await req.json().catch(() => null));
     if (!parsed.success) {

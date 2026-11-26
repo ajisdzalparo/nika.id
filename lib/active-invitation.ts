@@ -28,6 +28,10 @@ export const RESERVED_SLUGS = new Set([
   "api",
   "preview",
   "templates",
+  "kebijakan-privasi",
+  "syarat-layanan",
+  "garansi",
+  "hadir",
 ]);
 
 export function sanitizeSlug(raw: string): string {
@@ -125,7 +129,16 @@ async function createStarterInvitation(userId: string) {
   throw new Error("FAILED_CREATE_STARTER_INVITATION");
 }
 
+/** Invitations this account may open: its own, plus ones it was added to (a mitra's client). */
+export function invitationAccessWhere(userId: string): Prisma.InvitationWhereInput {
+  return { OR: [{ userId }, { members: { some: { userId } } }] };
+}
+
 async function ensureStarterInvitation(userId: string) {
+  // A client account created by a mitra works on the shared invitation; it gets no empty starter of its own
+  const shared = await prisma.invitation.findFirst({ where: { members: { some: { userId } } }, orderBy: { createdAt: "asc" } });
+  if (shared && !(await prisma.invitation.findFirst({ where: { userId }, select: { id: true } }))) return shared;
+
   const inFlight = starterInFlight.get(userId);
   if (inFlight) return inFlight;
 
@@ -149,7 +162,7 @@ export async function getActiveInvitation(userId: string, overrideId?: string | 
   const targetId = overrideId || (await getActiveInvitationIdFromCookie());
   if (targetId) {
     const found = await prisma.invitation.findFirst({
-      where: { id: targetId, userId },
+      where: { id: targetId, ...invitationAccessWhere(userId) },
     });
     if (found) return found;
   }
@@ -159,7 +172,7 @@ export async function getActiveInvitation(userId: string, overrideId?: string | 
 export async function listUserInvitations(userId: string) {
   await ensureStarterInvitation(userId);
   return prisma.invitation.findMany({
-    where: { userId },
+    where: invitationAccessWhere(userId),
     orderBy: { createdAt: "desc" },
     include: {
       _count: {

@@ -15,6 +15,7 @@ import { getMidtransConfig } from "@/lib/midtrans";
 import { getManualPaymentInfo, openOrderWhere } from "@/lib/payment";
 import { prisma } from "@/lib/prisma";
 import { REFERRAL_COOKIE, resolveReferralForBuyer } from "@/lib/referral";
+import { getPlanPrices } from "@/lib/system-settings";
 import type { PlanType } from "@/lib/limits";
 
 export default async function UpgradePage({
@@ -31,12 +32,12 @@ export default async function UpgradePage({
   const cookieStore = await cookies();
   const refCookie = cookieStore.get(REFERRAL_COOKIE)?.value;
 
-  const [catalogItems, manualInfo, midtrans, aiQuota, userMeta, referralRes, txRows, openManualOrder, openMidtransOrder] = await Promise.all([
+  const [catalogItems, manualInfo, midtrans, aiQuota, userMeta, referralRes, txRows, openManualOrder, openMidtransOrder, planPrices] = await Promise.all([
     getCatalog(),
     getManualPaymentInfo(),
     getMidtransConfig(),
     getAiQuota(session.user.id, currentPlan),
-    prisma.user.findUnique({ where: { id: session.user.id }, select: { agencyQuota: true } }),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { agencyQuota: true, accountType: true } }),
     resolveReferralForBuyer({ buyerId: session.user.id, buyerEmail: session.user.email, rawCode: refCookie }),
     prisma.transaction.findMany({
       where: { userId: session.user.id },
@@ -54,6 +55,7 @@ export default async function UpgradePage({
       where: openOrderWhere(session.user.id, active.id, "MIDTRANS"),
       orderBy: { createdAt: "desc" },
     }),
+    getPlanPrices(),
   ]);
 
   const initialOrder: CheckoutOrder | null = openManualOrder
@@ -119,13 +121,13 @@ export default async function UpgradePage({
       ? "MARKETPLACE"
       : resolvedParams?.pilih === "kredit"
         ? "AI_CREDIT"
-        : resolvedParams?.pilih === "mitra"
+        : resolvedParams?.pilih === "mitra" && userMeta?.accountType === "AGENCY"
           ? "AGENCY_QUOTA"
           : undefined;
 
   const initialReferral =
     referralRes.valid && referralRes.code
-      ? { code: referralRes.code, referrerName: referralRes.referrerName || "Mitra SatuMoment" }
+      ? { code: referralRes.code, referrerName: referralRes.referrerName || "Mitra SatuMoment", isAgency: referralRes.referrerIsAgency }
       : null;
 
   return (
@@ -135,8 +137,11 @@ export default async function UpgradePage({
         invitationId={active.id}
         invitationTitle={active.title}
         currentPlan={currentPlan}
+        planExpiresAt={active.planExpiresAt ? active.planExpiresAt.toISOString() : null}
         extraGuestQuota={active.extraGuestQuota ?? 0}
         agencyQuota={userMeta?.agencyQuota ?? 0}
+        isMitra={userMeta?.accountType === "AGENCY"}
+        planPrices={planPrices}
         aiQuota={aiQuota}
         initialKind={initialKind}
         initialMarketplaceTemplate={initialMarketplaceTemplate}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notifyMitraGranted } from "@/lib/mitra";
 import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
 
 const VALID_ROLES = ["USER", "admin"];
@@ -57,11 +58,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (typeof agencyVerified === "boolean") {
       data.agencyVerified = agencyVerified;
     }
+    // Mitra status is granted by an admin only; verified follows it
+    let grantingMitra = false;
     if (accountType === "PERSONAL" || accountType === "AGENCY") {
+      const before = await prisma.user.findUnique({ where: { id }, select: { accountType: true } });
+      grantingMitra = accountType === "AGENCY" && before?.accountType !== "AGENCY";
       data.accountType = accountType;
+      data.agencyVerified = accountType === "AGENCY";
     }
     if (typeof addAgencyQuota === "number" && Number.isInteger(addAgencyQuota) && addAgencyQuota > 0 && addAgencyQuota <= 500) {
       data.accountType = "AGENCY";
+      data.agencyVerified = true;
       data.agencyQuota = { increment: addAgencyQuota };
       data.agencyQuotaExpiresAt = new Date(Date.now() + 365 * 86_400_000);
     }
@@ -74,6 +81,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       where: { id },
       data,
     });
+    if (grantingMitra) await notifyMitraGranted(id);
 
     return NextResponse.json(user);
   } catch (error) {

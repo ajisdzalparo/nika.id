@@ -36,6 +36,12 @@ function LoginForm() {
       });
 
       if (result.error) {
+        // Unverified account: the server has just mailed a fresh activation link (sendOnSignIn)
+        if (result.error.code === "EMAIL_NOT_VERIFIED") {
+          toast.info("Email belum diaktivasi. Kami sudah mengirim ulang link aktivasi ke email Anda.");
+          router.push("/verification-sent?email=" + encodeURIComponent(email));
+          return;
+        }
         toast.error(result.error.message || "Login gagal");
         setLoading(false);
         return;

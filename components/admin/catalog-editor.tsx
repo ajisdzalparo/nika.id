@@ -34,6 +34,7 @@ import { CATALOG_CATEGORIES, type TemplateDefaultMusic } from "@/lib/catalog-sha
 import { ImageUploadField } from "./image-upload-field";
 import { ReferenceUploader } from "@/components/common/reference-uploader";
 import { MusicSourcePicker } from "@/components/common/music-source-picker";
+import { NumberInput } from "@/components/common/number-input";
 import { SelectField } from "@/components/ui/select";
 
 export interface CatalogDraft {
@@ -42,7 +43,7 @@ export interface CatalogDraft {
   name: string;
   description: string;
   category: string;
-  tier: "Gratis" | "Premium";
+  tier: "Gratis" | "Premium" | "Marketplace";
   kind: "ENGINE" | "CODE";
   theme: AiTheme | null;
   defaultMusic?: TemplateDefaultMusic | null;
@@ -53,6 +54,10 @@ export interface CatalogDraft {
   isFeatured: boolean;
   isNew: boolean;
   sortOrder: number;
+  price?: number;
+  platformFeePct?: number;
+  reviewStatus?: "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+  reviewNote?: string | null;
 }
 
 export const EMPTY_DRAFT: CatalogDraft = {
@@ -95,7 +100,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function Select<T extends string>({ value, options, onChange }: { value: T; options: readonly T[]; onChange: (v: T) => void }) {
   return (
-    <SelectField value={value} onChange={(e) => onChange(e.target.value as T)} className="px-3.5 text-[15px] data-[size=default]:h-11">
+    <SelectField value={value} onChange={(e) => onChange(e.target.value as T)} className="h-11 px-3.5 text-[15px]">
 
       {options.map((o) => (
         <option key={o} value={o}>
@@ -290,12 +295,35 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               />
             </Field>
             <Field label="Paket">
-              <Select value={d.tier} options={["Gratis", "Premium"] as const} onChange={(v) => set("tier", v)} />
+              <Select value={d.tier} options={["Gratis", "Premium", "Marketplace"] as const} onChange={(v) => set("tier", v)} />
             </Field>
             <Field label="Urutan" hint="Kecil = tampil lebih dulu.">
-              <input type="number" className={input} value={d.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} />
+              <NumberInput className={input} maxDigits={4} value={String(d.sortOrder)} onValueChange={(v) => set("sortOrder", Number(v || 0))} />
             </Field>
           </div>
+          {(d.tier === "Marketplace" || (d.price ?? 0) > 0) && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Harga Marketplace (Rp)" hint="0 = termasuk paket (bukan jualan kreator).">
+                <NumberInput
+                  className={input}
+                  format="thousands"
+                  prefix="Rp"
+                  max={500000}
+                  value={String(d.price ?? 0)}
+                  onValueChange={(v) => set("price", Number(v || 0))}
+                />
+              </Field>
+              <Field label="Komisi Platform (%)" hint="Bagian platform SatuMoment (0–80%).">
+                <NumberInput
+                  className={input}
+                  suffix="%"
+                  max={80}
+                  value={String(d.platformFeePct ?? 30)}
+                  onValueChange={(v) => set("platformFeePct", Number(v || 0))}
+                />
+              </Field>
+            </div>
+          )}
           <Field label="Link referensi inspirasi (opsional)" hint="Catatan internal untuk admin, tidak tampil ke publik. Pakai sebagai inspirasi gaya, jangan menyalin desain orang lain.">
             <input className={input} value={d.referenceUrl} onChange={(e) => set("referenceUrl", e.target.value)} placeholder="https://…" />
           </Field>

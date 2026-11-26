@@ -159,7 +159,7 @@ export function LandingChatWidget({ whatsapp }: { whatsapp: string | null }) {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 space-y-3.5 overflow-y-auto px-4 py-4 [scrollbar-width:thin]">
+          <div className="flex-1 space-y-3.5 overflow-y-auto px-4 py-4">
             {messages.map((m) => {
               const isUser = m.sender === "USER";
               return (

@@ -14,6 +14,7 @@ import {
   IconWallet,
 } from "@tabler/icons-react";
 import { SiteHeader } from "@/components/site-header";
+import { NumberInput } from "@/components/common/number-input";
 
 interface ReferralSummary {
   code: string;
@@ -147,7 +148,7 @@ export default function DompetPage() {
           <header className="space-y-2">
             <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">Dompet</p>
             <h2 className="font-serif text-5xl font-medium">Saldo & penarikan</h2>
-            <p className="max-w-2xl text-zinc-600">Pemasukan dari komisi referral dan penjualan template masuk ke sini, lalu bisa ditarik ke rekening atau e-wallet.</p>
+            <p className="max-w-2xl text-zinc-600">Pemasukan dari penjualan template (dan komisi referral lama) masuk ke sini, lalu bisa ditarik ke rekening atau e-wallet.</p>
           </header>
 
           {!data ? (
@@ -179,10 +180,10 @@ export default function DompetPage() {
                         <IconShare size={14} /> Program Referral
                       </p>
                       <h3 className="font-serif text-2xl font-medium text-[#1A1510] sm:text-3xl">
-                        Bagikan link, teman hemat 10%, kamu dapat komisi 15%
+                        Bagikan link, teman hemat 10%
                       </h3>
                       <p className="max-w-xl text-sm text-[#5E5446]">
-                        Setiap teman yang mendaftar atau checkout dengan kodemu mendapat diskon 10% (maks Rp15.000), dan 15% dari transaksi mereka (maks Rp100.000 per transaksi, di luar top-up Kredit AI) masuk ke Dompet ini.
+                        Teman yang mendaftar atau checkout dengan kodemu mendapat diskon 10% (maks Rp15.000) di transaksi pertamanya, di luar top-up Kredit AI. Punya usaha atau ingin ikut menjual? Gabung Program Mitra untuk mendapat bonus kuota undangan.
                       </p>
 
                       <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-[#5E5446]">
@@ -193,10 +194,14 @@ export default function DompetPage() {
                         <span>
                           <strong className="font-serif text-lg tabular-nums text-[#1A1510]">{referral.conversions}</strong> transaksi berhasil
                         </span>
-                        <span>·</span>
-                        <span>
-                          Total komisi <strong className="font-serif text-lg tabular-nums text-[#8A6424]">{rupiah(referral.totalCommission)}</strong>
-                        </span>
+                        {referral.totalCommission > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>
+                              Komisi lama <strong className="font-serif text-lg tabular-nums text-[#8A6424]">{rupiah(referral.totalCommission)}</strong>
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -283,7 +288,7 @@ export default function DompetPage() {
                           rel="noreferrer"
                           className="inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[#E9DDC6] bg-white px-4 text-xs font-medium text-[#1A1510] hover:bg-[#F6EEDF]"
                         >
-                          <IconBrandWhatsapp size={15} className="text-[#1F9D55]" /> Bagikan WA
+                          <IconBrandWhatsapp size={15} className="text-[#8A6424]" /> Bagikan WA
                         </a>
                       </div>
                     </div>
@@ -347,7 +352,7 @@ export default function DompetPage() {
                         })}
                       </ul>
                     ) : (
-                      <p className="mt-3 text-sm text-zinc-500">Belum ada pemasukan. Komisi referral dan penjualan template akan muncul di sini.</p>
+                      <p className="mt-3 text-sm text-zinc-500">Belum ada pemasukan. Hasil penjualan template akan muncul di sini.</p>
                     )}
                   </div>
                 </section>
@@ -376,18 +381,26 @@ export default function DompetPage() {
                       <input className={field} placeholder={form.method === "BANK" ? "Contoh: BCA" : "Contoh: GoPay"} value={form.provider} onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))} required />
                     </label>
                     <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B5F50]">{form.method === "BANK" ? "Nomor rekening" : "Nomor HP e-wallet"}</span>
-                      <input className={field} inputMode="numeric" value={form.accountNumber} onChange={(e) => setForm((f) => ({ ...f, accountNumber: e.target.value }))} required />
+                      <NumberInput
+                        className={field}
+                        maxDigits={20}
+                        placeholder={form.method === "BANK" ? "1234567890" : "081234567890"}
+                        value={form.accountNumber}
+                        onValueChange={(accountNumber) => setForm((f) => ({ ...f, accountNumber }))}
+                        required
+                      />
                     </label>
                     <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B5F50]">Nama pemilik</span>
                       <input className={field} placeholder="Sesuai buku tabungan / akun" value={form.accountName} onChange={(e) => setForm((f) => ({ ...f, accountName: e.target.value }))} required />
                     </label>
-                    <input
+                    <NumberInput
                       className={field}
+                      format="thousands"
+                      prefix="Rp"
                       aria-label={`Jumlah penarikan, minimal ${rupiah(data.minWithdrawal)}`}
-                      placeholder={`Jumlah (min ${rupiah(data.minWithdrawal)})`}
-                      inputMode="numeric"
-                      value={form.amount ? Number(form.amount.replace(/\D/g, "") || 0).toLocaleString("id-ID") : ""}
-                      onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value.replace(/\D/g, "") }))}
+                      placeholder={`Jumlah (min ${rupiah(data.minWithdrawal).replace(/^Rp\s?/, "")})`}
+                      value={form.amount}
+                      onValueChange={(amount) => setForm((f) => ({ ...f, amount }))}
                       required
                     />
                     <button type="submit" disabled={!canWithdraw || sending} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-zinc-900 text-sm font-medium text-zinc-50 disabled:opacity-50">

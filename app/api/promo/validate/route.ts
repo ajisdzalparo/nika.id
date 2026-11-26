@@ -5,7 +5,7 @@ import { resolvePromoCode } from "@/lib/promo";
 import { describePromo, sanitizePromoCode, type PromoCheckoutKind } from "@/lib/promo-shared";
 import { resolveReferralForBuyer, sanitizeReferralCode } from "@/lib/referral";
 
-const KINDS: PromoCheckoutKind[] = ["PLAN", "GUEST_ADDON", "AI_CREDIT", "AGENCY_QUOTA", "MARKETPLACE"];
+const KINDS: PromoCheckoutKind[] = ["PLAN", "GUEST_ADDON", "AI_CREDIT", "AGENCY_QUOTA", "MARKETPLACE", "RENEWAL"];
 
 // GET /api/promo/validate?code=..&kind=..&amount=.. — checks the checkout "Kode promo" field.
 // Admin promo codes come first; anything else is tried as a user's referral code.
@@ -37,6 +37,11 @@ export async function GET(request: Request) {
   if (!refRes.valid || !refRes.code) {
     const exists = await prisma.user.findUnique({ where: { referralCode: sanitizeReferralCode(code) }, select: { id: true } });
     return NextResponse.json({ valid: false, message: exists ? refRes.reason || "Kode promo tidak berlaku." : "Kode promo tidak ditemukan." }, { status: 400 });
+  }
+  if (refRes.referrerIsAgency) {
+    // Mitra code: no client discount, only valid on plan purchases (the mitra earns bonus quota)
+    if (kind !== "PLAN") return NextResponse.json({ valid: false, message: "Kode mitra hanya berlaku untuk pembelian paket undangan." }, { status: 400 });
+    return NextResponse.json({ valid: true, type: "MITRA", code: refRes.code, label: `Dibantu mitra ${refRes.referrerName || "SatuMoment"}` });
   }
   return NextResponse.json({ valid: true, type: "REFERRAL", code: refRes.code, label: `Kode dari ${refRes.referrerName || "teman"} · diskon 10% (maks Rp15rb)` });
 }

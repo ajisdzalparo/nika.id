@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { getPlanPrices } from "@/lib/system-settings";
+import type { PlanPrices } from "@/lib/limits";
 import { GUEST_ADDON_PRICE, GUEST_ADDON_SIZE, PLAN_LIMITS, type PlanType } from "@/lib/limits";
 import {
   DEFAULT_OPENROUTER_CHAT_MODEL,
@@ -50,17 +52,25 @@ export async function getOrCreateUserThread(userId: string): Promise<{
   if (supportThread && supportMessage) {
     let thread = await supportThread.findUnique({ where: { userId } });
     if (!thread) {
-      thread = await supportThread.create({
-        data: { userId, mode: "AI", status: "OPEN" },
-      });
-      await supportMessage.create({
-        data: {
-          threadId: thread.id,
-          sender: "AI",
-          content:
-            "Halo! Saya asisten AI SatuMoment. Ada yang bisa dibantu soal paket, pembayaran, musik latar, atau edit undangan? Kamu juga bisa klik tombol \"Hubungi Admin\" kapan saja untuk terhubung langsung dengan admin.",
-        },
-      });
+      try {
+        thread = await supportThread.create({
+          data: { userId, mode: "AI", status: "OPEN" },
+        });
+        await supportMessage.create({
+          data: {
+            threadId: thread.id,
+            sender: "AI",
+            content:
+              "Halo! Saya asisten AI SatuMoment. Ada yang bisa dibantu soal paket, pembayaran, musik latar, atau edit undangan? Kamu juga bisa klik tombol \"Hubungi Admin\" kapan saja untuk terhubung langsung dengan admin.",
+          },
+        });
+      } catch (err) {
+        // Concurrent /api/chat and /api/chat/stream on first visit can race on the unique userId constraint
+        const code = typeof err === "object" && err && "code" in err ? (err as { code?: string }).code : undefined;
+        if (code !== "P2002") throw err;
+        thread = await supportThread.findUnique({ where: { userId } });
+        if (!thread) throw err;
+      }
     }
     const messages = await supportMessage.findMany({
       where: { threadId: thread.id },
@@ -81,20 +91,23 @@ export async function getOrCreateUserThread(userId: string): Promise<{
 
   if (!thread) {
     const threadId = crypto.randomUUID();
-    await prisma.$executeRaw`
+    const inserted = await prisma.$executeRaw`
       INSERT INTO "SupportThread" ("id", "userId", "mode", "status", "lastMessageAt", "createdAt", "updatedAt")
       VALUES (${threadId}, ${userId}, 'AI', 'OPEN', NOW(), NOW(), NOW())
+      ON CONFLICT ("userId") DO NOTHING
     `;
-    const welcomeId = crypto.randomUUID();
-    const welcomeText =
-      'Halo! Saya asisten AI SatuMoment. Ada yang bisa dibantu soal paket, pembayaran, musik latar, atau edit undangan? Kamu juga bisa klik tombol "Hubungi Admin" kapan saja untuk terhubung langsung dengan admin.';
-    await prisma.$executeRaw`
-      INSERT INTO "SupportMessage" ("id", "threadId", "sender", "content", "createdAt")
-      VALUES (${welcomeId}, ${threadId}, 'AI', ${welcomeText}, NOW())
-    `;
+    if (inserted > 0) {
+      const welcomeId = crypto.randomUUID();
+      const welcomeText =
+        'Halo! Saya asisten AI SatuMoment. Ada yang bisa dibantu soal paket, pembayaran, musik latar, atau edit undangan? Kamu juga bisa klik tombol "Hubungi Admin" kapan saja untuk terhubung langsung dengan admin.';
+      await prisma.$executeRaw`
+        INSERT INTO "SupportMessage" ("id", "threadId", "sender", "content", "createdAt")
+        VALUES (${welcomeId}, ${threadId}, 'AI', ${welcomeText}, NOW())
+      `;
+    }
     const createdRows = await prisma.$queryRaw<SupportThreadRow[]>`
       SELECT "id", "userId", "mode", "status", "lastMessageAt", "createdAt"
-      FROM "SupportThread" WHERE "id" = ${threadId} LIMIT 1
+      FROM "SupportThread" WHERE "userId" = ${userId} LIMIT 1
     `;
     thread = createdRows[0];
   }
@@ -347,7 +360,9 @@ export async function getThreadMessagesForAdmin(threadId: string) {
   `;
 }
 
-function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisitor = false): { reply: string; suggestAdmin: boolean } {
+const rp = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
+
+function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisitor: boolean, prices: PlanPrices): { reply: string; suggestAdmin: boolean } {
   const q = userText.toLowerCase();
   const hasImageOnly = !q.trim() || q === "[lampiran gambar]";
   if (hasImageOnly) {
@@ -383,7 +398,7 @@ function buildKnowledgeFallback(userText: string, plan: PlanType, isPublicVisito
           : `Paket aktifmu saat ini **${PLAN_LIMITS[plan].name}**. Upgrade ke paket lebih tinggi cukup membayar selisih harganya di /upgrade.`;
 
     return {
-      reply: `Daftar paket SatuMoment (sekali bayar per undangan):\n• **Hemat (Rp49.000)**: 100 tamu, 10 foto, 1× Desain AI, aktif 90 hari.\n• **Premium (Rp79.000)**: 300 tamu, 20 foto, 5× Desain AI, template Premium & Kisah Cinta, aktif 180 hari.\n• **Eksklusif (Rp99.000)**: Tamu & galeri tanpa batas, 10× Desain AI, Video, Tanpa Watermark, aktif 1 tahun.\n• **Add-on Tamu**: +${GUEST_ADDON_SIZE} tamu seharga Rp${GUEST_ADDON_PRICE.toLocaleString("id-ID")}.\n• **Top-up Kredit AI**: 10 kredit Rp29.000 · 30 kredit Rp75.000 · 100 kredit Rp229.000 (1 generate = 1 kredit, dengan referensi = 2 kredit).\n• **Mitra B2B (/mitra)**: Paket grosir Mitra 10 (Rp299rb), Mitra 30 (Rp749rb), Mitra 100 (Rp1,99jt) + link isi data klien tanpa login.\n• **Referral (/dompet)**: Teman dapat diskon 10% (maks Rp15rb), kamu dapat komisi 15% (maks Rp100rb per transaksi; tidak berlaku untuk top-up Kredit AI & template marketplace).\n\n${statusNote}`,
+      reply: `Daftar paket SatuMoment (sekali bayar per undangan):\n• **Hemat (${rp(prices.HEMAT)})**: semua template, 100 tamu, 10 foto, 1× Desain AI, aktif 90 hari.\n• **Premium (${rp(prices.PREMIUM)})**: semua template, 300 tamu, 20 foto, 5× Desain AI, Kisah Cinta, aktif 180 hari.\n• **Eksklusif (${rp(prices.EKSKLUSIF)})**: semua template, tamu & galeri tanpa batas, 10× Desain AI, Video, Tanpa Watermark, aktif 1 tahun.\n• **Add-on Tamu**: +${GUEST_ADDON_SIZE} tamu seharga Rp${GUEST_ADDON_PRICE.toLocaleString("id-ID")}.\n• **Top-up Kredit AI**: 10 kredit Rp29.000 · 30 kredit Rp75.000 · 100 kredit Rp229.000 (1 generate = 1 kredit, dengan referensi = 2 kredit).\n• **Mitra B2B (/mitra)**: Paket grosir Mitra 10 (Rp299rb), Mitra 30 (Rp749rb), Mitra 100 (Rp1,99jt) + link isi data klien tanpa login.\n• **Referral (/dompet)**: Teman yang memakai kodemu dapat diskon 10% (maks Rp15rb) di transaksi pertamanya (tidak berlaku untuk top-up Kredit AI). Mitra mendapat bonus 1 kuota undangan setiap 3 klien membeli paket lewat kodenya.\n\n${statusNote}`,
       suggestAdmin: false,
     };
   }
@@ -453,7 +468,8 @@ export async function generateSupportAiReply(params: {
   isPublicVisitor?: boolean;
 }): Promise<{ reply: string; suggestAdmin: boolean }> {
   const { userMessage, history, userPlan, invitationTitle, isPublicVisitor = false } = params;
-  const fallback = buildKnowledgeFallback(userMessage, userPlan, isPublicVisitor);
+  const prices = await getPlanPrices();
+  const fallback = buildKnowledgeFallback(userMessage, userPlan, isPublicVisitor, prices);
 
   if (!isOpenRouterConfigured()) {
     return fallback;
@@ -480,9 +496,9 @@ export async function generateSupportAiReply(params: {
             "Kamu adalah asisten customer support resmi SatuMoment (platform undangan pernikahan digital Indonesia).",
             "Jawab ramah, ringkas, jelas dalam Bahasa Indonesia.",
             "Fakta layanan:",
-            "- Paket Hemat: Rp49.000 (90 hari, 100 tamu, 10 foto, 1x Desain AI, template Gratis).",
-            "- Paket Premium: Rp79.000 (180 hari, 300 tamu, 20 foto, 5x Desain AI, template Gratis & Premium, Kisah Cinta).",
-            "- Paket Eksklusif: Rp99.000 (Aktif 1 tahun, tamu & foto tanpa batas, 10x Desain AI, Video, Tanpa Watermark).",
+            `- Paket Hemat: ${rp(prices.HEMAT)} (90 hari, 100 tamu, 10 foto, 1x Desain AI). Semua paket berbayar membuka semua template katalog.`,
+            `- Paket Premium: ${rp(prices.PREMIUM)} (180 hari, 300 tamu, 20 foto, 5x Desain AI, Kisah Cinta).`,
+            `- Paket Eksklusif: ${rp(prices.EKSKLUSIF)} (Aktif 1 tahun, tamu & foto tanpa batas, 10x Desain AI, Video, Tanpa Watermark).`,
             "- Add-on +100 tamu: Rp15.000.",
             "- Upgrade dari paket lebih rendah cukup bayar selisih harga.",
             "- Pembayaran: Bayar Otomatis via Midtrans Snap (Virtual Account, QRIS, e-wallet, kartu) dan Transfer / QRIS Manual.",

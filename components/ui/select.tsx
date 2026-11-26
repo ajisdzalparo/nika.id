@@ -24,8 +24,11 @@ function SelectValue({
   return <SelectPrimitive.Value data-slot="select-value" {...props} />
 }
 
+// Size classes are plain utilities (not data-[size=…] variants) so a caller className such as h-11 can override them
+const TRIGGER_SIZE = { default: "h-10", sm: "h-8 rounded-lg px-2.5 text-xs" } as const
+
 const TRIGGER_CLASS =
-  "group/select border-input bg-white text-foreground data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground hover:border-ring/50 focus-visible:border-ring focus-visible:ring-ring/15 data-[state=open]:border-ring aria-invalid:ring-destructive/20 aria-invalid:border-destructive flex w-fit min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm whitespace-nowrap shadow-[0_1px_2px_rgba(26,21,16,.04)] transition-[color,box-shadow,border-color] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-10 data-[size=sm]:h-8 data-[size=sm]:rounded-lg data-[size=sm]:px-2.5 data-[size=sm]:text-xs *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+  "group/select border-input bg-white text-foreground data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground hover:border-ring/50 focus-visible:border-ring focus-visible:ring-ring/15 data-[state=open]:border-ring aria-invalid:ring-destructive/20 aria-invalid:border-destructive flex w-fit min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm whitespace-nowrap shadow-[0_1px_2px_rgba(26,21,16,.04)] transition-[color,box-shadow,border-color] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
 
 function SelectTrigger({
   className,
@@ -39,10 +42,7 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
-      className={cn(
-        TRIGGER_CLASS,
-        className
-      )}
+      className={cn(TRIGGER_CLASS, TRIGGER_SIZE[size], className)}
       {...props}
     >
       {children}
@@ -268,7 +268,7 @@ function SelectField({
         aria-label={ariaLabel}
         data-slot="select-trigger"
         data-size={size}
-        className={cn(TRIGGER_CLASS, "w-full", className)}
+        className={cn(TRIGGER_CLASS, TRIGGER_SIZE[size], "w-full", className)}
       >
         <span className="line-clamp-1">{findOptionLabel(children, current) ?? placeholder}</span>
         <ChevronDownIcon className="text-ring size-4" />

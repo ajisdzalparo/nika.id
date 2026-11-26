@@ -65,7 +65,9 @@ export interface WeddingData {
   };
   quote?: {
     text: string;
-    source: string; // e.g. "Qs. Ar-Rum: 21"
+    source: string; // e.g. "QS. Ar-Rum: 21", "Kejadian 2:24", or empty for a general quote
+    /** false hides the quote section entirely */
+    enabled?: boolean;
   };
   loveStory?: {
     enabled: boolean;

@@ -20,17 +20,20 @@ import { Switch } from "@/components/ui/switch";
 import type { BankAccount, PaymentAndContactSettings } from "@/lib/system-settings";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { PhoneInput } from "@/components/common/phone-input";
+import { NumberInput } from "@/components/common/number-input";
 import { normalizePhoneDigits, waLink } from "@/lib/phone";
+import { FeatureStatusManager } from "@/components/admin/feature-status-manager";
+import type { FeatureId, FeatureStatusMap } from "@/lib/features";
 
 interface SystemSettingsManagerProps {
   initialSettings: PaymentAndContactSettings;
+  initialFeatures: FeatureStatusMap;
+  featureNotes?: Partial<Record<FeatureId, string>>;
 }
 
-export function SystemSettingsManager({ initialSettings }: SystemSettingsManagerProps) {
+export function SystemSettingsManager({ initialSettings, initialFeatures, featureNotes }: SystemSettingsManagerProps) {
   const [maintenanceMode, setMaintenanceMode] = useState(initialSettings.maintenanceMode);
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
-  const [aiDesignEnabled, setAiDesignEnabled] = useState(initialSettings.aiDesignEnabled);
-  const [togglingAiDesign, setTogglingAiDesign] = useState(false);
 
   const [waNumber, setWaNumber] = useState(normalizePhoneDigits(initialSettings.manualWhatsapp));
   const [manualBanks, setManualBanks] = useState<BankAccount[]>(
@@ -72,30 +75,6 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
       toast.error("Gagal terhubung ke server");
     } finally {
       setTogglingMaintenance(false);
-    }
-  };
-
-  const handleToggleAiDesign = async (next: boolean) => {
-    setTogglingAiDesign(true);
-    setAiDesignEnabled(next);
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ aiDesignEnabled: next }),
-      });
-      const d = await res.json();
-      if (!res.ok) {
-        setAiDesignEnabled(!next);
-        return toast.error(d.message || "Gagal memperbarui status Desain AI");
-      }
-      setAiDesignEnabled(Boolean(d.settings?.aiDesignEnabled));
-      toast.success(next ? "Fitur Desain AI diaktifkan" : "Fitur Desain AI dinonaktifkan");
-    } catch {
-      setAiDesignEnabled(!next);
-      toast.error("Gagal terhubung ke server");
-    } finally {
-      setTogglingAiDesign(false);
     }
   };
 
@@ -211,43 +190,8 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
         </CardContent>
       </Card>
 
-      {/* Fitur Desain AI */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle>Fitur Desain AI (User)</CardTitle>
-              <CardDescription>Kontrol apakah user dapat membuat tema undangan baru menggunakan AI</CardDescription>
-            </div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                aiDesignEnabled
-                  ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border border-zinc-200 bg-zinc-100 text-zinc-600"
-              }`}
-            >
-              {aiDesignEnabled ? "Aktif" : "Dinonaktifkan"}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="font-medium">Izinkan Generate Desain AI</p>
-              <p className="text-sm text-muted-foreground">Matikan sementara jika saldo API AI belum diisi agar user langsung diarahkan ke Koleksi Template</p>
-            </div>
-            <div className="flex items-center gap-2.5">
-              {togglingAiDesign && <IconLoader2 size={16} className="animate-spin text-muted-foreground" />}
-              <Switch
-                checked={aiDesignEnabled}
-                disabled={togglingAiDesign}
-                onCheckedChange={handleToggleAiDesign}
-                aria-label="Aktifkan Fitur Desain AI"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Per-feature status (Desain AI, WA Blast, Kanvas, …) */}
+      <FeatureStatusManager initialStatuses={initialFeatures} notes={featureNotes} />
 
       {/* Pembayaran & Kontak */}
       <Card>
@@ -260,7 +204,7 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
             {/* WhatsApp Admin (WA Biasa) */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <IconBrandWhatsapp size={18} className="text-emerald-600" />
+                <IconBrandWhatsapp size={18} className="text-[#8A6424]" />
                 <h4 className="font-semibold">WhatsApp Admin (Konfirmasi Manual)</h4>
               </div>
               <div className="space-y-2">
@@ -341,12 +285,12 @@ export function SystemSettingsManager({ initialSettings }: SystemSettingsManager
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor={`bank-number-${idx}`} className="text-xs">Nomor Rekening</Label>
-                      <Input
+                      <NumberInput
                         id={`bank-number-${idx}`}
+                        maxDigits={20}
                         value={bank.number}
-                        onChange={(e) => updateBankField(idx, "number", e.target.value)}
+                        onValueChange={(v) => updateBankField(idx, "number", v)}
                         placeholder="1234567890"
-                        inputMode="numeric"
                       />
                     </div>
                     <div className="space-y-1.5">

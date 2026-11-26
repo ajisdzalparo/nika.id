@@ -1,4 +1,13 @@
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_PLAN_PRICES, type PlanPrices } from "@/lib/limits";
+import {
+  defaultFeatureStatuses,
+  FEATURE_STATUSES,
+  isFeatureId,
+  type FeatureId,
+  type FeatureStatus,
+  type FeatureStatusMap,
+} from "@/lib/features";
 
 export interface BankAccount {
   bank: string;
@@ -34,6 +43,10 @@ const KEYS = {
   manualQrisImage: "manual_qris_image",
   midtransEnabled: "midtrans_enabled",
   aiDesignEnabled: "ai_design_enabled",
+  /** JSON { [FeatureId]: FeatureStatus } — see lib/features.ts */
+  featureFlags: "feature_flags",
+  /** JSON { HEMAT, PREMIUM, EKSKLUSIF } in rupiah — overrides the defaults in lib/limits.ts */
+  planPrices: "plan_prices",
 } as const;
 
 function parseEnvBanks(): BankAccount[] {
@@ -116,9 +129,69 @@ export async function isMaintenanceMode(): Promise<boolean> {
   return map[KEYS.maintenanceMode] === "true";
 }
 
+/** Desain AI is now one of the feature statuses; kept for the pages and APIs that already call it. */
 export async function isAiDesignEnabled(): Promise<boolean> {
-  const map = await readSettingMap([KEYS.aiDesignEnabled]);
-  return map[KEYS.aiDesignEnabled] === "true";
+  return (await getFeatureStatus("DESAIN_AI")) === "ACTIVE";
+}
+
+function parseFeatureFlags(raw: string | undefined): Partial<FeatureStatusMap> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const out: Partial<FeatureStatusMap> = {};
+    for (const [id, status] of Object.entries(parsed)) {
+      if (isFeatureId(id) && typeof status === "string" && (FEATURE_STATUSES as readonly string[]).includes(status)) {
+        out[id] = status as FeatureStatus;
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Status of every registered feature: saved value, else the legacy AI toggle, else the registry default. */
+export async function getFeatureStatuses(): Promise<FeatureStatusMap> {
+  const map = await readSettingMap([KEYS.featureFlags, KEYS.aiDesignEnabled]);
+  const saved = parseFeatureFlags(map[KEYS.featureFlags]);
+  const statuses = { ...defaultFeatureStatuses(), ...saved };
+  if (!saved.DESAIN_AI && KEYS.aiDesignEnabled in map) {
+    statuses.DESAIN_AI = map[KEYS.aiDesignEnabled] === "true" ? "ACTIVE" : "COMING_SOON";
+  }
+  return statuses;
+}
+
+export async function getFeatureStatus(id: FeatureId): Promise<FeatureStatus> {
+  return (await getFeatureStatuses())[id];
+}
+
+/** Merge status changes into the saved map (unknown ids are ignored by the caller's schema). */
+export async function setFeatureStatuses(changes: Partial<FeatureStatusMap>): Promise<FeatureStatusMap> {
+  const next = { ...(await getFeatureStatuses()), ...changes };
+  await upsertSetting(KEYS.featureFlags, JSON.stringify(next));
+  // Keep the legacy key in sync for anything still reading it directly
+  if (changes.DESAIN_AI) await upsertSetting(KEYS.aiDesignEnabled, String(changes.DESAIN_AI === "ACTIVE"));
+  return next;
+}
+
+/** Current plan prices: the admin's values over the defaults. */
+export async function getPlanPrices(): Promise<PlanPrices> {
+  const map = await readSettingMap([KEYS.planPrices]);
+  const prices = { ...DEFAULT_PLAN_PRICES };
+  try {
+    const saved = JSON.parse(map[KEYS.planPrices] ?? "{}") as Partial<Record<keyof PlanPrices, unknown>>;
+    for (const k of Object.keys(prices) as (keyof PlanPrices)[]) {
+      const v = Number(saved[k]);
+      if (Number.isInteger(v) && v >= 1000) prices[k] = v;
+    }
+  } catch {
+    // Bad JSON: keep the defaults
+  }
+  return prices;
+}
+
+export async function setPlanPrices(prices: PlanPrices): Promise<void> {
+  await upsertSetting(KEYS.planPrices, JSON.stringify(prices));
 }
 
 export async function getSystemSettings(): Promise<PaymentAndContactSettings> {

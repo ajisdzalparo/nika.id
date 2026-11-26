@@ -20,7 +20,7 @@ function VerificationSentContent() {
   const resend = async () => {
     if (!email) return;
     setState("sending");
-    const { error } = await authClient.sendVerificationEmail({ email, callbackURL: "/dashboard" });
+    const { error } = await authClient.sendVerificationEmail({ email });
     setState(error ? "error" : "sent");
     if (!error) setCooldown(60);
   };

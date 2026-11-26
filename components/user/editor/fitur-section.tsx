@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { IconClipboardCheck, IconGift, IconHeartHandshake, IconMusic, IconPlus, IconTrash, IconUsersGroup } from "@tabler/icons-react";
+import { IconClipboardCheck, IconGift, IconHeartHandshake, IconMusic, IconPlus, IconQuote, IconTrash, IconUsersGroup } from "@tabler/icons-react";
 import { MusicSourcePicker } from "@/components/common/music-source-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,86 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectField } from "@/components/ui/select";
 import { WeddingData } from "@/types/wedding";
+import { QUOTE_PRESETS } from "@/lib/quote-presets";
+import { Switch } from "@/components/ui/switch";
 
 interface FiturSectionProps {
   data: WeddingData;
   setData: React.Dispatch<React.SetStateAction<WeddingData & { extra?: Record<string, string> }>>;
-  handleUpdate: (section: "story" | "extra" | "music", field: string, value: any) => void;
+  handleUpdate: (section: "story" | "extra" | "music" | "quote", field: string, value: any) => void;
   renderExtraFields: (section: string) => React.ReactNode;
+}
+
+function QuoteEditor({ data, setData }: Pick<FiturSectionProps, "data" | "setData">) {
+  const quote = data.quote ?? { text: QUOTE_PRESETS[0].text, source: QUOTE_PRESETS[0].source, enabled: true };
+  const enabled = quote.enabled !== false;
+  const presetId = QUOTE_PRESETS.find((p) => p.text === quote.text)?.id ?? "CUSTOM";
+  const setQuote = (next: Partial<NonNullable<WeddingData["quote"]>>) => setData((prev) => ({ ...prev, quote: { ...quote, ...next } }));
+  const groups = [...new Set(QUOTE_PRESETS.map((p) => p.group))];
+
+  return (
+    <section className="rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1]/55 p-5 sm:p-6 space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5EDDD] text-[#8A6424]">
+            <IconQuote size={20} stroke={1.7} />
+          </span>
+          <div>
+            <h3 className="font-serif text-xl font-medium text-[#1F1A14]">Ayat / Kutipan Pembuka</h3>
+            <p className="text-xs text-[#6B5F50]">Pilih ayat Al-Qur&apos;an, ayat Alkitab, kutipan umum, atau tulis sendiri.</p>
+          </div>
+        </div>
+        <Switch checked={enabled} onCheckedChange={(v) => setQuote({ enabled: v })} aria-label="Tampilkan kutipan" />
+      </div>
+
+      {enabled && (
+        <>
+          <label className="block space-y-1.5">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Pilihan kutipan</span>
+            <SelectField
+              value={presetId}
+              onChange={(e) => {
+                const p = QUOTE_PRESETS.find((x) => x.id === e.target.value);
+                if (p) setQuote({ text: p.text, source: p.source });
+              }}
+              aria-label="Pilihan kutipan"
+              className="h-11"
+            >
+              {groups.map((g) => (
+                <optgroup key={g} label={g}>
+                  {QUOTE_PRESETS.filter((p) => p.group === g).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+              <option value="CUSTOM">Tulis sendiri</option>
+            </SelectField>
+          </label>
+          <label className="block space-y-1.5">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Isi kutipan</span>
+            <Textarea
+              value={quote.text}
+              onChange={(e) => setQuote({ text: e.target.value })}
+              rows={4}
+              placeholder="Tulis ayat atau kutipan yang berarti untuk kalian…"
+              className="rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B5F50]">Sumber (opsional)</span>
+            <Input
+              value={quote.source}
+              onChange={(e) => setQuote({ source: e.target.value })}
+              placeholder="QS. Ar-Rum: 21, Kejadian 2:24, atau kosongkan"
+              className="h-11 rounded-xl border-[#E9DDC6] bg-[#FFFDF9]"
+            />
+          </label>
+        </>
+      )}
+    </section>
+  );
 }
 
 export function FiturSection({ data, setData, handleUpdate, renderExtraFields }: FiturSectionProps) {
@@ -309,6 +383,9 @@ export function FiturSection({ data, setData, handleUpdate, renderExtraFields }:
           </div>
         </div>
       </section>
+
+      {/* Opening quote: Islamic, Christian or general, or hidden */}
+      <QuoteEditor data={data} setData={setData} />
 
       {/* Love Story */}
       <section className="rounded-2xl border border-[#E9DDC6] bg-[#FCF8F1]/55 p-5 sm:p-6 space-y-4">

@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
-import { getSystemSettings, SYSTEM_SETTING_KEYS, upsertSetting } from "@/lib/system-settings";
+import { getFeatureStatuses, getPlanPrices, getSystemSettings, setFeatureStatuses, setPlanPrices, SYSTEM_SETTING_KEYS, upsertSetting } from "@/lib/system-settings";
+import { FEATURE_IDS, FEATURE_STATUSES } from "@/lib/features";
+
+async function settingsPayload() {
+  const [settings, features, planPrices] = await Promise.all([getSystemSettings(), getFeatureStatuses(), getPlanPrices()]);
+  return { settings, features, planPrices };
+}
 
 const BankSchema = z.object({
   bank: z.string().trim().min(1, "Nama bank wajib diisi").max(40),
-  number: z.string().trim().min(3, "Nomor rekening wajib diisi").max(40),
+  number: z.string().trim().regex(/^\d+$/, "Nomor rekening hanya boleh berisi angka").min(3, "Nomor rekening wajib diisi").max(40),
   holder: z.string().trim().min(1, "Atas nama wajib diisi").max(100),
 });
 
@@ -21,13 +27,23 @@ const PatchSettingsSchema = z.object({
   manualQrisImage: z.string().trim().max(500).refine((v) => v === "" || /^https?:\/\//.test(v), "URL gambar QRIS tidak valid").optional(),
   midtransEnabled: z.boolean().optional(),
   aiDesignEnabled: z.boolean().optional(),
+  // Per-feature status (Aktif / Maintenance / Segera hadir); only the features sent are changed
+  features: z.partialRecord(z.enum(FEATURE_IDS as [string, ...string[]]), z.enum(FEATURE_STATUSES)).optional(),
+  // Plan prices in rupiah; must rise from Hemat to Eksklusif so upgrades always pay a positive difference
+  planPrices: z
+    .object({
+      HEMAT: z.number().int().min(10_000, "Harga minimal Rp10.000").max(10_000_000),
+      PREMIUM: z.number().int().min(10_000, "Harga minimal Rp10.000").max(10_000_000),
+      EKSKLUSIF: z.number().int().min(10_000, "Harga minimal Rp10.000").max(10_000_000),
+    })
+    .refine((p) => p.HEMAT < p.PREMIUM && p.PREMIUM < p.EKSKLUSIF, "Harga harus naik: Hemat < Premium < Eksklusif")
+    .optional(),
 });
 
 export async function GET(request: Request) {
   try {
     await requireAdmin(request);
-    const settings = await getSystemSettings();
-    return NextResponse.json({ settings });
+    return NextResponse.json(await settingsPayload());
   } catch (error) {
     return apiErrorResponse(error, "Gagal memuat pengaturan");
   }
@@ -67,16 +83,24 @@ export async function PATCH(request: Request) {
       ops.push(upsertSetting(SYSTEM_SETTING_KEYS.midtransIsProduction, String(d.midtransIsProduction)));
     }
 
-    for (const key of ["manualTransferEnabled", "manualQrisEnabled", "midtransEnabled", "aiDesignEnabled"] as const) {
+    for (const key of ["manualTransferEnabled", "manualQrisEnabled", "midtransEnabled"] as const) {
       if (typeof d[key] === "boolean") ops.push(upsertSetting(SYSTEM_SETTING_KEYS[key], String(d[key])));
     }
+    // Legacy AI switch and the feature list write the same status, so they can't disagree
+    const featureChanges = { ...(d.features ?? {}) } as Parameters<typeof setFeatureStatuses>[0];
+    if (typeof d.aiDesignEnabled === "boolean" && !featureChanges.DESAIN_AI) {
+      featureChanges.DESAIN_AI = d.aiDesignEnabled ? "ACTIVE" : "COMING_SOON";
+    }
+    if (Object.keys(featureChanges).length) {
+      ops.push(setFeatureStatuses(featureChanges).then(() => undefined));
+    }
+    if (d.planPrices) ops.push(setPlanPrices(d.planPrices));
     if (typeof d.manualQrisImage === "string") {
       ops.push(upsertSetting(SYSTEM_SETTING_KEYS.manualQrisImage, d.manualQrisImage));
     }
 
     await Promise.all(ops);
-    const settings = await getSystemSettings();
-    return NextResponse.json({ settings });
+    return NextResponse.json(await settingsPayload());
   } catch (error) {
     return apiErrorResponse(error, "Gagal menyimpan pengaturan");
   }

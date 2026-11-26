@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { LEDGER_ACCOUNT } from "@/lib/ledger";
-import { computeReferralDiscount } from "@/lib/limits";
+import { MITRA_BONUS_EVERY, computeReferralDiscount } from "@/lib/limits";
 
 export const REFERRAL_COOKIE = "uy_ref";
 
@@ -77,12 +77,14 @@ export interface ReferralResolution {
   code: string | null;
   referrerId: string | null;
   referrerName: string | null;
+  /** Mitra (agency) codes give the client no discount; the mitra earns bonus quota instead */
+  referrerIsAgency: boolean;
   reason?: string;
 }
 
 /**
  * Validates whether `buyerId` can apply `rawCode` (or their already-linked `referredById` code)
- * for the first-time 10% referral discount.
+ * on their first paid order: a 10% discount for a regular user's code, or no discount (mitra bonus quota) for a mitra code.
  */
 export async function resolveReferralForBuyer(input: {
   buyerId: string;
@@ -95,7 +97,7 @@ export async function resolveReferralForBuyer(input: {
       select: {
         id: true,
         email: true,
-        referredBy: { select: { id: true, name: true, email: true, referralCode: true } },
+        referredBy: { select: { id: true, name: true, email: true, referralCode: true, accountType: true } },
       },
     }),
     prisma.transaction.findFirst({
@@ -104,28 +106,29 @@ export async function resolveReferralForBuyer(input: {
     }),
   ]);
 
-  if (!buyer) return { valid: false, code: null, referrerId: null, referrerName: null, reason: "Akun tidak ditemukan." };
+  if (!buyer) return { valid: false, code: null, referrerId: null, referrerName: null, referrerIsAgency: false, reason: "Akun tidak ditemukan." };
   if (priorUsed) {
-    return { valid: false, code: null, referrerId: null, referrerName: null, reason: "Diskon referral hanya berlaku 1× pada transaksi pertama." };
+    return { valid: false, code: null, referrerId: null, referrerName: null, referrerIsAgency: false, reason: "Diskon referral hanya berlaku 1× pada transaksi pertama." };
   }
 
   const clean = sanitizeReferralCode(input.rawCode);
   if (clean) {
     const referrer = await prisma.user.findUnique({
       where: { referralCode: clean },
-      select: { id: true, name: true, email: true, referralCode: true },
+      select: { id: true, name: true, email: true, referralCode: true, accountType: true },
     });
     if (!referrer) {
-      return { valid: false, code: clean, referrerId: null, referrerName: null, reason: "Kode referral tidak ditemukan." };
+      return { valid: false, code: clean, referrerId: null, referrerName: null, referrerIsAgency: false, reason: "Kode referral tidak ditemukan." };
     }
     if (referrer.id === buyer.id || referrer.email.toLowerCase() === (input.buyerEmail ?? buyer.email).toLowerCase()) {
-      return { valid: false, code: clean, referrerId: null, referrerName: null, reason: "Tidak dapat menggunakan kode referral milik sendiri." };
+      return { valid: false, code: clean, referrerId: null, referrerName: null, referrerIsAgency: false, reason: "Tidak dapat menggunakan kode referral milik sendiri." };
     }
     return {
       valid: true,
       code: referrer.referralCode ?? clean,
       referrerId: referrer.id,
       referrerName: referrer.name || "Mitra SatuMoment",
+      referrerIsAgency: referrer.accountType === "AGENCY",
     };
   }
 
@@ -135,10 +138,11 @@ export async function resolveReferralForBuyer(input: {
       code: buyer.referredBy.referralCode,
       referrerId: buyer.referredBy.id,
       referrerName: buyer.referredBy.name || "Mitra SatuMoment",
+      referrerIsAgency: buyer.referredBy.accountType === "AGENCY",
     };
   }
 
-  return { valid: false, code: null, referrerId: null, referrerName: null };
+  return { valid: false, code: null, referrerId: null, referrerName: null, referrerIsAgency: false };
 }
 
 /** Automatically links a newly signed-in/registered user to their referrer cookie if unset. */
@@ -160,8 +164,11 @@ export async function bindUserReferrerFromCode(userId: string, rawCode: string |
 
 export async function getUserReferralSummary(userId: string) {
   const code = await ensureUserReferralCode(userId);
-  const [signups, commissionRows, totalCommissionAgg] = await Promise.all([
+  const referredPaid = { status: "SUCCESS", referralCodeUsed: { not: null }, user: { referredById: userId } } as const;
+  const [signups, conversions, paidPlanClients, commissionRows, totalCommissionAgg] = await Promise.all([
     prisma.user.count({ where: { referredById: userId } }),
+    prisma.transaction.count({ where: referredPaid }),
+    prisma.transaction.count({ where: { ...referredPaid, kind: "PLAN" } }),
     prisma.ledgerEntry.findMany({
       where: { userId, account: LEDGER_ACCOUNT.earnings, type: "COMMISSION" },
       orderBy: { createdAt: "desc" },
@@ -171,14 +178,17 @@ export async function getUserReferralSummary(userId: string) {
     prisma.ledgerEntry.aggregate({
       where: { userId, account: LEDGER_ACCOUNT.earnings, type: "COMMISSION" },
       _sum: { amount: true },
-      _count: true,
     }),
   ]);
 
   return {
     code,
     signups,
-    conversions: totalCommissionAgg._count,
+    conversions,
+    /** Mitra bonus progress: clients who bought a plan with this code, and bonus invitations earned */
+    paidPlanClients,
+    bonusEarned: Math.floor(paidPlanClients / MITRA_BONUS_EVERY),
+    /** Commission booked before referral became discount-only (kept so it can still be withdrawn) */
     totalCommission: totalCommissionAgg._sum.amount ?? 0,
     recentCommissions: commissionRows.map((c) => ({
       ...c,

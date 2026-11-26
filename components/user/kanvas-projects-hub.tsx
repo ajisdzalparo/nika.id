@@ -13,7 +13,6 @@ import {
   IconPalette,
   IconPlus,
   IconShoppingBag,
-  IconSparkles,
   IconTrash,
 } from "@tabler/icons-react";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
@@ -188,7 +187,7 @@ export function KanvasProjectsHub({
             <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Mulai Proyek Baru</h2>
             {aiEnabled && (
               <Link href="/desain-ai" className="inline-flex items-center gap-1.5 text-xs font-medium text-[#8A6424] hover:underline">
-                <IconSparkles size={14} /> Atau generate pakai AI →
+                Atau generate pakai AI →
               </Link>
             )}
           </div>

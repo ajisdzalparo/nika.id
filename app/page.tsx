@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { LandingNavbar } from "@/components/landing/navbar";
 import { Hero } from "@/components/landing/hero";
-import { AiDemo, Collection, Faq, Features, FinalCta, LandingFooter, PartnerVendors, Pricing, Steps, StickyCta, type PartnerVendor } from "@/components/landing/sections";
+import { AiDemo, Collection, Faq, Features, FinalCta, LandingFooter, MitraJoin, PartnerVendors, Pricing, Steps, StickyCta, type PartnerVendor } from "@/components/landing/sections";
 import { LandingChatWidget } from "@/components/landing/landing-chat-widget";
 import { L } from "@/components/landing/primitives";
 import { getCatalog } from "@/lib/catalog";
 import { getLandingContent } from "@/lib/landing-content";
 import { getManualPaymentInfo } from "@/lib/payment";
 import { prisma } from "@/lib/prisma";
+import { getPlanPrices } from "@/lib/system-settings";
 import { landingFontClass } from "@/lib/studio";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [catalog, { whatsapp }, cms, partnerRows] = await Promise.all([
+  const [catalog, { whatsapp }, cms, partnerRows, planPrices] = await Promise.all([
     getCatalog(),
     getManualPaymentInfo(),
     getLandingContent(),
@@ -29,6 +30,7 @@ export default async function Home() {
       take: 18,
       select: { id: true, agencyName: true, agencyLogo: true, agencyInstagram: true, agencyVerified: true },
     }),
+    getPlanPrices(),
   ]);
   const partners: PartnerVendor[] = partnerRows
     .filter((p): p is typeof p & { agencyName: string } => Boolean(p.agencyName))
@@ -48,8 +50,9 @@ export default async function Home() {
         <Collection items={catalog} />
         <Steps content={cms.steps} />
         <Features content={cms.features} />
-        <Pricing />
+        <Pricing prices={planPrices} />
         <PartnerVendors partners={partners} />
+        <MitraJoin whatsapp={whatsapp} />
         <Faq content={cms.faq} />
         <FinalCta content={cms.finalCta} />
       </main>

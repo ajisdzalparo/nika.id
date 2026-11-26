@@ -6,9 +6,10 @@ import {
   GUEST_ADDON_SIZE,
   PAID_PLANS,
   PLAN_LIMITS,
-  REFERRAL_COMMISSION_RATE,
   REFERRAL_HOLD_DAYS,
-  REFERRAL_MAX_COMMISSION,
+  RENEWAL_DAYS,
+  RENEWAL_PRICE,
+  MITRA_BONUS_EVERY,
   computeReferralDiscount,
   getAgencyPack,
   getAgencyPackByQuota,
@@ -20,11 +21,11 @@ import { createNotification } from "@/lib/notifications";
 import { LEDGER_ACCOUNT, recordPaymentRevenue } from "@/lib/ledger";
 import { resolveReferralForBuyer, sanitizeReferralCode } from "@/lib/referral";
 import { resolvePromoCode, sanitizePromoCode } from "@/lib/promo";
-import { getSystemSettings, type BankAccount } from "@/lib/system-settings";
+import { getFeatureStatus, getPlanPrices, getSystemSettings, type BankAccount } from "@/lib/system-settings";
 
 export type { BankAccount };
 
-export type TransactionKind = "PLAN" | "GUEST_ADDON" | "AI_CREDIT" | "AGENCY_QUOTA" | "MARKETPLACE";
+export type TransactionKind = "PLAN" | "GUEST_ADDON" | "AI_CREDIT" | "AGENCY_QUOTA" | "MARKETPLACE" | "RENEWAL";
 
 export class CheckoutOrderError extends Error {
   constructor(
@@ -71,7 +72,9 @@ export async function resolveCheckoutOrder(
 }> {
   const rawKind = body?.kind;
   const kind: TransactionKind =
-    rawKind === "GUEST_ADDON"
+    rawKind === "RENEWAL"
+      ? "RENEWAL"
+      : rawKind === "GUEST_ADDON"
       ? "GUEST_ADDON"
       : rawKind === "AI_CREDIT"
         ? "AI_CREDIT"
@@ -96,6 +99,9 @@ export async function resolveCheckoutOrder(
   };
 
   if (kind === "MARKETPLACE") {
+    if ((await getFeatureStatus("MARKETPLACE")) !== "ACTIVE") {
+      throw new CheckoutOrderError(503, "FEATURE_COMING_SOON", "Marketplace template kreator segera hadir.");
+    }
     const tplId = typeof body?.templateId === "string" ? body.templateId : "";
     const tpl = tplId
       ? await prisma.catalogTemplate.findUnique({
@@ -128,6 +134,10 @@ export async function resolveCheckoutOrder(
       notes: `Marketplace · ${tpl.name} (${active.title})`,
     };
   } else if (kind === "AGENCY_QUOTA") {
+    const buyer = await prisma.user.findUnique({ where: { id: userId }, select: { accountType: true } });
+    if (buyer?.accountType !== "AGENCY") {
+      throw new CheckoutOrderError(403, "NOT_MITRA", "Paket kuota hanya untuk Mitra. Ajukan diri jadi Mitra dulu di halaman Mitra.");
+    }
     const pack = getAgencyPack(typeof body?.packId === "string" ? body.packId : undefined);
     if (!pack) {
       throw new CheckoutOrderError(400, "INVALID_PACK", "Paket kuota mitra tidak valid.");
@@ -158,6 +168,21 @@ export async function resolveCheckoutOrder(
       itemName: `Top-up ${pack.credits} Kredit AI`,
       label: `Top-up ${pack.credits} Kredit AI`,
       notes: `Top-up ${pack.credits} Kredit AI (per akun)`,
+    };
+  } else if (kind === "RENEWAL") {
+    if (currentPlan === "FREE") {
+      throw new CheckoutOrderError(400, "PLAN_REQUIRED", "Undangan ini belum punya paket aktif. Pilih paket dulu.");
+    }
+    baseOrder = {
+      basePrice: RENEWAL_PRICE,
+      plan: null,
+      templateId: null,
+      addonUnits: 1,
+      invitationId: active.id,
+      itemId: "RENEWAL_1Y",
+      itemName: `Perpanjang 1 tahun (${active.title})`,
+      label: "Perpanjangan 1 tahun",
+      notes: `Perpanjangan masa aktif 1 tahun (${active.title})`,
     };
   } else if (kind === "GUEST_ADDON") {
     if (currentPlan === "FREE") {
@@ -190,7 +215,7 @@ export async function resolveCheckoutOrder(
     if (currentPlan === target) {
       throw new CheckoutOrderError(400, "ALREADY_ACTIVE", "Paket ini sudah aktif untuk undangan ini");
     }
-    const diff = getUpgradePrice(currentPlan, target);
+    const diff = getUpgradePrice(currentPlan, target, await getPlanPrices());
     if (diff === null) {
       throw new CheckoutOrderError(400, "UPGRADE_NOT_ALLOWED", "Tidak dapat turun ke paket yang lebih rendah");
     }
@@ -235,18 +260,28 @@ export async function resolveCheckoutOrder(
       throw new CheckoutOrderError(400, "INVALID_PROMO", "Kode promo tidak ditemukan atau tidak berlaku.");
     }
     if (refRes.valid && refRes.code) {
-      discountAmount = computeReferralDiscount(baseOrder.basePrice);
-      if (discountAmount > 0) referralCodeUsed = refRes.code;
+      if (refRes.referrerIsAgency) {
+        // Mitra code: client pays the normal price (the mitra sets their own client price);
+        // the code is still recorded so the mitra earns bonus quota on activation.
+        if (kind === "PLAN") referralCodeUsed = refRes.code;
+        else if (explicitCode) throw new CheckoutOrderError(400, "INVALID_PROMO", "Kode mitra hanya berlaku untuk pembelian paket undangan.");
+      } else {
+        discountAmount = computeReferralDiscount(baseOrder.basePrice);
+        if (discountAmount > 0) referralCodeUsed = refRes.code;
+      }
     }
   } else if (!promoCodeUsed && explicitCode) {
     throw new CheckoutOrderError(400, "INVALID_PROMO", "Kode promo tidak berlaku untuk pembelian ini.");
   }
 
-  const finalPrice = Math.max(1000, baseOrder.basePrice - discountAmount);
+  // A full discount (100% promo) gives a free order; anything else stays at least Rp1.000 for the gateway
+  const finalPrice = discountAmount >= baseOrder.basePrice ? 0 : Math.max(1000, baseOrder.basePrice - discountAmount);
   const notesWithRef = promoCodeUsed
     ? `${baseOrder.notes} · Promo ${promoCodeUsed} (-Rp${discountAmount.toLocaleString("id-ID")})`
     : referralCodeUsed
-      ? `${baseOrder.notes} · Kode ${referralCodeUsed} (-Rp${discountAmount.toLocaleString("id-ID")})`
+      ? discountAmount > 0
+        ? `${baseOrder.notes} · Kode ${referralCodeUsed} (-Rp${discountAmount.toLocaleString("id-ID")})`
+        : `${baseOrder.notes} · Mitra ${referralCodeUsed}`
       : baseOrder.notes;
 
   return {
@@ -298,7 +333,7 @@ export function amountWithUniqueCode(price: number) {
  */
 export async function activateTransaction(transactionId: string) {
   let activatedMeta: { userId: string; title: string; message: string; isMidtrans: boolean; amount: number; href: string } | null = null;
-  let commissionMeta: { referrerId: string; amount: number; buyerLabel: string } | null = null;
+  let mitraBonusMeta: { referrerId: string; buyerLabel: string; paidClients: number; earned: boolean } | null = null;
   let creatorSaleMeta: { creatorId: string; templateName: string; creatorShare: number; platformFee: number } | null = null;
 
   const result = await prisma.$transaction(async (tx) => {
@@ -401,11 +436,12 @@ export async function activateTransaction(transactionId: string) {
     // Book the payment as platform revenue in the same database transaction (idempotent)
     await recordPaymentRevenue(updated, tx);
 
-    // Book referral commission (idempotent) if a valid referral code was used
+    // Referral: a regular user's code only gave the buyer a discount (no commission). A mitra code
+    // earns the mitra bonus quota: every MITRA_BONUS_EVERY paying clients = 1 free invitation.
     if (updated.referralCodeUsed) {
       const referrer = await tx.user.findUnique({
         where: { referralCode: updated.referralCodeUsed },
-        select: { id: true, email: true },
+        select: { id: true, email: true, accountType: true, agencyQuotaExpiresAt: true },
       });
       const buyer = await tx.user.findUnique({
         where: { id: updated.userId },
@@ -415,30 +451,22 @@ export async function activateTransaction(transactionId: string) {
         if (!buyer.referredById) {
           await tx.user.update({ where: { id: buyer.id }, data: { referredById: referrer.id } });
         }
-        const commission = Math.min(Math.round(updated.amount * REFERRAL_COMMISSION_RATE), REFERRAL_MAX_COMMISSION);
-        if (commission > 0) {
-          const availableAt = new Date(Date.now() + REFERRAL_HOLD_DAYS * 86_400_000);
-          await tx.ledgerEntry.createMany({
-            data: [
-              {
-                key: `commission:${updated.id}`,
-                account: LEDGER_ACCOUNT.earnings,
-                type: "COMMISSION",
-                source: updated.kind,
-                amount: commission,
-                userId: referrer.id,
-                transactionId: updated.id,
-                availableAt,
-                note: `Komisi 15% · ${buyer.name || buyer.email}`,
-              },
-            ],
-            skipDuplicates: true,
+        if (referrer.accountType === "AGENCY" && updated.kind === "PLAN") {
+          const paidClients = await tx.transaction.count({
+            where: { status: "SUCCESS", kind: "PLAN", referralCodeUsed: { not: null }, user: { referredById: referrer.id } },
           });
-          commissionMeta = {
-            referrerId: referrer.id,
-            amount: commission,
-            buyerLabel: buyer.name || buyer.email,
-          };
+          const earned = paidClients > 0 && paidClients % MITRA_BONUS_EVERY === 0;
+          if (earned) {
+            const expiry = referrer.agencyQuotaExpiresAt;
+            await tx.user.update({
+              where: { id: referrer.id },
+              data: {
+                agencyQuota: { increment: 1 },
+                ...(!expiry || expiry.getTime() <= Date.now() ? { agencyQuotaExpiresAt: new Date(Date.now() + AGENCY_QUOTA_VALID_DAYS * 86_400_000) } : {}),
+              },
+            });
+          }
+          mitraBonusMeta = { referrerId: referrer.id, buyerLabel: buyer.name || buyer.email, paidClients, earned };
         }
       }
     }
@@ -459,7 +487,6 @@ export async function activateTransaction(transactionId: string) {
       await tx.user.update({
         where: { id: t.userId },
         data: {
-          accountType: "AGENCY",
           agencyQuota: { increment: t.addonUnits },
           agencyQuotaExpiresAt: nextExpiresAt,
           ...(bonusAi > 0 ? { aiCredits: { increment: bonusAi } } : {}),
@@ -498,6 +525,22 @@ export async function activateTransaction(transactionId: string) {
 
     const invTitle = targetInv?.title || "undangan kamu";
 
+    if (t.kind === "RENEWAL" && targetInv) {
+      // Extend from the current expiry when still active, otherwise from today
+      const base = targetInv.planExpiresAt && targetInv.planExpiresAt.getTime() > Date.now() ? targetInv.planExpiresAt.getTime() : Date.now();
+      const nextExpiry = new Date(base + RENEWAL_DAYS * 86_400_000);
+      await tx.invitation.update({ where: { id: targetInv.id }, data: { planExpiresAt: nextExpiry } });
+      activatedMeta = {
+        userId: t.userId,
+        title: "Masa aktif diperpanjang!",
+        message: `${invTitle} kini aktif sampai ${nextExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}.`,
+        isMidtrans: t.paymentMethod === "MIDTRANS",
+        amount: t.amount,
+        href: "/upgrade",
+      };
+      return updated;
+    }
+
     if (t.kind === "GUEST_ADDON" && t.addonUnits > 0) {
       const inc = t.addonUnits * GUEST_ADDON_SIZE;
       if (targetInv) {
@@ -522,7 +565,8 @@ export async function activateTransaction(transactionId: string) {
       if (targetInv) {
         await tx.invitation.update({
           where: { id: targetInv.id },
-          data: { plan, planExpiresAt: expiresAt },
+          // mitraCost/activatedAt feed the mitra sales report (what the owner paid to activate this invitation)
+          data: { plan, planExpiresAt: expiresAt, mitraCost: (targetInv.mitraCost ?? 0) + t.amount, activatedAt: targetInv.activatedAt ?? new Date() },
         });
       }
       await tx.user.update({
@@ -563,16 +607,18 @@ export async function activateTransaction(transactionId: string) {
     }
   }
 
-  if (commissionMeta) {
-    const cm = commissionMeta as { referrerId: string; amount: number; buyerLabel: string };
-    const rp = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(cm.amount);
+  if (mitraBonusMeta) {
+    const mb = mitraBonusMeta as { referrerId: string; buyerLabel: string; paidClients: number; earned: boolean };
+    const progress = mb.paidClients % MITRA_BONUS_EVERY;
     await createNotification({
       audience: "USER",
-      userId: cm.referrerId,
+      userId: mb.referrerId,
       type: "TRANSACTION",
-      title: `Komisi referral ${rp} masuk!`,
-      message: `${cm.buyerLabel} menyelesaikan transaksi dengan kode referral kamu. Komisi masuk ke Dompet (masa tahan ${REFERRAL_HOLD_DAYS} hari).`,
-      href: "/dompet",
+      title: mb.earned ? "Bonus 1 kuota undangan masuk!" : "Klien baru membeli lewat kodemu",
+      message: mb.earned
+        ? `${mb.buyerLabel} membeli paket lewat kode mitramu. Setiap ${MITRA_BONUS_EVERY} klien = 1 undangan gratis, dan kuotanya sudah ditambahkan.`
+        : `${mb.buyerLabel} membeli paket lewat kode mitramu. ${progress}/${MITRA_BONUS_EVERY} klien menuju bonus 1 kuota undangan.`,
+      href: "/mitra",
     });
   }
 

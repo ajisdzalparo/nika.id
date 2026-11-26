@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   IconBrandWhatsapp,
   IconBuildingStore,
+  IconChartBar,
   IconCheck,
   IconCopy,
   IconEdit,
@@ -20,15 +21,18 @@ import {
   IconShieldCheck,
   IconUsers,
 } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { DatePickerField } from "@/components/common/date-time-picker";
 import { PhoneInput } from "@/components/common/phone-input";
 import { normalizePhoneDigits, waLink } from "@/lib/phone";
-import { AGENCY_PACKS, PLAN_LIMITS, type PlanType } from "@/lib/limits";
+import { MitraApplicationForm } from "@/components/common/mitra-application-form";
+import { ClientAccountDialog, ClientLoginCard } from "@/components/user/client-account-dialog";
+import { AGENCY_PACKS, MITRA_BONUS_EVERY, PLAN_LIMITS, type PlanType } from "@/lib/limits";
 
 export interface AgencyProfileData {
   id: string;
@@ -66,6 +70,8 @@ export interface AgencyReferralInfo {
   code: string;
   signups: number;
   conversions: number;
+  paidPlanClients: number;
+  bonusEarned: number;
   totalCommission: number;
 }
 
@@ -73,18 +79,23 @@ const rupiah = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 
 const dateStr = (iso: string | null) =>
-  iso ? new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso)) : "-";
+  iso ? new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric" }).format(new Date(iso)) : "-";
 
 export function AgencyHub({
   initialAgency,
   initialInvitations,
   initialReferral,
   appUrl,
+  application = null,
+  adminWhatsapp = null,
 }: {
   initialAgency: AgencyProfileData;
   initialInvitations: AgencyInvitationRow[];
   initialReferral: AgencyReferralInfo;
   appUrl: string;
+  /** Latest mitra application (shown while this account is not a mitra yet) */
+  application?: { status: string; createdAt: string; adminNote: string | null } | null;
+  adminWhatsapp?: string | null;
 }) {
   const router = useRouter();
   const [agency, setAgency] = useState(initialAgency);
@@ -97,9 +108,11 @@ export function AgencyHub({
   const [agencyInstagram, setAgencyInstagram] = useState(initialAgency.agencyInstagram || "");
   const [agencyLogo, setAgencyLogo] = useState(initialAgency.agencyLogo || "");
 
-  // Filter client invitations
+  // Filter & paginate client invitations table
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"ALL" | "PAID" | "FREE">("ALL");
+  const [perPage, setPerPage] = useState(10);
+  const [page, setPage] = useState(1);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   // Create client invitation modal
@@ -107,6 +120,14 @@ export function AgencyHub({
   const [newTitle, setNewTitle] = useState("");
   const [newClientName, setNewClientName] = useState("");
   const [newClientWa, setNewClientWa] = useState("");
+  // Optional client email: creates the client's own login together with the invitation
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [createdLogin, setCreatedLogin] = useState<{
+    login: { email: string; tempPassword: string | null };
+    clientName: string;
+    title: string;
+    whatsapp: string | null;
+  } | null>(null);
   const [newDate, setNewDate] = useState("");
   // Opt-in: a quota is paid stock, so never spend it without an explicit tick
   const [useQuotaOnCreate, setUseQuotaOnCreate] = useState(false);
@@ -151,7 +172,7 @@ export function AgencyHub({
         return;
       }
       setAgency((prev) => ({ ...prev, ...d.agency }));
-      toast.success(isAgency ? "Profil mitra diperbarui" : "Akun Mitra aktif! Anda siap mengelola klien.");
+      toast.success("Profil mitra diperbarui");
       router.refresh();
     } finally {
       setSavingProfile(false);
@@ -184,12 +205,32 @@ export function AgencyHub({
       if (usableQuota > 0 && useQuotaOnCreate) {
         setAgency((prev) => ({ ...prev, agencyQuota: Math.max(0, prev.agencyQuota - 1) }));
       }
-      setCreateOpen(false);
+
+      let login: { email: string; tempPassword: string | null } | null = null;
+      if (newClientEmail.trim()) {
+        const clientName = newClientName.trim() || newTitle.trim();
+        const ca = await fetch(`/api/user/invitations/${d.invitation.id}/client-account`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: clientName, email: newClientEmail.trim() }),
+        });
+        const cd = await ca.json().catch(() => ({}));
+        if (ca.ok) login = { email: cd.email, tempPassword: cd.tempPassword };
+        else toast.error(`Undangan dibuat, tapi akun klien gagal: ${cd.message || "coba lagi lewat tombol Akun Klien"}`);
+      }
+
+      if (login) {
+        // Keep the dialog open on the login details so the mitra can send them right away
+        setCreatedLogin({ login, clientName: newClientName.trim(), title: newTitle.trim(), whatsapp: newClientWa.trim() || null });
+      } else {
+        setCreateOpen(false);
+      }
       setNewTitle("");
       setNewClientName("");
       setNewClientWa("");
+      setNewClientEmail("");
       setNewDate("");
-      toast.success("Undangan klien berhasil dibuat");
+      toast.success(login ? "Undangan dan akun klien berhasil dibuat" : "Undangan klien berhasil dibuat");
       router.refresh();
     } finally {
       setCreating(false);
@@ -277,7 +318,7 @@ export function AgencyHub({
               Kelola banyak undangan klien dalam satu akun
             </h1>
             <p className="max-w-2xl text-sm leading-relaxed text-[#5E5446] sm:text-base">
-              Dirancang untuk Wedding Organizer, MUA, fotografer, dan percetakan. Aktifkan mode Mitra dalam 1 langkah — tanpa tunggu persetujuan berhari-hari.
+              Untuk wedding organizer, MUA, fotografer, percetakan, maupun reseller perorangan. Kirim pengajuan, admin meninjau dan menghubungimu lewat WhatsApp.
             </p>
           </header>
 
@@ -292,7 +333,7 @@ export function AgencyHub({
                     "Nama brand / studio tampil di footer undangan",
                     "Aktifkan undangan klien cukup 1 klik pakai kuota",
                     "Dashboard terpusat untuk pantau semua RSVP klien",
-                    "Komisi referral 15% jika klien membeli mandiri",
+                    `Bonus 1 undangan gratis tiap ${MITRA_BONUS_EVERY} klien beli lewat kode Anda`,
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
                       <IconCheck size={16} className="mt-0.5 shrink-0 text-[#8A6424]" />
@@ -304,10 +345,8 @@ export function AgencyHub({
 
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-serif text-2xl font-medium text-[#1A1510]">Pilihan Paket Kuota Mitra</h3>
-                  <Link href="/upgrade?pilih=mitra#kuota-mitra" className="text-xs font-medium text-[#8A6424] hover:underline">
-                    Beli kuota →
-                  </Link>
+                  <h3 className="font-serif text-2xl font-medium text-[#1A1510]">Paket Kuota Mitra</h3>
+                  <span className="text-xs text-[#6B5F50]">Bisa dibeli setelah disetujui</span>
                 </div>
                 <div className="grid gap-3.5 sm:grid-cols-3">
                   {AGENCY_PACKS.map((p) => (
@@ -326,53 +365,39 @@ export function AgencyHub({
             </div>
 
             <aside className="rounded-2xl border border-[#EDE3CF] bg-white p-6 shadow-xs">
-              <form onSubmit={saveAgencyProfile} className="space-y-4">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F5E8CA] text-[#8A6424]">
-                    <IconBuildingStore size={20} />
-                  </span>
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A6424]">Aktivasi Instan</p>
-                    <h2 className="font-serif text-xl font-medium text-[#1A1510]">Profil Usaha Mitra</h2>
-                  </div>
+              <div className="mb-5 flex items-center gap-2.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F5E8CA] text-[#8A6424]">
+                  <IconBuildingStore size={20} />
+                </span>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A6424]">Gabung Program Mitra</p>
+                  <h2 className="font-serif text-xl font-medium text-[#1A1510]">Ajukan diri jadi Mitra</h2>
                 </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="onboard-name">Nama Usaha / Studio / WO</Label>
-                  <Input
-                    id="onboard-name"
-                    value={agencyName}
-                    onChange={(e) => setAgencyName(e.target.value)}
-                    placeholder="Contoh: Kirana Wedding Organizer"
-                    required
-                    className="h-11"
+              </div>
+              {application?.status === "PENDING" ? (
+                <div className="space-y-2 rounded-xl bg-[#FCF8F1] p-4 text-sm text-[#40372B]">
+                  <p className="font-medium text-[#1F1A14]">Pengajuanmu sedang ditinjau admin</p>
+                  <p>Dikirim {dateStr(application.createdAt)}. Admin akan menghubungimu lewat WhatsApp.</p>
+                </div>
+              ) : (
+                <>
+                  {application?.status === "REJECTED" && (
+                    <p className="mb-4 rounded-xl bg-[#F4E6E2] p-3 text-sm text-[#7A2F22]">
+                      Pengajuan sebelumnya belum disetujui{application.adminNote ? `: ${application.adminNote}` : "."} Kamu bisa mengajukan ulang.
+                    </p>
+                  )}
+                  <MitraApplicationForm
+                    defaultName={agency.name ?? ""}
+                    defaultEmail={agency.email}
+                    emailLocked
+                    adminWhatsapp={adminWhatsapp}
+                    onSubmitted={() => router.refresh()}
                   />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="onboard-wa">WhatsApp Bisnis</Label>
-                  <PhoneInput id="onboard-wa" value={agencyWhatsapp} onChange={setAgencyWhatsapp} required className="h-11" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="onboard-ig">Instagram (opsional)</Label>
-                  <Input
-                    id="onboard-ig"
-                    value={agencyInstagram}
-                    onChange={(e) => setAgencyInstagram(e.target.value)}
-                    placeholder="@kirana.wedding"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Logo Usaha / WO (opsional — tampil di halaman depan)</Label>
-                  <ImageUploadField value={agencyLogo} onChange={setAgencyLogo} aspect="aspect-[16/9]" fit="contain" />
-                </div>
-
-                <Button type="submit" disabled={savingProfile} className="h-11 w-full rounded-full bg-[#1A1510] text-[#FCF8F1] hover:bg-[#2B241B]">
-                  {savingProfile && <IconLoader2 size={16} className="mr-2 animate-spin" />}
-                  Aktifkan Mode Mitra Sekarang
-                </Button>
-                <p className="text-center text-xs text-[#6B5F50]">Gratis aktivasi · Langsung dapat dashboard klien & link referral 15%.</p>
-              </form>
+                </>
+              )}
+              <p className="mt-4 text-center text-xs text-[#6B5F50]">
+                Mitra disetujui admin. Setelah aktif: dashboard klien, link mitra (bonus kuota tiap {MITRA_BONUS_EVERY} klien), dan kuota grosir.
+              </p>
             </aside>
           </div>
         </div>
@@ -401,18 +426,50 @@ export function AgencyHub({
 
           <div className="flex flex-wrap gap-2.5">
             <Link
+              href="/mitra/laporan"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-[#E9DDC6] bg-white px-5 text-sm font-medium text-[#1A1510] transition hover:border-[#8A6424] hover:bg-[#FCF8F1]"
+            >
+              <IconChartBar size={16} className="text-[#8A6424]" /> Laporan Penjualan
+            </Link>
+            <Link
               href="/upgrade?pilih=mitra#kuota-mitra"
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-[#E9DDC6] bg-white px-5 text-sm font-medium text-[#1A1510] hover:bg-[#FCF8F1]"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-[#E9DDC6] bg-white px-5 text-sm font-medium text-[#1A1510] transition hover:border-[#8A6424] hover:bg-[#FCF8F1]"
             >
               Beli Kuota Mitra
             </Link>
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <Dialog
+              open={createOpen}
+              onOpenChange={(v) => {
+                setCreateOpen(v);
+                if (!v) setCreatedLogin(null);
+              }}
+            >
               <DialogTrigger asChild>
                 <Button className="h-11 rounded-full bg-[#1A1510] px-5 text-sm font-medium text-[#FCF8F1] hover:bg-[#2B241B]">
                   <IconPlus size={17} className="mr-1.5" /> Undangan Klien Baru
                 </Button>
               </DialogTrigger>
               <DialogContent>
+                {createdLogin ? (
+                  <div className="space-y-4">
+                    <DialogHeader>
+                      <DialogTitle className="font-serif text-2xl">Undangan &amp; akun klien siap</DialogTitle>
+                      <DialogDescription>Kirim info login ini ke klien. Klien bisa memilih template, mengedit undangan, serta mengelola tamu, RSVP, ucapan, dan check-in.</DialogDescription>
+                    </DialogHeader>
+                    <ClientLoginCard
+                      created={createdLogin.login}
+                      clientName={createdLogin.clientName}
+                      invitationTitle={createdLogin.title}
+                      clientWhatsapp={createdLogin.whatsapp}
+                      appUrl={appUrl}
+                    />
+                    <DialogFooter>
+                      <Button type="button" variant="ink" onClick={() => setCreateOpen(false)}>
+                        Selesai
+                      </Button>
+                    </DialogFooter>
+                  </div>
+                ) : (
                 <form onSubmit={handleCreateClientInv} className="space-y-4">
                   <DialogHeader>
                     <DialogTitle className="font-serif text-2xl">Buat Undangan Klien</DialogTitle>
@@ -437,6 +494,21 @@ export function AgencyHub({
                       <Label htmlFor="client-wa">WA Klien (opsional)</Label>
                       <PhoneInput id="client-wa" value={newClientWa} onChange={setNewClientWa} />
                     </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="client-email">Email Klien (opsional)</Label>
+                    <Input
+                      id="client-email"
+                      type="email"
+                      inputMode="email"
+                      value={newClientEmail}
+                      onChange={(e) => setNewClientEmail(e.target.value)}
+                      pattern="[^\s@]+@[^\s@]+\.[^\s@]{2,}"
+                      title="Masukkan alamat email yang valid, contoh: dinda@email.com"
+                      placeholder="dinda@email.com"
+                      maxLength={120}
+                    />
+                    <p className="text-xs text-[#6B5F50]">Isi untuk langsung membuat akun login klien (pilih template, edit undangan, tamu, RSVP, dan check-in).</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="client-date">Tanggal Acara (opsional)</Label>
@@ -473,6 +545,7 @@ export function AgencyHub({
                     </Button>
                   </DialogFooter>
                 </form>
+                )}
               </DialogContent>
             </Dialog>
           </div>
@@ -500,209 +573,427 @@ export function AgencyHub({
             <p className="mt-1 text-xs text-[#6B5F50]">Kredit AI tersedia: {agency.aiCredits}</p>
           </div>
           <div className="rounded-2xl border border-[#EDE3CF] bg-white p-5">
-            <p className="text-xs text-[#6B5F50]">Komisi Referral (15%)</p>
-            <p className="mt-2 font-serif text-3xl lining-nums text-[#1A1510]">{rupiah(initialReferral.totalCommission)}</p>
-            <Link href="/dompet" className="mt-1 inline-flex min-h-9 items-center text-xs font-medium text-[#8A6424] hover:underline">
-              Kelola Dompet & Referral →
-            </Link>
+            <p className="text-xs text-[#6B5F50]">Bonus Kuota dari Klien</p>
+            <p className="mt-2 font-serif text-4xl lining-nums text-[#1A1510]">
+              {initialReferral.bonusEarned} <span className="text-lg text-[#8C8272]">undangan gratis</span>
+            </p>
+            <p className="mt-1 text-xs text-[#6B5F50]">
+              {initialReferral.paidPlanClients} klien membeli lewat kode Anda · {initialReferral.paidPlanClients % MITRA_BONUS_EVERY}/{MITRA_BONUS_EVERY} menuju bonus berikutnya
+            </p>
           </div>
         </section>
 
-        {/* Client Invitations List */}
-        <section className="space-y-4">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div className="relative max-w-sm flex-1">
-              <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C8272]" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                type="search"
-                aria-label="Cari undangan klien"
-                placeholder="Cari nama klien, judul, atau slug..."
-                className="h-11 rounded-full border-[#E9DDC6] bg-white pl-10"
-              />
-            </div>
-            <div className="flex gap-1.5">
-              {(
-                [
-                  ["ALL", "Semua"],
-                  ["PAID", "Aktif"],
-                  ["FREE", "Pratinjau"],
-                ] as const
-              ).map(([k, l]) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setFilter(k)}
-                  className={`h-10 rounded-full px-4 text-xs font-medium transition ${
-                    filter === k ? "bg-[#1A1510] text-[#FCF8F1]" : "border border-[#E9DDC6] bg-white text-[#5E5446] hover:bg-[#FCF8F1]"
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Client Invitations Table */}
+        {(() => {
+          const pages = Math.max(1, Math.ceil(filtered.length / perPage));
+          const current = Math.min(page, pages);
+          const pageRows = filtered.slice((current - 1) * perPage, current * perPage);
+          const paidCount = invitations.filter((i) => i.plan !== "FREE").length;
+          const freeCount = invitations.length - paidCount;
 
-          {filtered.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#D8CFC0] bg-white/70 p-10 text-center text-sm text-[#6B5F50]">
-              Belum ada undangan klien yang cocok. Klik <strong>Undangan Klien Baru</strong> untuk mulai.
-            </div>
-          ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {filtered.map((inv) => {
-                const isPaid = inv.plan !== "FREE";
-                const limits = PLAN_LIMITS[(inv.plan as PlanType) ?? "FREE"];
-                const clientFormUrl = inv.clientEditToken ? `${appUrl}/isi-data/${inv.clientEditToken}` : null;
-                const clientWaLink = clientFormUrl
-                  ? waLink(
-                      inv.clientWhatsapp,
-                      `Halo${inv.clientName ? ` ${inv.clientName}` : ""}, silakan lengkapi data mempelai, jadwal acara, dan rekening amplop untuk undangan "${inv.title}" lewat tautan berikut (tanpa perlu login):\n${clientFormUrl}`,
-                    )
-                  : null;
+          return (
+            <section className="overflow-hidden rounded-2xl border border-[#EDE3CF] bg-white shadow-[0_1px_2px_rgba(26,21,16,.04)]">
+              {/* Toolbar */}
+              <div className="flex flex-col justify-between gap-3 border-b border-[#F3EBDB] p-4 sm:flex-row sm:items-center">
+                <div className="relative max-w-sm flex-1">
+                  <IconSearch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C8272]" />
+                  <Input
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    type="search"
+                    aria-label="Cari undangan klien"
+                    placeholder="Cari nama klien, judul, atau slug..."
+                    className="h-10 rounded-full border-[#E9DDC6] bg-[#FCF8F1] pl-10"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      ["ALL", `Semua (${invitations.length})`],
+                      ["PAID", `Aktif (${paidCount})`],
+                      ["FREE", `Pratinjau (${freeCount})`],
+                    ] as const
+                  ).map(([k, l]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => {
+                        setFilter(k);
+                        setPage(1);
+                      }}
+                      className={`h-9 rounded-full px-3.5 text-xs font-medium transition ${
+                        filter === k
+                          ? "bg-[#1A1510] text-[#FCF8F1]"
+                          : "border border-[#E9DDC6] bg-white text-[#5E5446] hover:border-[#8A6424] hover:text-[#1A1510]"
+                      }`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                return (
-                  <article key={inv.id} className="flex flex-col justify-between gap-4 rounded-2xl border border-[#EDE3CF] bg-white p-5 shadow-xs">
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span
-                            className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                              isPaid ? "border border-[#E6D5B2] bg-[#F7F0E1] text-[#5C431A]" : "bg-amber-50 text-amber-800"
-                            }`}
-                          >
-                            {isPaid ? `Aktif · ${limits.name}` : "Mode Pratinjau"}
-                          </span>
-                          {inv.clientName && (
-                            <span className="rounded-full bg-[#FCF8F1] px-2.5 py-0.5 text-[11px] text-[#5E5446]">
-                              Klien: {inv.clientName}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs text-[#8C8272]">{dateStr(inv.weddingDate)}</span>
-                      </div>
+              {filtered.length === 0 ? (
+                <div className="px-6 py-14 text-center text-sm text-[#6B5F50]">
+                  Belum ada undangan klien yang cocok. Klik <strong>Undangan Klien Baru</strong> untuk mulai.
+                </div>
+              ) : (
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[#F3EBDB] bg-[#FCF8F1]/60 text-left text-[11px] uppercase tracking-[0.12em] text-[#8E8268]">
+                          <th className="px-4 py-3 font-medium">Undangan &amp; Klien</th>
+                          <th className="px-4 py-3 font-medium">Status</th>
+                          <th className="px-4 py-3 font-medium">Tanggal</th>
+                          <th className="px-4 py-3 font-medium">Statistik</th>
+                          <th className="px-4 py-3 font-medium">Form Klien</th>
+                          <th className="px-4 py-3 text-right font-medium">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#F3EBDB]">
+                        {pageRows.map((inv) => {
+                          const isPaid = inv.plan !== "FREE";
+                          const limits = PLAN_LIMITS[(inv.plan as PlanType) ?? "FREE"];
+                          const clientFormUrl = inv.clientEditToken ? `${appUrl}/isi-data/${inv.clientEditToken}` : null;
+                          const clientWaLink = clientFormUrl
+                            ? waLink(
+                                inv.clientWhatsapp,
+                                `Halo${inv.clientName ? ` ${inv.clientName}` : ""}, silakan lengkapi data mempelai, jadwal acara, dan rekening amplop untuk undangan "${inv.title}" lewat tautan berikut (tanpa perlu login):\n${clientFormUrl}`,
+                              )
+                            : null;
 
-                      <div>
-                        <h3 className="font-serif text-2xl font-medium text-[#1A1510]">{inv.title}</h3>
-                        <p className="text-xs text-[#6B5F50]">/{inv.slug || "-"}</p>
-                      </div>
+                          return (
+                            <tr key={inv.id} className="align-middle transition-colors hover:bg-[#FCF8F1]/70">
+                              <td className="px-4 py-3.5">
+                                <p className="font-medium text-[#1F1A14]">{inv.title}</p>
+                                <p className="mt-0.5 text-xs text-[#6B5F50]">
+                                  /{inv.slug || "-"}
+                                  {inv.clientName ? ` · Klien: ${inv.clientName}` : ""}
+                                </p>
+                              </td>
+                              <td className="px-4 py-3.5">
+                                <span
+                                  className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                                    isPaid
+                                      ? "border border-[#E6D5B2] bg-[#F7F0E1] text-[#5C431A]"
+                                      : "bg-amber-50 text-amber-800"
+                                  }`}
+                                >
+                                  {isPaid ? `Aktif · ${limits.name}` : "Pratinjau"}
+                                </span>
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3.5 text-xs text-[#40372B]">
+                                {dateStr(inv.weddingDate)}
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3.5 text-xs tabular-nums text-[#5E5446]">
+                                <span title="Dilihat">{inv.views} lihat</span>
+                                <span className="mx-1.5 text-[#D9CBAE]">·</span>
+                                <span title="Daftar tamu">{inv._count.guests} tamu</span>
+                                <span className="mx-1.5 text-[#D9CBAE]">·</span>
+                                <span title="RSVP">{inv._count.rsvps} RSVP</span>
+                              </td>
+                              <td className="px-4 py-3.5">
+                                {clientFormUrl ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => copyText(clientFormUrl, "Link pengisian data klien disalin")}
+                                      className="inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2.5 text-xs font-medium text-[#5C431A] transition hover:bg-[#ECE2CE]"
+                                    >
+                                      <IconLink size={13} /> Salin link
+                                    </button>
+                                    {clientWaLink && (
+                                      <a
+                                        href={clientWaLink}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title="Kirim link isi data ke WA klien"
+                                        aria-label={`Kirim link isi data ${inv.title} ke WhatsApp klien`}
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#E6D5B2] bg-white text-[#8A6424] transition hover:border-[#8A6424] hover:bg-[#FCF8F1] hover:text-[#1F1A14]"
+                                      >
+                                        <IconBrandWhatsapp size={15} />
+                                      </a>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    disabled={busyId === inv.id}
+                                    onClick={() => void ensureClientLink(inv)}
+                                    className="inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-full border border-[#E9DDC6] bg-white px-2.5 text-xs font-medium text-[#5E5446] transition hover:border-[#8A6424] hover:text-[#1F1A14]"
+                                  >
+                                    <IconLink size={13} /> Buat link
+                                  </button>
+                                )}
+                              </td>
+                              <td className="px-4 py-3.5">
+                                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    disabled={busyId === inv.id}
+                                    onClick={() => void openInWorkspace(inv.id, "/editor")}
+                                    className="inline-flex h-8 items-center gap-1 rounded-full bg-[#1F1A14] px-3 text-xs font-medium text-[#FCF8F1] transition hover:bg-[#2F281F] disabled:opacity-50"
+                                  >
+                                    <IconEdit size={13} /> Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={busyId === inv.id}
+                                    onClick={() => void openInWorkspace(inv.id, "/pilih-template")}
+                                    title="Pilih / ubah desain"
+                                    className="inline-flex h-8 items-center gap-1 rounded-full border border-[#E9DDC6] bg-white px-2.5 text-xs font-medium text-[#1F1A14] transition hover:border-[#8A6424] hover:bg-[#FCF8F1]"
+                                  >
+                                    <IconPalette size={13} /> Desain
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={busyId === inv.id}
+                                    onClick={() => void openInWorkspace(inv.id, "/manajemen-tamu")}
+                                    title="Kelola daftar tamu"
+                                    className="inline-flex h-8 items-center gap-1 rounded-full border border-[#E9DDC6] bg-white px-2.5 text-xs font-medium text-[#1F1A14] transition hover:border-[#8A6424] hover:bg-[#FCF8F1]"
+                                  >
+                                    <IconUsers size={13} /> Tamu
+                                  </button>
+                                  <ClientAccountDialog
+                                    invitationId={inv.id}
+                                    invitationTitle={inv.title}
+                                    clientName={inv.clientName}
+                                    clientWhatsapp={inv.clientWhatsapp}
+                                    appUrl={appUrl}
+                                    compact
+                                  />
+                                  {inv.slug && (
+                                    <a
+                                      href={`/${inv.slug}${!isPaid || !inv.isPublic ? "?preview=1" : ""}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title="Lihat undangan"
+                                      aria-label={`Lihat undangan ${inv.title}`}
+                                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#E9DDC6] bg-white text-[#5E5446] transition hover:border-[#8A6424] hover:text-[#1F1A14]"
+                                    >
+                                      <IconExternalLink size={14} />
+                                    </a>
+                                  )}
+                                  {!isPaid &&
+                                    (usableQuota > 0 ? (
+                                      <button
+                                        type="button"
+                                        disabled={busyId === inv.id}
+                                        onClick={() => void activateWithQuota(inv)}
+                                        className="inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-full bg-[#8A6424] px-3 text-xs font-semibold text-white transition hover:bg-[#755925] disabled:opacity-50"
+                                      >
+                                        {busyId === inv.id ? <IconLoader2 size={13} className="animate-spin" /> : <IconShare size={13} />}
+                                        Aktifkan
+                                      </button>
+                                    ) : (
+                                      <Link
+                                        href="/upgrade?pilih=mitra#kuota-mitra"
+                                        className="inline-flex h-8 items-center whitespace-nowrap rounded-full border border-[#D9B56A] px-2.5 text-xs font-medium text-[#8A6424] hover:bg-[#FCF5E6]"
+                                      >
+                                        Beli Kuota
+                                      </Link>
+                                    ))}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
 
-                      <div className="grid grid-cols-3 gap-2 rounded-xl border border-[#F3EBDB] bg-[#FCF8F1] px-3 py-2 text-center text-xs">
-                        <div>
-                          <span className="text-[#6B5F50]">Dilihat</span>
-                          <p className="font-serif text-lg tabular-nums text-[#1A1510]">{inv.views}</p>
-                        </div>
-                        <div>
-                          <span className="text-[#6B5F50]">Tamu</span>
-                          <p className="font-serif text-lg tabular-nums text-[#1A1510]">{inv._count.guests}</p>
-                        </div>
-                        <div>
-                          <span className="text-[#6B5F50]">RSVP</span>
-                          <p className="font-serif text-lg tabular-nums text-[#1A1510]">{inv._count.rsvps}</p>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Mobile compact list */}
+                  <ul className="divide-y divide-[#F3EBDB] md:hidden">
+                    {pageRows.map((inv) => {
+                      const isPaid = inv.plan !== "FREE";
+                      const limits = PLAN_LIMITS[(inv.plan as PlanType) ?? "FREE"];
+                      const clientFormUrl = inv.clientEditToken ? `${appUrl}/isi-data/${inv.clientEditToken}` : null;
+                      const clientWaLink = clientFormUrl
+                        ? waLink(
+                            inv.clientWhatsapp,
+                            `Halo${inv.clientName ? ` ${inv.clientName}` : ""}, silakan lengkapi data mempelai, jadwal acara, dan rekening amplop untuk undangan "${inv.title}" lewat tautan berikut (tanpa perlu login):\n${clientFormUrl}`,
+                          )
+                        : null;
 
-                    <div className="space-y-2.5 border-t border-[#F3EBDB] pt-4">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={busyId === inv.id}
-                          onClick={() => void openInWorkspace(inv.id, "/editor")}
-                          className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#1A1510] px-4 text-xs font-medium text-[#FCF8F1] hover:bg-[#2B241B] disabled:opacity-50"
-                        >
-                          <IconEdit size={15} /> Edit
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busyId === inv.id}
-                          onClick={() => void openInWorkspace(inv.id, "/desain-ai")}
-                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-[#E9DDC6] px-3.5 text-xs font-medium text-[#1A1510] hover:bg-[#FCF8F1]"
-                        >
-                          <IconPalette size={15} /> Desain
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busyId === inv.id}
-                          onClick={() => void openInWorkspace(inv.id, "/manajemen-tamu")}
-                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-[#E9DDC6] px-3.5 text-xs font-medium text-[#1A1510] hover:bg-[#FCF8F1]"
-                        >
-                          <IconUsers size={15} /> Tamu
-                        </button>
-                        {inv.slug && (
-                          <a
-                            href={`/${inv.slug}${!isPaid || !inv.isPublic ? "?preview=1" : ""}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex h-10 items-center justify-center gap-1 rounded-full border border-[#E9DDC6] px-3.5 text-xs font-medium text-[#1A1510] hover:bg-[#FCF8F1]"
-                          >
-                            <IconExternalLink size={14} /> Lihat
-                          </a>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        {clientFormUrl ? (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => copyText(clientFormUrl, "Link pengisian data klien disalin")}
-                              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-3 text-xs font-medium text-[#5C431A] hover:bg-[#ECE2CE]"
+                      return (
+                        <li key={inv.id} className="space-y-3 p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-medium text-[#1F1A14]">{inv.title}</p>
+                              <p className="mt-0.5 text-xs text-[#6B5F50]">
+                                /{inv.slug || "-"}
+                                {inv.clientName ? ` · ${inv.clientName}` : ""}
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                                isPaid ? "border border-[#E6D5B2] bg-[#F7F0E1] text-[#5C431A]" : "bg-amber-50 text-amber-800"
+                              }`}
                             >
-                              <IconLink size={14} /> Salin Link Isi Data Klien
-                            </button>
-                            {clientWaLink && (
-                              <a
-                                href={clientWaLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-xs font-medium text-emerald-800 hover:bg-emerald-100"
-                              >
-                                <IconBrandWhatsapp size={14} /> Kirim ke Klien
-                              </a>
-                            )}
+                              {isPaid ? `Aktif · ${limits.name}` : "Pratinjau"}
+                            </span>
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={busyId === inv.id}
-                            onClick={() => void ensureClientLink(inv)}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E9DDC6] px-3 text-xs font-medium text-[#5E5446] hover:bg-[#FCF8F1] hover:text-[#1A1510]"
-                          >
-                            <IconLink size={14} /> Buat Link Isi Data Klien
-                          </button>
-                        )}
-
-                        {!isPaid &&
-                          (usableQuota > 0 ? (
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#6B5F50]">
+                            <span>{dateStr(inv.weddingDate)}</span>
+                            <span>·</span>
+                            <span>{inv.views} lihat</span>
+                            <span>·</span>
+                            <span>{inv._count.guests} tamu</span>
+                            <span>·</span>
+                            <span>{inv._count.rsvps} RSVP</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
                               disabled={busyId === inv.id}
-                              onClick={() => void activateWithQuota(inv)}
-                              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#8A6424] px-3.5 text-xs font-semibold text-white hover:bg-[#755925] disabled:opacity-50"
+                              onClick={() => void openInWorkspace(inv.id, "/editor")}
+                              className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#1A1510] px-4 text-xs font-medium text-[#FCF8F1]"
                             >
-                              {busyId === inv.id ? <IconLoader2 size={14} className="animate-spin" /> : <IconShare size={14} />}
-                              Aktifkan (1 Kuota)
+                              <IconEdit size={14} /> Edit
                             </button>
-                          ) : (
-                            <Link
-                              href="/upgrade?pilih=mitra#kuota-mitra"
-                              className="inline-flex h-9 items-center gap-1 rounded-full border border-[#D9B56A] px-3 text-xs font-medium text-[#8A6424] hover:bg-[#FCF5E6]"
+                            <button
+                              type="button"
+                              disabled={busyId === inv.id}
+                              onClick={() => void openInWorkspace(inv.id, "/manajemen-tamu")}
+                              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#E9DDC6] bg-white px-3.5 text-xs font-medium text-[#1A1510]"
                             >
-                              Beli Kuota
-                            </Link>
-                          ))}
-                      </div>
+                              <IconUsers size={14} /> Tamu
+                            </button>
+                            <ClientAccountDialog
+                              invitationId={inv.id}
+                              invitationTitle={inv.title}
+                              clientName={inv.clientName}
+                              clientWhatsapp={inv.clientWhatsapp}
+                              appUrl={appUrl}
+                            />
+                            {inv.slug && (
+                              <a
+                                href={`/${inv.slug}${!isPaid || !inv.isPublic ? "?preview=1" : ""}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex h-10 items-center gap-1 rounded-full border border-[#E9DDC6] bg-white px-3.5 text-xs font-medium text-[#1A1510]"
+                              >
+                                <IconExternalLink size={14} /> Lihat
+                              </a>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            {clientFormUrl ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => copyText(clientFormUrl, "Link pengisian data klien disalin")}
+                                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-3 text-xs font-medium text-[#5C431A]"
+                                >
+                                  <IconLink size={13} /> Salin Link Isi Data
+                                </button>
+                                {clientWaLink && (
+                                  <a
+                                    href={clientWaLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E6D5B2] bg-white px-3 text-xs font-medium text-[#1F1A14]"
+                                  >
+                                    <IconBrandWhatsapp size={14} className="text-[#8A6424]" /> Kirim WA
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={busyId === inv.id}
+                                onClick={() => void ensureClientLink(inv)}
+                                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E9DDC6] px-3 text-xs font-medium text-[#5E5446]"
+                              >
+                                <IconLink size={13} /> Buat Link Isi Data
+                              </button>
+                            )}
+                            {!isPaid &&
+                              (usableQuota > 0 ? (
+                                <button
+                                  type="button"
+                                  disabled={busyId === inv.id}
+                                  onClick={() => void activateWithQuota(inv)}
+                                  className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#8A6424] px-3.5 text-xs font-semibold text-white"
+                                >
+                                  <IconShare size={14} /> Aktifkan (1 Kuota)
+                                </button>
+                              ) : (
+                                <Link
+                                  href="/upgrade?pilih=mitra#kuota-mitra"
+                                  className="inline-flex h-9 items-center rounded-full border border-[#D9B56A] px-3 text-xs font-medium text-[#8A6424]"
+                                >
+                                  Beli Kuota
+                                </Link>
+                              ))}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {/* Pagination */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#F3EBDB] px-4 py-3 text-xs text-[#6B5F50]">
+                    <div className="flex items-center gap-2">
+                      <SelectField
+                        value={String(perPage)}
+                        onChange={(e) => {
+                          setPerPage(Number(e.target.value));
+                          setPage(1);
+                        }}
+                        size="sm"
+                        aria-label="Baris per halaman"
+                        className="w-20"
+                      >
+                        {[10, 20, 50].map((n) => (
+                          <option key={n} value={String(n)}>
+                            {n}
+                          </option>
+                        ))}
+                      </SelectField>
+                      <span>
+                        {(current - 1) * perPage + 1}–{Math.min(current * perPage, filtered.length)} dari {filtered.length} undangan
+                      </span>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={current <= 1}
+                        onClick={() => setPage(current - 1)}
+                        className="h-9 rounded-full border-[#E9DDC6] text-xs"
+                      >
+                        Sebelumnya
+                      </Button>
+                      <span className="px-2 tabular-nums">
+                        {current}/{pages}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={current >= pages}
+                        onClick={() => setPage(current + 1)}
+                        className="h-9 rounded-full border-[#E9DDC6] text-xs"
+                      >
+                        Berikutnya
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+          );
+        })()}
 
         {/* Branding & Referral shortcut */}
-        <section className="grid gap-6 xl:grid-cols-2">
+        <section className="grid gap-6 xl:grid-cols-2 xl:items-start">
           <form onSubmit={saveAgencyProfile} className="space-y-4 rounded-2xl border border-[#EDE3CF] bg-white p-6">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A6424]">Branding Footer</p>
@@ -733,33 +1024,72 @@ export function AgencyHub({
             </Button>
           </form>
 
-          <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[#EDE3CF] bg-[#FFFDF9] p-6">
+          <div className="space-y-5 rounded-2xl border border-[#EDE3CF] bg-[#FFFDF9] p-6">
             <div className="space-y-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A6424]">Link Referral Mitra</p>
-              <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Klien bayar sendiri? Anda tetap dapat 15%</h2>
-              <p className="text-xs leading-relaxed text-[#5E5446]">
-                Bagikan kode <strong>{initialReferral.code}</strong> ke pasangan atau vendor lain. Pembeli langsung hemat 10% (maks Rp15rb), dan komisi 15% otomatis masuk ke Dompet Anda.
+              <h2 className="font-serif text-2xl font-medium text-[#1A1510]">Klien bayar sendiri? Anda dapat bonus kuota</h2>
+              <p className="text-sm leading-relaxed text-[#5E5446]">
+                Bagikan kode <strong className="text-[#1F1A14]">{initialReferral.code}</strong> ke klien yang ingin membeli paket sendiri. Klien membayar harga normal, dan setiap {MITRA_BONUS_EVERY} klien membeli, Anda mendapat 1 kuota undangan gratis (setara Premium) yang bisa dijual lagi.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex h-10 flex-1 items-center rounded-xl border border-[#E9DDC6] bg-white px-3 text-xs text-[#40372B]">
-                <span className="truncate">{referralUrl}</span>
+
+            <div className="space-y-3 rounded-xl border border-[#EDE3CF] bg-[#FCF8F1] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-[#8E8268]">Kode Mitra Anda</p>
+                  <p className="mt-0.5 font-mono text-lg font-semibold tracking-wider text-[#1F1A14]">{initialReferral.code}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyText(initialReferral.code, "Kode mitra disalin")}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E6D5B2] bg-white px-3.5 text-xs font-medium text-[#1F1A14] transition hover:border-[#8A6424]"
+                >
+                  <IconCopy size={13} /> Salin Kode
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => copyText(referralUrl, "Link referral disalin")}
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#1A1510] px-4 text-xs font-medium text-[#FCF8F1]"
-              >
-                <IconCopy size={14} /> Salin Link
-              </button>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Buat undangan pernikahan digital di SatuMoment — pakai kode referral ${initialReferral.code} atau buka ${referralUrl} untuk diskon 10% langsung!`)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 text-xs font-medium text-emerald-800"
-              >
-                <IconBrandWhatsapp size={15} /> Bagikan
-              </a>
+              <div className="space-y-1.5 border-t border-[#EDE3CF] pt-3">
+                <div className="flex items-center justify-between text-xs text-[#5E5446]">
+                  <span>Progres menuju bonus kuota berikutnya</span>
+                  <span className="font-medium tabular-nums text-[#1F1A14]">
+                    {initialReferral.paidPlanClients % MITRA_BONUS_EVERY} / {MITRA_BONUS_EVERY} klien
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-[#EDE3CF]">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#B8903F,#D9B56A)] transition-all"
+                    style={{ width: `${((initialReferral.paidPlanClients % MITRA_BONUS_EVERY) / MITRA_BONUS_EVERY) * 100}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-[#8E8268]">
+                  Total {initialReferral.paidPlanClients} klien berbayar · {initialReferral.bonusEarned} kuota bonus sudah diterima
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="flex h-10 items-center rounded-xl border border-[#E9DDC6] bg-white px-3.5 text-xs text-[#40372B]">
+                <span className="truncate font-mono">{referralUrl}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => copyText(referralUrl, "Link referral disalin")}
+                  className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#1F1A14] px-4 text-xs font-medium text-[#FCF8F1] transition hover:bg-[#2F281F] sm:flex-initial"
+                >
+                  <IconCopy size={14} /> Salin Link
+                </button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Buat undangan pernikahan digital di SatuMoment — pakai kode ${initialReferral.code} atau buka ${referralUrl}`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonVariants({
+                    variant: "gold",
+                    className: "h-10 flex-1 px-4 text-xs sm:flex-initial",
+                  })}
+                >
+                  <IconBrandWhatsapp size={15} /> Bagikan via WA
+                </a>
+              </div>
             </div>
           </div>
         </section>

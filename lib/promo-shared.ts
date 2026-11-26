@@ -1,12 +1,13 @@
 // Client-safe promo helpers (no database access) shared by checkout UI and server.
 
-export type PromoCheckoutKind = "PLAN" | "GUEST_ADDON" | "AI_CREDIT" | "AGENCY_QUOTA" | "MARKETPLACE";
+export type PromoCheckoutKind = "PLAN" | "GUEST_ADDON" | "AI_CREDIT" | "AGENCY_QUOTA" | "MARKETPLACE" | "RENEWAL";
 
 export const PROMO_KIND_LABELS: Record<Exclude<PromoCheckoutKind, "MARKETPLACE">, string> = {
   PLAN: "Paket undangan",
   GUEST_ADDON: "Tambah tamu",
   AI_CREDIT: "Kredit AI",
   AGENCY_QUOTA: "Paket Mitra",
+  RENEWAL: "Perpanjangan",
 };
 
 export interface PromoRule {
@@ -32,7 +33,9 @@ export function computePromoDiscount(promo: Pick<PromoRule, "percentOff" | "amou
   if (promo.percentOff) discount = Math.floor((basePrice * promo.percentOff) / 100);
   else if (promo.amountOff) discount = promo.amountOff;
   if (promo.maxDiscount) discount = Math.min(discount, promo.maxDiscount);
-  // Never below Rp1.000 so the payment gateway still accepts the order
+  // 100% (e.g. a mitra trial code) makes the order free: it is activated without the payment gateway
+  if (discount >= basePrice) return basePrice;
+  // Otherwise never below Rp1.000 so the payment gateway still accepts the order
   return Math.max(0, Math.min(discount, basePrice - 1000));
 }
 

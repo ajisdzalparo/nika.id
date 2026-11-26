@@ -11,7 +11,6 @@ import {
   IconMinus,
   IconPencil,
   IconPlus,
-  IconSparkles,
   IconUserCheck,
   IconUsersGroup,
 } from "@tabler/icons-react";
@@ -254,7 +253,7 @@ export function GuestSelfCheckIn({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#8A6424]">
-                      <IconSparkles size={12} /> Undangan personal dikenali
+                      <IconCheck size={12} /> Undangan personal dikenali
                     </p>
                     <p className="mt-1 truncate font-(family-name:--font-landing-display) text-2xl text-[#1F1A14]">
                       {identity!.name}

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { newCheckInToken } from "@/lib/checkin";
 import { prisma } from "@/lib/prisma";
+import { invitationAccessWhere } from "@/lib/active-invitation";
 
 const PatchSchema = z.object({
   note: z.string().trim().max(120).optional(),
@@ -12,13 +13,20 @@ const PatchSchema = z.object({
 });
 
 async function ownRsvp(id: string, userId: string) {
-  return prisma.rSVP.findFirst({ where: { id, userId } });
+  return prisma.rSVP.findFirst({ where: { id, invitation: invitationAccessWhere(userId) } });
 }
 
 // PATCH /api/user/rsvp/:id — note, manual check-in, or create the QR token
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuth(request);
+    const viewer = await prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } });
+    if (viewer?.accountType === "AGENCY") {
+      return NextResponse.json(
+        { error: "MITRA_MONITORING_ONLY", message: "Data RSVP dikelola langsung oleh akun klien. Mitra hanya dapat memantau konfirmasi tamu." },
+        { status: 403 },
+      );
+    }
     const { id } = await params;
     const parsed = PatchSchema.safeParse(await request.json().catch(() => ({})));
     if (!parsed.success) return NextResponse.json({ error: "VALIDATION_ERROR" }, { status: 400 });
@@ -45,6 +53,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuth(request);
+    const viewer = await prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } });
+    if (viewer?.accountType === "AGENCY") {
+      return NextResponse.json(
+        { error: "MITRA_MONITORING_ONLY", message: "Data RSVP dikelola langsung oleh akun klien. Mitra hanya dapat memantau konfirmasi tamu." },
+        { status: 403 },
+      );
+    }
     const { id } = await params;
     const rsvp = await ownRsvp(id, session.user.id);
     if (!rsvp) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });

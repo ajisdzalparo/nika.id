@@ -165,15 +165,14 @@ export default function RomanticElegance({ data }: { data: WeddingData }) {
             </motion.div>
           </section>
 
-          {/* Section: Verse */}
-          <section className="py-20 px-10 text-center italic text-[#8B7E7E] space-y-4 romantic-reveal">
-            <IconHeart className="w-8 h-8 mx-auto opacity-30 fill-[#FFB7C5]" />
-            <p className="text-lg leading-relaxed">
-              {data.story?.content ||
-                '"Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang."'}
-            </p>
-            <p className="font-sans font-bold text-xs uppercase tracking-widest text-[#A67B7B]">{data.story?.title || "QS. Ar-Rum: 21"}</p>
-          </section>
+          {/* Section: Verse / opening quote */}
+          {data.quote && (
+            <section className="py-20 px-10 text-center italic text-[#8B7E7E] space-y-4 romantic-reveal">
+              <IconHeart className="w-8 h-8 mx-auto opacity-30 fill-[#FFB7C5]" />
+              <p className="text-lg leading-relaxed">&ldquo;{data.quote.text}&rdquo;</p>
+              {data.quote.source && <p className="font-sans font-bold text-xs uppercase tracking-widest text-[#A67B7B]">{data.quote.source}</p>}
+            </section>
+          )}
 
           {/* Section: Couple */}
           <section className="py-24 px-8 border-t border-[#FCE2E6]">
