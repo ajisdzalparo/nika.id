@@ -58,7 +58,7 @@ jobs:
             echo "APP_URL=https://satumoment.com" >> $GITHUB_ENV
           else
             echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
-            echo "APP_URL=https://staging.satumoment.com" >> $GITHUB_ENV
+            echo "APP_URL=https://satumoment-staging.ajisdzalparo.com" >> $GITHUB_ENV
           fi
 
       - name: Set up Docker Buildx
