@@ -10,13 +10,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSession } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
+import { maskPhone } from "@/lib/phone";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 
 export default async function BukuTamuPage() {
   const session = await getSession(undefined, "user");
   if (!session) redirect("/login");
 
-  const active = await getActiveInvitation(session.user.id);
+  const [active, viewer] = await Promise.all([
+    getActiveInvitation(session.user.id),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } }),
+  ]);
+  const isMitraMonitoring = viewer?.accountType === "AGENCY";
 
   const [attendees, messages, guestRows] = await Promise.all([
     prisma.rSVP.findMany({ where: { invitationId: active.id }, orderBy: { createdAt: "desc" } }),
@@ -34,7 +39,7 @@ export default async function BukuTamuPage() {
   // Check-in tracking is always visible because every invitation has a printable venue QR in /check-in
   const qrEnabled = Boolean(data.rsvp?.qrCheckIn) || hasAnyCheckIn || true;
   const ev = data.events?.[0] ?? data.event;
-  const eventDate = ev?.date ? new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(ev.date)) : null;
+  const eventDate = ev?.date ? new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }).format(new Date(ev.date)) : null;
 
   return (
     <>
@@ -61,6 +66,7 @@ export default async function BukuTamuPage() {
             <TabsContent value="attendance">
               <RsvpManager
                 qrEnabled={qrEnabled}
+                monitoringOnly={isMitraMonitoring}
                 card={{
                   couple: hasCouple ? `${data.groom.nickname} & ${data.bride.nickname}` : active.title,
                   date: eventDate,
@@ -77,7 +83,7 @@ export default async function BukuTamuPage() {
                     guestName: a.guestName,
                     attendance: a.attendance,
                     guests: a.guests,
-                    phone: a.phone,
+                    phone: isMitraMonitoring ? maskPhone(a.phone) : a.phone,
                     companions: a.companions,
                     customAnswer: a.customAnswer,
                     note: a.note,

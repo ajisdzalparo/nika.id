@@ -3,6 +3,7 @@ import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { parseCheckInCode } from "@/lib/checkin";
 import { checkChatRateLimit } from "@/lib/chat-security";
 import { prisma } from "@/lib/prisma";
+import { invitationAccessWhere } from "@/lib/active-invitation";
 import { featureBlockedResponse } from "@/lib/feature-guard";
 
 // POST /api/user/rsvp/checkin { code } — mark a guest as arrived from their QR (or a typed code)
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 
     // Only RSVPs of invitations this account owns can be checked in
     const rsvp = await prisma.rSVP.findFirst({
-      where: { checkInToken: token, userId: session.user.id },
+      where: { checkInToken: token, invitation: invitationAccessWhere(session.user.id) },
       include: { invitation: { select: { title: true } } },
     });
     if (!rsvp) return NextResponse.json({ error: "NOT_FOUND", message: "QR ini bukan tamu dari undangan Anda." }, { status: 404 });

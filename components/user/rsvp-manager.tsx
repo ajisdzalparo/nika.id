@@ -13,6 +13,7 @@ import {
   IconQrcode,
   IconScan,
   IconSearch,
+  IconShieldLock,
   IconTrash,
   IconUserCheck,
   IconUsers,
@@ -23,7 +24,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { SelectField } from "@/components/ui/select";
 import { StatTile } from "@/components/common/studio-ui";
-import { CheckInQr, downloadQrCard, downloadStandardQr } from "@/components/common/qr-code";
+import { CheckInQr, downloadQrCard, downloadStandardQr, renderQrCard, renderStandardQr, shareQrOnWhatsapp } from "@/components/common/qr-code";
 import { waLink } from "@/lib/phone";
 
 export interface RsvpRow {
@@ -51,7 +52,13 @@ const STATUS: Record<string, { label: string; cls: string }> = {
 };
 
 const fmt = new Intl.NumberFormat("id-ID");
-const dateFmt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const dateFmt = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Jakarta",
+});
 
 /**
  * RSVP guest list for the couple: numbers at a glance, search / filter / sort, a page at a time,
@@ -61,10 +68,12 @@ export function RsvpManager({
   initialRows,
   qrEnabled,
   card,
+  monitoringOnly = false,
 }: {
   initialRows: RsvpRow[];
   qrEnabled: boolean;
   card: { couple: string; date?: string | null; venue?: string | null };
+  monitoringOnly?: boolean;
 }) {
   const [rows, setRows] = useState(initialRows);
   const [q, setQ] = useState("");
@@ -142,6 +151,29 @@ export function RsvpManager({
     }
   };
 
+  const sendQrOnWhatsapp = async () => {
+    if (!qrFor?.checkInToken) return;
+    setBusy(true);
+    try {
+      const img =
+        qrKind === "standard"
+          ? await renderStandardQr(qrFor.checkInToken, qrFor.guestName)
+          : await renderQrCard(qrFor.checkInToken, { guestName: qrFor.guestName, note: qrFor.note, ...card });
+      const message = [
+        `Halo ${qrFor.guestName},`,
+        `terima kasih sudah mengonfirmasi kehadiran di pernikahan ${card.couple}.`,
+        "Berikut QR check-in Anda. Mohon tunjukkan kepada penerima tamu saat tiba di lokasi acara.",
+      ].join("\n");
+      const how = await shareQrOnWhatsapp(img, qrFor.phone, message);
+      if (how === "manual") toast.success("QR diunduh. Lampirkan gambarnya di chat WhatsApp yang terbuka.");
+      setQrFor(null);
+    } catch {
+      toast.error("Gagal menyiapkan QR");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const saveNote = async () => {
     if (!noteFor) return;
     setBusy(true);
@@ -195,6 +227,18 @@ export function RsvpManager({
         />
       </div>
 
+      {monitoringOnly && (
+        <div className="flex items-start gap-3 rounded-2xl border border-[#E6D5B2] bg-[#FAF4E8] px-4 py-3.5 text-sm text-[#40372B]">
+          <IconShieldLock size={19} className="mt-0.5 shrink-0 text-[#8A6424]" />
+          <div>
+            <p className="font-medium text-[#1F1A14]">Mode Pemantauan Mitra</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-[#5E5446]">
+              Anda dapat memantau kehadiran dan ucapan tamu klien secara langsung. Nomor WhatsApp disensor sebagian untuk menjaga privasi tamu.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-[#EDE3CF] bg-white shadow-[0_1px_2px_rgba(26,21,16,.04)]">
         {/* Toolbar */}
         <div className="flex flex-col gap-3 border-b border-[#F3EBDB] p-4 lg:flex-row lg:items-center">
@@ -208,7 +252,7 @@ export function RsvpManager({
               }}
               type="search"
               aria-label="Cari tamu"
-              placeholder="Cari nama, nomor, pendamping, catatan…"
+              placeholder={monitoringOnly ? "Cari nama tamu, pendamping, catatan…" : "Cari nama, nomor, pendamping, catatan…"}
               className="w-full min-w-0 bg-transparent text-sm outline-none"
             />
           </label>
@@ -217,17 +261,21 @@ export function RsvpManager({
               <option value="baru">Terbaru</option>
               <option value="nama">Nama A–Z</option>
             </SelectField>
-            <a href="/api/user/rsvp/export" download className={buttonVariants({ variant: "outline", className: "h-10 rounded-full border-[#E9DDC6]" })}>
-              <IconDownload size={16} /> Ekspor CSV
-            </a>
-            <Link href="/wa-blast" className={buttonVariants({ variant: "outline", className: "h-10 rounded-full border-[#E9DDC6]" })}>
-              <IconBrandWhatsapp size={16} className="text-[#8A6424]" /> WA Blast
-              <span className="rounded-full bg-[#F6EEDF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#8A6424]">Segera</span>
-            </Link>
-            {qrEnabled && (
-              <Link href="/check-in" className={buttonVariants({ variant: "gold", className: "h-10 px-4" })}>
-                <IconScan size={16} /> Pindai tamu
-              </Link>
+            {!monitoringOnly && (
+              <>
+                <a href="/api/user/rsvp/export" download className={buttonVariants({ variant: "outline", className: "h-10 rounded-full border-[#E9DDC6]" })}>
+                  <IconDownload size={16} /> Ekspor CSV
+                </a>
+                <Link href="/wa-blast" className={buttonVariants({ variant: "outline", className: "h-10 rounded-full border-[#E9DDC6]" })}>
+                  <IconBrandWhatsapp size={16} className="text-[#8A6424]" /> WA Blast
+                  <span className="rounded-full bg-[#F6EEDF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#8A6424]">Segera</span>
+                </Link>
+                {qrEnabled && (
+                  <Link href="/check-in" className={buttonVariants({ variant: "gold", className: "h-10 px-4" })}>
+                    <IconScan size={16} /> Pindai tamu
+                  </Link>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -259,18 +307,24 @@ export function RsvpManager({
                 <th className="px-4 py-3 font-medium">Jumlah</th>
                 <th className="px-4 py-3 font-medium">Detail</th>
                 {qrEnabled && <th className="px-4 py-3 font-medium">Check-in</th>}
-                <th className="px-4 py-3 text-right font-medium">Aksi</th>
+                {!monitoringOnly && <th className="px-4 py-3 text-right font-medium">Aksi</th>}
               </tr>
             </thead>
             <tbody>
               {pageRows.map((r) => {
                 const st = STATUS[r.attendance.toUpperCase()] ?? STATUS.HADIR;
-                const wa = waLink(r.phone);
+                const wa = monitoringOnly ? null : waLink(r.phone);
                 return (
                   <tr key={r.id} className="border-t border-[#F3EBDB] align-top transition-colors hover:bg-[#FCF8F1]">
                     <td className="px-4 py-3">
                       <p className="font-medium text-[#1F1A14]">{r.guestName}</p>
-                      {wa ? (
+                      {monitoringOnly ? (
+                        r.phone ? (
+                          <p className="text-xs tabular-nums text-[#6B5F50]">{r.phone}</p>
+                        ) : (
+                          <p className="text-xs text-[#8E8268]">{dateFmt.format(new Date(r.createdAt))}</p>
+                        )
+                      ) : wa ? (
                         <a href={wa} target="_blank" rel="noreferrer" className="text-xs text-[#8A6424] hover:underline">
                           +{r.phone}
                         </a>
@@ -308,9 +362,11 @@ export function RsvpManager({
                         )}
                       </td>
                     )}
-                    <td className="px-4 py-3">
-                      <RowActions r={r} qrEnabled={qrEnabled} onCheckIn={toggleCheckIn} onQr={openQr} onNote={(x) => (setNoteFor(x), setNoteText(x.note ?? ""))} onDelete={setDeleteFor} />
-                    </td>
+                    {!monitoringOnly && (
+                      <td className="px-4 py-3">
+                        <RowActions r={r} qrEnabled={qrEnabled} onCheckIn={toggleCheckIn} onQr={openQr} onNote={(x) => (setNoteFor(x), setNoteText(x.note ?? ""))} onDelete={setDeleteFor} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -327,8 +383,8 @@ export function RsvpManager({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-medium text-[#1F1A14]">{r.guestName}</p>
-                    <p className="text-xs text-[#6B5F50]">
-                      {r.guests} orang{r.phone ? ` · +${r.phone}` : ""}
+                    <p className="text-xs tabular-nums text-[#6B5F50]">
+                      {r.guests} orang{r.phone ? ` · ${monitoringOnly ? r.phone : `+${r.phone}`}` : ""}
                     </p>
                   </div>
                   <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${st.cls}`}>{st.label}</span>
@@ -348,7 +404,9 @@ export function RsvpManager({
                   ) : (
                     <span />
                   )}
-                  <RowActions r={r} qrEnabled={qrEnabled} onCheckIn={toggleCheckIn} onQr={openQr} onNote={(x) => (setNoteFor(x), setNoteText(x.note ?? ""))} onDelete={setDeleteFor} />
+                  {!monitoringOnly && (
+                    <RowActions r={r} qrEnabled={qrEnabled} onCheckIn={toggleCheckIn} onQr={openQr} onNote={(x) => (setNoteFor(x), setNoteText(x.note ?? ""))} onDelete={setDeleteFor} />
+                  )}
                 </div>
               </li>
             );
@@ -405,7 +463,7 @@ export function RsvpManager({
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-(family-name:--font-landing-display) text-2xl font-normal">QR untuk {qrFor?.guestName}</DialogTitle>
-            <DialogDescription>Pilih bentuk QR yang ingin diunduh, lalu kirim ke tamu lewat WhatsApp.</DialogDescription>
+            <DialogDescription>Pilih bentuk QR, lalu kirim langsung ke WhatsApp tamu atau unduh gambarnya.</DialogDescription>
           </DialogHeader>
           {qrFor?.checkInToken && (
             <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Bentuk QR">
@@ -443,8 +501,11 @@ export function RsvpManager({
             <Button type="button" variant="outline" onClick={() => setQrFor(null)} className="rounded-full">
               Batal
             </Button>
-            <Button type="button" variant="gold" disabled={busy} onClick={downloadQr} className="h-10 px-5">
+            <Button type="button" variant="outline" disabled={busy} onClick={downloadQr} className="h-10 rounded-full px-5">
               <IconDownload size={16} /> Unduh
+            </Button>
+            <Button type="button" variant="gold" disabled={busy} onClick={() => void sendQrOnWhatsapp()} className="h-10 px-5">
+              <IconBrandWhatsapp size={16} /> Kirim via WhatsApp
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -9,13 +9,18 @@ import { buttonVariants } from "@/components/ui/button";
 import { getSession } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
+import { maskPhone } from "@/lib/phone";
 import { mapInvitationToWeddingData } from "@/lib/utils/wedding-mapper";
 
 export default async function WaBlastPage() {
   const session = await getSession(undefined, "user");
   if (!session) redirect("/login");
 
-  const active = await getActiveInvitation(session.user.id);
+  const [active, viewer] = await Promise.all([
+    getActiveInvitation(session.user.id),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } }),
+  ]);
+  const isMitraMonitoring = viewer?.accountType === "AGENCY";
   const [guests, existingWaitlist] = await Promise.all([
     prisma.guest.findMany({
       where: { invitationId: active.id },
@@ -40,6 +45,7 @@ export default async function WaBlastPage() {
         day: "numeric",
         month: "long",
         year: "numeric",
+        timeZone: "Asia/Jakarta",
       }).format(new Date(ev.date))
     : "Sabtu, 28 November 2026";
 
@@ -60,6 +66,7 @@ export default async function WaBlastPage() {
                 <InvitationSwitcher compact />
                 <Link
                   href="/manajemen-tamu"
+                  data-feature-allow="true"
                   className={buttonVariants({ variant: "outline", className: "h-9 rounded-full border-[#E9DDC6] bg-white px-3.5 text-xs shadow-none hover:border-[#8A6424]" })}
                 >
                   <IconUsers size={15} /> Kelola Tamu
@@ -85,7 +92,7 @@ export default async function WaBlastPage() {
               name: g.name,
               greeting: g.greeting,
               guestType: g.guestType === "VIP" ? "VIP" : "REGULAR",
-              phone: g.phone,
+              phone: isMitraMonitoring ? maskPhone(g.phone) : g.phone,
               label: g.label,
               eventName: g.eventName,
               maxGuests: g.maxGuests,

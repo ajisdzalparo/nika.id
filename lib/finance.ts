@@ -128,7 +128,9 @@ export async function getFinanceReport(from: Date, to: Date) {
             ? `Kuota Mitra (${t.addonUnits})`
             : t.kind === "MARKETPLACE"
               ? "Fee template marketplace"
-              : PLAN_LABEL[t.plan ?? ""] ?? t.plan ?? "Lainnya",
+              : t.kind === "RENEWAL"
+                ? "Perpanjangan masa aktif"
+                : PLAN_LABEL[t.plan ?? ""] ?? t.plan ?? "Lainnya",
     ]),
   );
 

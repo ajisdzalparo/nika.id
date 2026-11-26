@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
+import { maskPhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 
 function escapeCsvCell(raw: string | number | null | undefined): string {
@@ -24,7 +25,11 @@ function formatWib(date: Date): string {
 export async function GET(request: Request) {
   try {
     const session = await requireAuth(request);
-    const active = await getActiveInvitation(session.user.id);
+    const [active, viewer] = await Promise.all([
+      getActiveInvitation(session.user.id),
+      prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } }),
+    ]);
+    const isMitraMonitoring = viewer?.accountType === "AGENCY";
 
     const [attendees, messages] = await Promise.all([
       prisma.rSVP.findMany({
@@ -68,7 +73,7 @@ export async function GET(request: Request) {
           r.guestName,
           r.attendance,
           r.guests,
-          r.phone ?? "",
+          (isMitraMonitoring ? maskPhone(r.phone) : r.phone) ?? "",
           r.companions ?? "",
           r.customAnswer ?? "",
           r.note ?? "",

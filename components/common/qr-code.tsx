@@ -39,8 +39,18 @@ function save(dataUrl: string, filename: string) {
 
 const safeName = (s: string) => s.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 40) || "tamu";
 
+export interface QrImage {
+  dataUrl: string;
+  filename: string;
+}
+
 /** Plain QR with the code printed under it. */
 export async function downloadStandardQr(token: string, guestName: string) {
+  const img = await renderStandardQr(token, guestName);
+  save(img.dataUrl, img.filename);
+}
+
+export async function renderStandardQr(token: string, guestName: string): Promise<QrImage> {
   const qr = document.createElement("canvas");
   await QRCode.toCanvas(qr, checkInQrText(token), { margin: 2, width: 720, color: { dark: INK, light: "#FFFFFF" } });
   const c = document.createElement("canvas");
@@ -57,11 +67,18 @@ export async function downloadStandardQr(token: string, guestName: string) {
   ctx.fillStyle = GOLD;
   ctx.font = "500 26px monospace";
   ctx.fillText(token, 360, 800);
-  save(c.toDataURL("image/png"), `qr-${safeName(guestName)}.png`);
+  return { dataUrl: c.toDataURL("image/png"), filename: `qr-${safeName(guestName)}.png` };
 }
 
+type QrCardInfo = { guestName: string; couple: string; date?: string | null; venue?: string | null; note?: string | null };
+
 /** A small invitation card: couple, guest, date, QR — ready to share on WhatsApp. */
-export async function downloadQrCard(token: string, info: { guestName: string; couple: string; date?: string | null; venue?: string | null; note?: string | null }) {
+export async function downloadQrCard(token: string, info: QrCardInfo) {
+  const img = await renderQrCard(token, info);
+  save(img.dataUrl, img.filename);
+}
+
+export async function renderQrCard(token: string, info: QrCardInfo): Promise<QrImage> {
   const W = 900;
   const H = 1500;
   const c = document.createElement("canvas");
@@ -122,7 +139,29 @@ export async function downloadQrCard(token: string, info: { guestName: string; c
     ctx.font = "400 28px 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(info.venue, W / 2, 1400, W - 160);
   }
-  save(c.toDataURL("image/png"), `kartu-${safeName(info.guestName)}.png`);
+  return { dataUrl: c.toDataURL("image/png"), filename: `kartu-${safeName(info.guestName)}.png` };
+}
+
+/**
+ * Sends a guest their QR on WhatsApp. On phones the image itself is shared (system share sheet, pick
+ * WhatsApp); elsewhere the image is downloaded and the guest's chat opens with the message ready, so the
+ * image only needs to be attached. Returns how it was sent.
+ */
+export async function shareQrOnWhatsapp(img: QrImage, phone: string | null, message: string): Promise<"shared" | "manual"> {
+  const blob = await (await fetch(img.dataUrl)).blob();
+  const file = new File([blob], img.filename, { type: "image/png" });
+  if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], text: message });
+      return "shared";
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return "shared";
+    }
+  }
+  save(img.dataUrl, img.filename);
+  const digits = (phone ?? "").replace(/\D/g, "");
+  window.open(`https://wa.me/${digits}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+  return "manual";
 }
 
 /** Generic URL QR preview (used for the printable venue self-check-in standee). */

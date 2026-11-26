@@ -53,3 +53,17 @@ export function waLink(digits: string | null | undefined, text?: string): string
   if (!d) return null;
   return `https://wa.me/${d}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }
+
+/**
+ * Censors middle digits of a phone number for privacy (e.g. Mitra monitoring client guests):
+ * "6281299990001" -> "+6281•••••0001" (shows prefix & tail only).
+ */
+export function maskPhone(raw: string | null | undefined): string | null {
+  const d = normalizePhoneDigits(raw);
+  if (!d) return null;
+  if (d.length <= 5) return `+${d.slice(0, 2)}•••`;
+  const headLen = d.length >= 10 ? 4 : 3;
+  const tailLen = d.length >= 10 ? 4 : 2;
+  const hiddenCount = Math.max(3, Math.min(5, d.length - headLen - tailLen));
+  return `+${d.slice(0, headLen)}${"•".repeat(hiddenCount)}${d.slice(-tailLen)}`;
+}

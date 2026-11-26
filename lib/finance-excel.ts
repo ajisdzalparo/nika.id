@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { readSpreadsheetRows, styleHeader } from "@/lib/excel";
 import type { FinanceReport, ManualEntryInput } from "@/lib/finance";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/finance";
 
@@ -58,16 +59,6 @@ function parseKind(v: unknown): "INCOME" | "EXPENSE" | null {
   return null;
 }
 
-/** ExcelJS cell value → plain value (rich text, formulas and hyperlinks flattened). */
-function plain(v: ExcelJS.CellValue): unknown {
-  if (v && typeof v === "object" && !(v instanceof Date)) {
-    if ("result" in v) return (v as { result: unknown }).result;
-    if ("richText" in v) return (v as { richText: { text: string }[] }).richText.map((t) => t.text).join("");
-    if ("text" in v) return (v as { text: string }).text;
-  }
-  return v;
-}
-
 function rowsToEntries(rows: unknown[][]): ImportResult {
   const entries: ManualEntryInput[] = [];
   const errors: ImportResult["errors"] = [];
@@ -99,61 +90,9 @@ function rowsToEntries(rows: unknown[][]): ImportResult {
   return { entries, errors };
 }
 
-function parseCsv(text: string): unknown[][] {
-  const delim = (text.split("\n")[0].match(/;/g)?.length ?? 0) > (text.split("\n")[0].match(/,/g)?.length ?? 0) ? ";" : ",";
-  const out: unknown[][] = [];
-  let row: string[] = [];
-  let cur = "";
-  let quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"' && text[i + 1] === '"') {
-        cur += '"';
-        i++;
-      } else if (ch === '"') quoted = false;
-      else cur += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === delim) {
-      row.push(cur);
-      cur = "";
-    } else if (ch === "\n" || ch === "\r") {
-      if (ch === "\r" && text[i + 1] === "\n") i++;
-      row.push(cur);
-      out.push(row);
-      row = [];
-      cur = "";
-    } else cur += ch;
-  }
-  if (cur || row.length) {
-    row.push(cur);
-    out.push(row);
-  }
-  return out;
-}
-
 /** Reads the first sheet of an .xlsx (or a .csv) into validated manual entries. */
 export async function parseFinanceFile(buffer: ArrayBuffer, filename: string): Promise<ImportResult> {
-  if (/\.csv$/i.test(filename)) return rowsToEntries(parseCsv(new TextDecoder("utf-8").decode(buffer).replace(/^﻿/, "")));
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(buffer);
-  const ws = wb.worksheets.find((w) => w.name.toLowerCase() === "data") ?? wb.worksheets[0];
-  if (!ws) return { entries: [], errors: [{ row: 1, message: "Tidak ada sheet di file" }] };
-  const rows: unknown[][] = [];
-  ws.eachRow({ includeEmpty: false }, (r) => {
-    const vals = (r.values as ExcelJS.CellValue[]).slice(1).map(plain);
-    rows.push(vals);
-  });
-  return rowsToEntries(rows);
-}
-
-function styleHeader(ws: ExcelJS.Worksheet) {
-  const h = ws.getRow(1);
-  h.font = { bold: true, color: { argb: "FFF7F3EC" } };
-  h.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E1B17" } };
-  h.alignment = { vertical: "middle" };
-  h.height = 22;
-  ws.views = [{ state: "frozen", ySplit: 1 }];
+  return rowsToEntries(await readSpreadsheetRows(buffer, filename, "data"));
 }
 
 /** Template with headers, example rows and a sheet explaining the columns. */
