@@ -19,7 +19,8 @@ export async function POST(request: Request) {
       headers: request.headers,
     });
 
-    const res = NextResponse.json({ success: true, result });
+    // Never echo `result`: it holds the impersonated user's raw session token
+    const res = NextResponse.json({ success: true });
     const sessionObj = (result as { session?: { id?: string; token?: string } } | null)?.session;
     if (sessionObj?.id && sessionObj?.token) {
       const cookieName = process.env.NODE_ENV === "production" ? "__Secure-better-auth.session_token" : "better-auth.session_token";

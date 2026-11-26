@@ -27,9 +27,9 @@ services:
     container_name: satumoment-postgres
     restart: unless-stopped
     ports:
-      # Exposed publicly on host port 5434 (avoids port 5433 used by velomock-postgres)
-      # Always set a strong POSTGRES_PASSWORD in .env!
-      - "${POSTGRES_PUBLIC_PORT:-5434}:5432"
+      # Host-only (127.0.0.1): the app reaches Postgres over the internal network. For a DB GUI use an SSH tunnel:
+      #   ssh -L 5434:127.0.0.1:5434 <vps>
+      - "127.0.0.1:${POSTGRES_PUBLIC_PORT:-5434}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nikaid}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -50,9 +50,9 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
-      # Public S3 API (9000) & MinIO Web Console (9001), also proxied over HTTPS via Caddy
-      - "9000:9000"
-      - "9001:9001"
+      # Host-only: public files are served over HTTPS by Caddy (/storage); the console is reachable via SSH tunnel
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
