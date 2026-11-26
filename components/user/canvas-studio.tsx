@@ -31,7 +31,6 @@ import {
   IconSearch,
   IconShape,
   IconShoppingBag,
-  IconSparkles,
   IconStackBackward,
   IconStackForward,
   IconTrash,
@@ -708,7 +707,7 @@ export function CanvasStudio({
                 {(
                   [
                     ["ornaments", "Ilustrasi", IconFlower, "art"],
-                    ["ornaments", "AI", IconSparkles, "ai"],
+                    ["ornaments", "AI", IconBrush, "ai"],
                     ["ornaments", "Bingkai & Hiasan", IconShape, "library"],
                     ["type", "Teks", IconTypography, "text"],
                     ["ornaments", "Unggahan", IconUpload, "upload"],
@@ -1342,7 +1341,7 @@ export function CanvasStudio({
                           href="/ai-design"
                           className="inline-flex h-8 items-center gap-1 rounded-full bg-[#1A1510] px-3 text-[11px] font-medium text-[#FCF8F1] hover:bg-[#2B241B]"
                         >
-                          <IconSparkles size={13} /> Buka AI Designer
+                          Buka AI Designer
                         </Link>
                         <Link
                           href="/upgrade?pilih=kredit#kredit-ai"
@@ -1373,7 +1372,7 @@ export function CanvasStudio({
                         onClick={() => void generateOrnament()}
                         className="h-11 rounded-xl bg-[#1A1510] px-5 text-xs font-medium text-[#FCF8F1]"
                       >
-                        {generatingOrnament ? <IconLoader2 size={16} className="mr-1.5 animate-spin" /> : <IconSparkles size={16} className="mr-1.5" />}
+                        {generatingOrnament && <IconLoader2 size={16} className="mr-1.5 animate-spin" />}
                         {generatingOrnament ? "Membuat..." : "Generate Ornamen (1 Kredit)"}
                       </Button>
                     </div>
@@ -2793,7 +2792,7 @@ export function CanvasStudio({
 
               {/* Clean flat paper Canva-style artboard (no thick phone bezel) */}
               <div className="relative overflow-hidden rounded-lg border-2 border-[#D9B56A]/70 bg-white shadow-sm">
-                <div className="h-[720px] overflow-y-auto overscroll-contain [scrollbar-width:thin]">
+                <div className="h-[720px] overflow-y-auto overscroll-contain">
                   <AiDesignTemplate
                     data={previewData}
                     theme={theme}

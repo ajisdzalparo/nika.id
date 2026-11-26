@@ -46,7 +46,8 @@ export function mapInvitationToWeddingData(invitationData: any, guestName?: stri
     },
     gifts: invitationData.gifts || { enabled: false, bankAccounts: [] },
     music: invitationData.music,
-    quote: invitationData.quote || {
+    // No quote saved yet: the classic verse; the couple can switch to another or hide it in the editor
+    quote: invitationData.quote?.enabled === false ? undefined : invitationData.quote?.text ? invitationData.quote : {
       text: "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang. Sungguh, pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir.",
       source: "Qs. Ar-Rum: 21",
     },

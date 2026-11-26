@@ -9,7 +9,6 @@ import {
   IconLock,
   IconLockOpen,
   IconRefresh,
-  IconSparkles,
   IconStackForward,
   IconTrash,
 } from "@tabler/icons-react";
@@ -1110,9 +1109,9 @@ export function CanvasSectionFrame({
               type="button"
               title="Hias elemen di section ini"
               onClick={() => canvasEditor.onQuickInsert?.(section)}
-              className="inline-flex items-center gap-0.5 rounded-full bg-[#FBF6EB] px-1.5 py-0.5 text-[10px] font-medium text-[#8A6A2F] hover:bg-[#F3E9D2]"
+              className="inline-flex items-center gap-0.5 rounded-full bg-[#FBF6EB] px-2 py-0.5 text-[10px] font-medium text-[#8A6A2F] hover:bg-[#F3E9D2]"
             >
-              <IconSparkles size={10} /> Hias
+              Hias
             </button>
           )}
         </div>

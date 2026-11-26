@@ -1164,7 +1164,7 @@ export function Rsvp({ theme, data, preview }: { theme: AiTheme; data: WeddingDa
           </span>
         </div>
         {wishes.length ? (
-          <ul className="max-h-[520px] space-y-3 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin]">
+          <ul className="max-h-[520px] space-y-3 overflow-y-auto overscroll-contain pr-1">
             {wishes.map((w, i) => (
               <li key={`${w.createdAt}-${i}`} className={`space-y-2 px-5 py-4 ${cardShape(theme)}`} style={{ background: "var(--surface)", border: "1px solid color-mix(in srgb, var(--ink) 10%, transparent)" }}>
                 <div className="flex items-baseline justify-between gap-3">

@@ -185,13 +185,15 @@ export default function ClassicPremium({ data }: { data: WeddingData }) {
         </section>
 
         {/* Intro Section */}
+        {data.quote && (
         <section className="py-24 px-6 text-center max-w-2xl mx-auto space-y-6 premium-section">
           <IconHeart className="w-8 h-8 mx-auto text-[#C4A484] fill-current opacity-50" />
           <p className="text-lg leading-relaxed italic">
-            &ldquo;{data.quote?.text || "Maka timbulah kasih sayang di antara mereka. Sungguh pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir."}&rdquo;
+            &ldquo;{data.quote.text}&rdquo;
           </p>
-          <p className="text-sm font-sans font-bold uppercase tracking-wider text-[#C4A484]">{data.quote?.source || "Ar-Rum: 21"}</p>
+          {data.quote.source && <p className="text-sm font-sans font-bold uppercase tracking-wider text-[#C4A484]">{data.quote.source}</p>}
         </section>
+        )}
 
         {/* Couple Detail Section */}
         <section className="py-24 px-6 bg-white overflow-hidden">
