@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_PLAN_PRICES, type PlanPrices } from "@/lib/limits";
 import {
   defaultFeatureStatuses,
   FEATURE_STATUSES,
@@ -44,6 +45,8 @@ const KEYS = {
   aiDesignEnabled: "ai_design_enabled",
   /** JSON { [FeatureId]: FeatureStatus } — see lib/features.ts */
   featureFlags: "feature_flags",
+  /** JSON { HEMAT, PREMIUM, EKSKLUSIF } in rupiah — overrides the defaults in lib/limits.ts */
+  planPrices: "plan_prices",
 } as const;
 
 function parseEnvBanks(): BankAccount[] {
@@ -169,6 +172,26 @@ export async function setFeatureStatuses(changes: Partial<FeatureStatusMap>): Pr
   // Keep the legacy key in sync for anything still reading it directly
   if (changes.DESAIN_AI) await upsertSetting(KEYS.aiDesignEnabled, String(changes.DESAIN_AI === "ACTIVE"));
   return next;
+}
+
+/** Current plan prices: the admin's values over the defaults. */
+export async function getPlanPrices(): Promise<PlanPrices> {
+  const map = await readSettingMap([KEYS.planPrices]);
+  const prices = { ...DEFAULT_PLAN_PRICES };
+  try {
+    const saved = JSON.parse(map[KEYS.planPrices] ?? "{}") as Partial<Record<keyof PlanPrices, unknown>>;
+    for (const k of Object.keys(prices) as (keyof PlanPrices)[]) {
+      const v = Number(saved[k]);
+      if (Number.isInteger(v) && v >= 1000) prices[k] = v;
+    }
+  } catch {
+    // Bad JSON: keep the defaults
+  }
+  return prices;
+}
+
+export async function setPlanPrices(prices: PlanPrices): Promise<void> {
+  await upsertSetting(KEYS.planPrices, JSON.stringify(prices));
 }
 
 export async function getSystemSettings(): Promise<PaymentAndContactSettings> {

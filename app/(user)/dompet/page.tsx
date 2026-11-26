@@ -148,7 +148,7 @@ export default function DompetPage() {
           <header className="space-y-2">
             <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[#8A6424]">Dompet</p>
             <h2 className="font-serif text-5xl font-medium">Saldo & penarikan</h2>
-            <p className="max-w-2xl text-zinc-600">Pemasukan dari komisi referral dan penjualan template masuk ke sini, lalu bisa ditarik ke rekening atau e-wallet.</p>
+            <p className="max-w-2xl text-zinc-600">Pemasukan dari penjualan template (dan komisi referral lama) masuk ke sini, lalu bisa ditarik ke rekening atau e-wallet.</p>
           </header>
 
           {!data ? (
@@ -180,10 +180,10 @@ export default function DompetPage() {
                         <IconShare size={14} /> Program Referral
                       </p>
                       <h3 className="font-serif text-2xl font-medium text-[#1A1510] sm:text-3xl">
-                        Bagikan link, teman hemat 10%, kamu dapat komisi 15%
+                        Bagikan link, teman hemat 10%
                       </h3>
                       <p className="max-w-xl text-sm text-[#5E5446]">
-                        Setiap teman yang mendaftar atau checkout dengan kodemu mendapat diskon 10% (maks Rp15.000), dan 15% dari transaksi mereka (maks Rp100.000 per transaksi, di luar top-up Kredit AI) masuk ke Dompet ini.
+                        Teman yang mendaftar atau checkout dengan kodemu mendapat diskon 10% (maks Rp15.000) di transaksi pertamanya, di luar top-up Kredit AI. Punya usaha atau ingin ikut menjual? Gabung Program Mitra untuk mendapat bonus kuota undangan.
                       </p>
 
                       <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-[#5E5446]">
@@ -194,10 +194,14 @@ export default function DompetPage() {
                         <span>
                           <strong className="font-serif text-lg tabular-nums text-[#1A1510]">{referral.conversions}</strong> transaksi berhasil
                         </span>
-                        <span>·</span>
-                        <span>
-                          Total komisi <strong className="font-serif text-lg tabular-nums text-[#8A6424]">{rupiah(referral.totalCommission)}</strong>
-                        </span>
+                        {referral.totalCommission > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>
+                              Komisi lama <strong className="font-serif text-lg tabular-nums text-[#8A6424]">{rupiah(referral.totalCommission)}</strong>
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -284,7 +288,7 @@ export default function DompetPage() {
                           rel="noreferrer"
                           className="inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[#E9DDC6] bg-white px-4 text-xs font-medium text-[#1A1510] hover:bg-[#F6EEDF]"
                         >
-                          <IconBrandWhatsapp size={15} className="text-[#1F9D55]" /> Bagikan WA
+                          <IconBrandWhatsapp size={15} className="text-[#8A6424]" /> Bagikan WA
                         </a>
                       </div>
                     </div>
@@ -348,7 +352,7 @@ export default function DompetPage() {
                         })}
                       </ul>
                     ) : (
-                      <p className="mt-3 text-sm text-zinc-500">Belum ada pemasukan. Komisi referral dan penjualan template akan muncul di sini.</p>
+                      <p className="mt-3 text-sm text-zinc-500">Belum ada pemasukan. Hasil penjualan template akan muncul di sini.</p>
                     )}
                   </div>
                 </section>

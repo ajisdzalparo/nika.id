@@ -4,13 +4,13 @@ import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { sanitizePromoCode } from "@/lib/promo-shared";
 
-const KINDS = ["PLAN", "GUEST_ADDON", "AI_CREDIT", "AGENCY_QUOTA"] as const;
+const KINDS = ["PLAN", "GUEST_ADDON", "AI_CREDIT", "AGENCY_QUOTA", "RENEWAL"] as const;
 
 const PromoInputSchema = z
   .object({
     code: z.string().transform(sanitizePromoCode).pipe(z.string().min(3, "Kode minimal 3 huruf/angka.")),
     description: z.string().trim().max(120).optional().nullable(),
-    percentOff: z.number().int().min(1).max(90).nullable().optional(),
+    percentOff: z.number().int().min(1).max(100).nullable().optional(),
     amountOff: z.number().int().min(1000).nullable().optional(),
     maxDiscount: z.number().int().min(1000).nullable().optional(),
     appliesTo: z.array(z.enum(KINDS)).optional(),

@@ -130,6 +130,8 @@ export function TransactionsClient({ initialTransactions }: TransactionsClientPr
                       <span className="ml-2 rounded-full border border-[#E6D5B2] bg-[#F7F0E1] px-2 py-0.5 text-[11px] text-[#5C431A]">
                         Top-up {t.addonUnits ?? 0} Kredit AI
                       </span>
+                    ) : t.kind === "RENEWAL" ? (
+                      <span className="ml-2 rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-600">Perpanjangan +1 tahun</span>
                     ) : t.kind === "GUEST_ADDON" ? (
                       <span className="ml-2 rounded-full border border-zinc-300 px-2 py-0.5 text-[11px] text-zinc-600">
                         Add-on +{(t.addonUnits ?? 1) * 100} Tamu

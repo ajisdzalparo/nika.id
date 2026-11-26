@@ -123,7 +123,7 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
         <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
           {mode === "PERCENT" ? "Besar diskon (%)" : "Potongan (Rp)"}
           {mode === "PERCENT" ? (
-            <NumberInput value={value} onValueChange={setValue} max={90} suffix="%" placeholder="20" required className={fieldCls} />
+            <NumberInput value={value} onValueChange={setValue} max={100} suffix="%" placeholder="20" required className={fieldCls} />
           ) : (
             <NumberInput value={value} onValueChange={setValue} format="thousands" prefix="Rp" placeholder="50.000" required className={fieldCls} />
           )}

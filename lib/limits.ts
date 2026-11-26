@@ -17,6 +17,9 @@ export interface PlanLimits {
 }
 
 export const GUEST_ADDON_PRICE = 15000;
+/** Extends a paid invitation's active period by RENEWAL_DAYS (from its current expiry, or today if expired). */
+export const RENEWAL_PRICE = 25000;
+export const RENEWAL_DAYS = 365;
 export const GUEST_ADDON_SIZE = 100;
 export const PAID_PLANS: PlanType[] = ["HEMAT", "PREMIUM", "EKSKLUSIF"];
 
@@ -103,18 +106,21 @@ export function getAgencyPackByQuota(quota: number): AgencyPack | undefined {
   return AGENCY_PACKS.find((p) => p.quota === quota);
 }
 
-export function getUsableAgencyQuota(user: { agencyQuota: number; agencyQuotaExpiresAt: Date | null } | null | undefined): number {
-  if (!user || user.agencyQuota <= 0) return 0;
+export function getUsableAgencyQuota(
+  user: { agencyQuota: number; agencyQuotaExpiresAt: Date | null; accountType?: string | null } | null | undefined,
+): number {
+  // Quota is only usable by an admin-approved mitra (accountType AGENCY)
+  if (!user || user.agencyQuota <= 0 || (user.accountType !== undefined && user.accountType !== "AGENCY")) return 0;
   if (user.agencyQuotaExpiresAt && user.agencyQuotaExpiresAt.getTime() <= Date.now()) return 0;
   return user.agencyQuota;
 }
 
 export const REFERRAL_DISCOUNT_RATE = 0.1;
 export const REFERRAL_MAX_DISCOUNT = 15000;
-export const REFERRAL_COMMISSION_RATE = 0.15;
-/** Caps commission on large orders (e.g. agency packs) so one referral can't pay out hundreds of thousands. */
-export const REFERRAL_MAX_COMMISSION = 100000;
+/** Hold period for wallet earnings (marketplace sales; commissions booked before referral became discount-only). */
 export const REFERRAL_HOLD_DAYS = 7;
+/** A mitra earns 1 free invitation (Premium-equivalent quota) for every N clients who buy a plan with their code. */
+export const MITRA_BONUS_EVERY = 3;
 
 export function computeReferralDiscount(basePrice: number): number {
   if (basePrice <= 1000) return 0;
@@ -163,11 +169,12 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseLoveStory: false,
     activeDays: 90,
     aiDesignQuota: 1,
-    allowedTemplateTypes: ["Gratis"],
+    // Every paid plan opens the whole catalog: plans differ by features, not by design
+    allowedTemplateTypes: ["Gratis", "Premium"],
   },
   PREMIUM: {
     name: "Premium",
-    price: 79000,
+    price: 129000,
     maxGuests: 300,
     maxGalleryPhotos: 20,
     canUseMusic: true,
@@ -182,7 +189,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   },
   EKSKLUSIF: {
     name: "Eksklusif",
-    price: 99000,
+    price: 159000,
     maxGuests: Infinity,
     maxGalleryPhotos: Infinity,
     canUseMusic: true,
@@ -208,13 +215,31 @@ export function isFeatureEnabled(plan: PlanType | string | null | undefined, fea
   return limits[feature] === true;
 }
 
+/** Prices of the paid plans. The admin can change them (SystemSetting "plan_prices"); PLAN_LIMITS holds the defaults. */
+export type PaidPlan = "HEMAT" | "PREMIUM" | "EKSKLUSIF";
+export type PlanPrices = Record<PaidPlan, number>;
+
+export const DEFAULT_PLAN_PRICES: PlanPrices = {
+  HEMAT: PLAN_LIMITS.HEMAT.price,
+  PREMIUM: PLAN_LIMITS.PREMIUM.price,
+  EKSKLUSIF: PLAN_LIMITS.EKSKLUSIF.price,
+};
+
+export function planPrice(plan: PlanType, prices: PlanPrices = DEFAULT_PLAN_PRICES): number {
+  return plan === "FREE" ? 0 : prices[plan];
+}
+
 /** Returns the amount to pay when upgrading from `currentPlan` to `targetPlan` (paying only the difference), or `null` if not an upgrade. */
-export function getUpgradePrice(currentPlan: PlanType | string | null | undefined, targetPlan: PlanType): number | null {
+export function getUpgradePrice(
+  currentPlan: PlanType | string | null | undefined,
+  targetPlan: PlanType,
+  prices: PlanPrices = DEFAULT_PLAN_PRICES,
+): number | null {
   if (targetPlan === "FREE") return null;
   const cur: PlanType = currentPlan && currentPlan in PLAN_LIMITS ? (currentPlan as PlanType) : "FREE";
   if (PLAN_ORDER[targetPlan] <= PLAN_ORDER[cur]) return null;
-  if (cur === "FREE") return PLAN_LIMITS[targetPlan].price;
-  return Math.max(0, PLAN_LIMITS[targetPlan].price - PLAN_LIMITS[cur].price);
+  if (cur === "FREE") return planPrice(targetPlan, prices);
+  return Math.max(0, planPrice(targetPlan, prices) - planPrice(cur, prices));
 }
 
 export function getMaxGuests(plan: PlanType | string | null | undefined, extraGuestQuota = 0) {

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
-import { getFeatureStatuses, getSystemSettings, setFeatureStatuses, SYSTEM_SETTING_KEYS, upsertSetting } from "@/lib/system-settings";
+import { getFeatureStatuses, getPlanPrices, getSystemSettings, setFeatureStatuses, setPlanPrices, SYSTEM_SETTING_KEYS, upsertSetting } from "@/lib/system-settings";
 import { FEATURE_IDS, FEATURE_STATUSES } from "@/lib/features";
 
 async function settingsPayload() {
-  const [settings, features] = await Promise.all([getSystemSettings(), getFeatureStatuses()]);
-  return { settings, features };
+  const [settings, features, planPrices] = await Promise.all([getSystemSettings(), getFeatureStatuses(), getPlanPrices()]);
+  return { settings, features, planPrices };
 }
 
 const BankSchema = z.object({
@@ -29,6 +29,15 @@ const PatchSettingsSchema = z.object({
   aiDesignEnabled: z.boolean().optional(),
   // Per-feature status (Aktif / Maintenance / Segera hadir); only the features sent are changed
   features: z.partialRecord(z.enum(FEATURE_IDS as [string, ...string[]]), z.enum(FEATURE_STATUSES)).optional(),
+  // Plan prices in rupiah; must rise from Hemat to Eksklusif so upgrades always pay a positive difference
+  planPrices: z
+    .object({
+      HEMAT: z.number().int().min(10_000, "Harga minimal Rp10.000").max(10_000_000),
+      PREMIUM: z.number().int().min(10_000, "Harga minimal Rp10.000").max(10_000_000),
+      EKSKLUSIF: z.number().int().min(10_000, "Harga minimal Rp10.000").max(10_000_000),
+    })
+    .refine((p) => p.HEMAT < p.PREMIUM && p.PREMIUM < p.EKSKLUSIF, "Harga harus naik: Hemat < Premium < Eksklusif")
+    .optional(),
 });
 
 export async function GET(request: Request) {
@@ -85,6 +94,7 @@ export async function PATCH(request: Request) {
     if (Object.keys(featureChanges).length) {
       ops.push(setFeatureStatuses(featureChanges).then(() => undefined));
     }
+    if (d.planPrices) ops.push(setPlanPrices(d.planPrices));
     if (typeof d.manualQrisImage === "string") {
       ops.push(upsertSetting(SYSTEM_SETTING_KEYS.manualQrisImage, d.manualQrisImage));
     }

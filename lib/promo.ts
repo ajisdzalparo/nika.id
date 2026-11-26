@@ -23,6 +23,7 @@ export async function resolvePromoCode(
 
   const now = Date.now();
   if (!promo.isActive) return { found: true, valid: false, reason: "Kode promo ini sudah tidak aktif." };
+  if (promo.forUserId && promo.forUserId !== input.userId) return { found: true, valid: false, reason: "Kode promo ini khusus untuk akun lain." };
   if (promo.startsAt && promo.startsAt.getTime() > now) return { found: true, valid: false, reason: "Kode promo ini belum berlaku." };
   if (promo.expiresAt && promo.expiresAt.getTime() <= now) return { found: true, valid: false, reason: "Kode promo ini sudah kedaluwarsa." };
   if (!promoAppliesToKind(promo, input.kind)) return { found: true, valid: false, reason: "Kode promo ini tidak berlaku untuk pembelian ini." };

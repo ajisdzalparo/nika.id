@@ -23,14 +23,15 @@ import { PhoneInput } from "@/components/common/phone-input";
 import { NumberInput } from "@/components/common/number-input";
 import { normalizePhoneDigits, waLink } from "@/lib/phone";
 import { FeatureStatusManager } from "@/components/admin/feature-status-manager";
-import type { FeatureStatusMap } from "@/lib/features";
+import type { FeatureId, FeatureStatusMap } from "@/lib/features";
 
 interface SystemSettingsManagerProps {
   initialSettings: PaymentAndContactSettings;
   initialFeatures: FeatureStatusMap;
+  featureNotes?: Partial<Record<FeatureId, string>>;
 }
 
-export function SystemSettingsManager({ initialSettings, initialFeatures }: SystemSettingsManagerProps) {
+export function SystemSettingsManager({ initialSettings, initialFeatures, featureNotes }: SystemSettingsManagerProps) {
   const [maintenanceMode, setMaintenanceMode] = useState(initialSettings.maintenanceMode);
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
 
@@ -190,7 +191,7 @@ export function SystemSettingsManager({ initialSettings, initialFeatures }: Syst
       </Card>
 
       {/* Per-feature status (Desain AI, WA Blast, Kanvas, …) */}
-      <FeatureStatusManager initialStatuses={initialFeatures} />
+      <FeatureStatusManager initialStatuses={initialFeatures} notes={featureNotes} />
 
       {/* Pembayaran & Kontak */}
       <Card>
@@ -203,7 +204,7 @@ export function SystemSettingsManager({ initialSettings, initialFeatures }: Syst
             {/* WhatsApp Admin (WA Biasa) */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <IconBrandWhatsapp size={18} className="text-emerald-600" />
+                <IconBrandWhatsapp size={18} className="text-[#8A6424]" />
                 <h4 className="font-semibold">WhatsApp Admin (Konfirmasi Manual)</h4>
               </div>
               <div className="space-y-2">
