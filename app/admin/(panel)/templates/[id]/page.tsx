@@ -22,7 +22,7 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
               name: row.name,
               description: row.description,
               category: row.category,
-              tier: row.tier === "Premium" ? "Premium" : "Gratis",
+              tier: row.tier === "Marketplace" ? "Marketplace" : row.tier === "Premium" ? "Premium" : "Gratis",
               kind: row.kind === "CODE" ? "CODE" : "ENGINE",
               theme: row.theme ? normalizeTheme(row.theme) : null,
               defaultMusic: (row.defaultMusic as { type: "youtube" | "upload"; url: string; title?: string } | null) ?? null,
@@ -33,6 +33,11 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
               isFeatured: row.isFeatured,
               isNew: row.isNew,
               sortOrder: row.sortOrder,
+              price: row.price,
+              platformFeePct: row.platformFeePct,
+              reviewStatus:
+                row.reviewStatus === "PENDING_REVIEW" || row.reviewStatus === "REJECTED" ? row.reviewStatus : "APPROVED",
+              reviewNote: row.reviewNote ?? null,
             }}
           />
         </div>

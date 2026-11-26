@@ -17,6 +17,7 @@ export function TemplatePicker({
   aiEnabled = true,
   purchasedTemplateIds = [],
   currentUserId,
+  marketplaceOpen = true,
 }: {
   items: CatalogItem[];
   allowedTiers: string[];
@@ -24,12 +25,23 @@ export function TemplatePicker({
   aiEnabled?: boolean;
   purchasedTemplateIds?: string[];
   currentUserId?: string;
+  /** Marketplace feature status is Aktif: the canvas card can promise selling */
+  marketplaceOpen?: boolean;
 }) {
   const router = useRouter();
   const [cat, setCat] = useState("Semua");
   const [busy, setBusy] = useState<string | null>(null);
-  const categories = useMemo(() => ["Semua", ...Array.from(new Set(items.map((i) => i.category)))], [items]);
-  const shown = cat === "Semua" ? items : items.filter((i) => i.category === cat);
+  // Two shelves: designs included in every paid plan, and paid templates from kreator (marketplace)
+  const included = useMemo(() => items.filter((i) => i.price <= 0), [items]);
+  const kreator = useMemo(() => items.filter((i) => i.price > 0), [items]);
+  const [shelf, setShelf] = useState<"PAKET" | "KREATOR">(() =>
+    highlight && kreator.some((i) => i.slug === highlight) ? "KREATOR" : "PAKET",
+  );
+  // The kreator shelf is always there while the marketplace is open, empty or not
+  const showShelves = marketplaceOpen || kreator.length > 0;
+  const shelfItems = showShelves && shelf === "KREATOR" ? kreator : included;
+  const categories = useMemo(() => ["Semua", ...Array.from(new Set(shelfItems.map((i) => i.category)))], [shelfItems]);
+  const shown = cat === "Semua" ? shelfItems : shelfItems.filter((i) => i.category === cat);
   const highlightRef = useRef<HTMLElement | null>(null);
   const purchasedSet = useMemo(() => new Set(purchasedTemplateIds), [purchasedTemplateIds]);
   const rupiah = (n: number) =>
@@ -88,15 +100,52 @@ export function TemplatePicker({
               <IconBrush size={20} />
             </span>
             <div>
-              <p className="font-(family-name:--font-landing-display) text-2xl">Kanvas Kosong &amp; Jual</p>
-              <p className="text-sm text-[#6B5F50]">Desain sebebas Canva dari nol, beri animasi, lalu jual di Marketplace.</p>
+              <p className="font-(family-name:--font-landing-display) text-2xl">{marketplaceOpen ? "Kanvas Kosong & Jual" : "Kanvas Kosong"}</p>
+              <p className="text-sm text-[#6B5F50]">
+                {marketplaceOpen ? "Desain sebebas Canva dari nol, beri animasi, lalu jual di Marketplace." : "Desain sebebas Canva dari nol dan beri animasi sendiri."}
+              </p>
             </div>
           </div>
           <IconArrowRight className="shrink-0 text-[#8A6424] transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
 
+      {showShelves && (
+        <div className="space-y-2">
+          <div role="tablist" aria-label="Jenis template" className="inline-flex rounded-full border border-[#E9DDC6] bg-[#F7F1E6] p-1">
+            {(
+              [
+                ["PAKET", `Termasuk paket (${included.length})`],
+                ["KREATOR", `Template Kreator (${kreator.length})`],
+              ] as const
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                role="tab"
+                aria-selected={shelf === k}
+                onClick={() => {
+                  setShelf(k);
+                  setCat("Semua");
+                }}
+                className={`h-9 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition sm:px-4 sm:text-sm ${
+                  shelf === k ? "bg-[#1F1A14] text-[#F6EEDD] shadow-[0_6px_14px_-10px_rgba(26,21,16,.8)]" : "text-[#6B5F50] hover:text-[#1F1A14]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-sm text-[#6B5F50]">
+            {shelf === "KREATOR"
+              ? "Desain buatan kreator, di luar paket. Harga tertera di setiap kartu, sekali beli untuk 1 undangan."
+              : "Semua desain ini sudah termasuk paket berbayar kalian, tanpa biaya tambahan."}
+          </p>
+        </div>
+      )}
+
       {/* Category chips */}
+      {shelfItems.length > 0 && (
       <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:pb-0">
         {categories.map((c) => (
           <button
@@ -113,6 +162,24 @@ export function TemplatePicker({
           </button>
         ))}
       </div>
+      )}
+
+      {showShelves && shelf === "KREATOR" && kreator.length === 0 && (
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-[#D9C9A6] bg-[#FFFDF9] px-6 py-14 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F6EEDF] text-[#8A6424]">
+            <IconBrush size={22} />
+          </span>
+          <div className="space-y-1.5">
+            <p className="font-(family-name:--font-landing-display) text-2xl text-[#1F1A14]">Belum ada template kreator</p>
+            <p className="mx-auto max-w-md text-sm text-[#6B5F50]">
+              Template buatan kreator akan tampil di sini dengan harganya. Punya desain sendiri? Buat di Kanvas lalu jual di Marketplace.
+            </p>
+          </div>
+          <Link href="/kanvas" className={buttonVariants({ variant: "ink", className: "h-10 rounded-full px-5" })}>
+            Jual desain saya
+          </Link>
+        </div>
+      )}
 
       {/* Template Grid */}
       <div className="grid grid-cols-2 gap-x-5 gap-y-8 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
@@ -167,11 +234,7 @@ export function TemplatePicker({
                     <span className="flex items-center gap-1 rounded-full bg-[#1A1510]/85 px-2.5 py-0.5 text-[10px] font-medium text-[#F6EEDD] backdrop-blur-xs">
                       <IconLock size={11} /> {item.tier}
                     </span>
-                  ) : (
-                    <span className="rounded-full border border-white/60 bg-white/85 px-2.5 py-0.5 text-[10px] font-medium text-[#40372B] backdrop-blur-xs">
-                      {item.tier}
-                    </span>
-                  )}
+                  ) : null /* Catalog designs are included in every paid plan: no tier label */}
                 </div>
 
                 {/* Hover preview hint */}
@@ -185,7 +248,7 @@ export function TemplatePicker({
                 <div className="space-y-0.5">
                   <p className="truncate font-(family-name:--font-landing-display) text-xl text-[#1F1A14]">{item.name}</p>
                   <p className="truncate text-xs text-[#6B5F50]">
-                    {item.category} · {isPaidMarketplace ? (item.creatorName ? `oleh ${item.creatorName}` : "Marketplace") : item.tier}
+                    {isPaidMarketplace ? `${item.category} · ${item.creatorName ? `oleh ${item.creatorName}` : "Marketplace"}` : item.category}
                   </p>
                 </div>
 

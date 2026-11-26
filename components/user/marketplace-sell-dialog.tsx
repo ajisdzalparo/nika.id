@@ -9,7 +9,6 @@ import {
   IconRefresh,
   IconShieldCheck,
   IconShieldX,
-  IconSparkles,
 } from "@tabler/icons-react";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
 import { Button } from "@/components/ui/button";
@@ -190,7 +189,7 @@ export function MarketplaceSellDialog({
                 ) : report?.verdict === "AMAN" ? (
                   <IconShieldCheck size={19} className="mt-0.5 shrink-0 text-emerald-700" />
                 ) : (
-                  <IconSparkles size={18} className="mt-0.5 shrink-0 text-[#8A6424]" />
+                  <IconShieldCheck size={18} className="mt-0.5 shrink-0 text-[#8A6424]" />
                 )}
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -208,8 +207,8 @@ export function MarketplaceSellDialog({
                                 : "Cek Orisinalitas AI"}
                     </p>
                     {report && !checking && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#5C431A]">
-                        <IconSparkles size={11} /> {report.source === "AI" ? "Analisis AI" : "Analisis Visual"}
+                      <span className="inline-flex items-center rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#5C431A]">
+                        {report.source === "AI" ? "Analisis AI" : "Analisis Visual"}
                       </span>
                     )}
                   </div>

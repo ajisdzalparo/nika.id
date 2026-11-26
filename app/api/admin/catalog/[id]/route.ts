@@ -1,10 +1,26 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { createNotification } from "@/lib/notifications";
 import { CatalogInput, errorResponse, toData } from "../shared";
 
 type Ctx = { params: Promise<{ id: string }> };
+
+// Quick-toggle / review PATCH schema without `.default(...)`: using `CatalogInput.pick(...).partial()`
+// would apply defaults to omitted fields and silently wipe `price`, `sortOrder`, `isFeatured`, etc.
+const CatalogQuickPatch = z
+  .object({
+    isActive: z.boolean().optional(),
+    isFeatured: z.boolean().optional(),
+    isNew: z.boolean().optional(),
+    sortOrder: z.number().int().optional(),
+    price: z.number().int().min(0).max(500000).optional(),
+    platformFeePct: z.number().int().min(0).max(80).optional(),
+    reviewStatus: z.enum(["PENDING_REVIEW", "APPROVED", "REJECTED"]).optional(),
+    reviewNote: z.string().max(300).nullable().optional(),
+  })
+  .strict();
 
 // PATCH /api/admin/catalog/[id] — full update, or quick toggles ({ isActive } / { isFeatured } / { isNew } / { sortOrder })
 export async function PATCH(request: Request, { params }: Ctx) {
@@ -16,19 +32,7 @@ export async function PATCH(request: Request, { params }: Ctx) {
       select: { isActive: true, reviewStatus: true, creatorId: true, name: true },
     });
     const body = await request.json();
-    const quick = CatalogInput.pick({
-      isActive: true,
-      isFeatured: true,
-      isNew: true,
-      sortOrder: true,
-      price: true,
-      platformFeePct: true,
-      reviewStatus: true,
-      reviewNote: true,
-    })
-      .partial()
-      .strict()
-      .safeParse(body);
+    const quick = CatalogQuickPatch.safeParse(body);
     const data = quick.success ? quick.data : toData(CatalogInput.parse(body));
     const row = await prisma.catalogTemplate.update({ where: { id }, data });
 

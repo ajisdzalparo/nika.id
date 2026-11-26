@@ -7,7 +7,8 @@ import { getActiveInvitation } from "@/lib/active-invitation";
 import { getCatalog } from "@/lib/catalog";
 import { getPlanLimits, type PlanType } from "@/lib/limits";
 import { prisma } from "@/lib/prisma";
-import { isAiDesignEnabled } from "@/lib/system-settings";
+import { getFeatureStatus, isAiDesignEnabled } from "@/lib/system-settings";
+import { MarketplaceInterestCard, type MarketplaceInterestAnswer } from "@/components/user/marketplace-interest-card";
 
 export default async function PilihTemplatePage({ searchParams }: { searchParams: Promise<{ pakai?: string }> }) {
   const session = await getSession(undefined, "user");
@@ -15,16 +16,22 @@ export default async function PilihTemplatePage({ searchParams }: { searchParams
   const { pakai } = await searchParams;
 
   const active = await getActiveInvitation(session.user.id);
-  const [items, aiEnabled, purchases] = await Promise.all([
+  const [catalog, aiEnabled, purchases, marketplaceStatus, interest] = await Promise.all([
     getCatalog(),
     isAiDesignEnabled(),
     prisma.templatePurchase.findMany({
       where: { invitationId: active.id },
       select: { templateId: true },
     }),
+    getFeatureStatus("MARKETPLACE"),
+    prisma.marketplaceInterest.findUnique({ where: { userId: session.user.id }, select: { role: true, priceBand: true, note: true } }),
   ]);
+  const marketplaceOpen = marketplaceStatus === "ACTIVE";
   const allowedTiers = getPlanLimits((active.plan ?? "FREE") as PlanType).allowedTemplateTypes;
   const purchasedTemplateIds = purchases.map((p) => p.templateId);
+  // While the marketplace is closed, paid kreator templates are hidden (except ones already bought or made by this user)
+  const owned = new Set(purchasedTemplateIds);
+  const items = marketplaceOpen ? catalog : catalog.filter((i) => i.price <= 0 || owned.has(i.id) || i.creatorId === session.user.id);
 
   return (
     <>
@@ -43,7 +50,9 @@ export default async function PilihTemplatePage({ searchParams }: { searchParams
             aiEnabled={aiEnabled}
             purchasedTemplateIds={purchasedTemplateIds}
             currentUserId={session.user.id}
+            marketplaceOpen={marketplaceOpen}
           />
+          {!marketplaceOpen && <MarketplaceInterestCard initial={interest as MarketplaceInterestAnswer | null} />}
         </div>
       </div>
     </>

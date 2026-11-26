@@ -30,7 +30,6 @@ import {
   IconShieldCheck,
   IconShieldSearch,
   IconShieldX,
-  IconSparkles,
   IconTrash,
   IconX,
 } from "@tabler/icons-react";
@@ -694,8 +693,8 @@ export function CatalogList({ initial }: { initial: AdminCatalogRow[] }) {
                               : "Aman — Orisinal"}
                         </span>
                         <span className="text-lg font-semibold text-[#1A1510]">{inspectReport.score}% kemiripan</span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#5C431A]">
-                          <IconSparkles size={11} /> {inspectReport.source === "AI" ? "Analisis AI" : "Analisis Visual"}
+                        <span className="inline-flex items-center rounded-full bg-white/85 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#5C431A]">
+                          {inspectReport.source === "AI" ? "Analisis AI" : "Analisis Visual"}
                         </span>
                       </div>
                       <p className="text-sm text-[#352C22]">{inspectReport.summary}</p>
