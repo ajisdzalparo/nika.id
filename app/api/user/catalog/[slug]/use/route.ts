@@ -5,9 +5,13 @@ import { requireAuth } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
 import { getCatalogItem } from "@/lib/catalog";
 import { getPlanLimits, type PlanType } from "@/lib/limits";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 // POST /api/user/catalog/[slug]/use — apply a catalog template to the user's active invitation
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const blocked = await featureBlockedResponse("KATALOG");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const { slug } = await params;

@@ -1,6 +1,16 @@
 export type OpenRouterContentPart =
-  | { type: "text"; text: string }
+  // cache_control: Anthropic prompt caching through OpenRouter (cache reads cost 1/10 of input)
+  | { type: "text"; text: string; cache_control?: { type: "ephemeral" } }
   | { type: "image_url"; image_url: { url: string } };
+
+/**
+ * System message for a long prompt that is identical on every call. Claude models cache it
+ * (~5 min TTL), so back-to-back requests pay 1/10 for those tokens; other providers get plain text.
+ */
+export function cachedSystemMessage(model: string, text: string): OpenRouterMessage {
+  if (!model.startsWith("anthropic/")) return { role: "system", content: text };
+  return { role: "system", content: [{ type: "text", text, cache_control: { type: "ephemeral" } }] };
+}
 
 export interface OpenRouterMessage {
   role: "system" | "user" | "assistant";
@@ -17,8 +27,14 @@ export class OpenRouterError extends Error {
   }
 }
 
-export const DEFAULT_OPENROUTER_DESIGN_MODEL = "anthropic/claude-sonnet-4.5";
+/** Newer and ~33% cheaper than claude-sonnet-4.5 on OpenRouter ($2 / $10 vs $3 / $15 per 1M tokens, Nov 2026) */
+export const DEFAULT_OPENROUTER_DESIGN_MODEL = "anthropic/claude-sonnet-5.5";
 export const DEFAULT_OPENROUTER_CHAT_MODEL = "anthropic/claude-haiku-4.5";
+/**
+ * Template similarity / originality checks: a short JSON comparison run often, so use a cheap model.
+ * claude-haiku-5.5 is ~10x cheaper than haiku-4.5 on OpenRouter ($0.10 / $0.50 per 1M tokens, Nov 2026).
+ */
+export const DEFAULT_OPENROUTER_CHECK_MODEL = "anthropic/claude-haiku-5.5";
 
 export function isOpenRouterConfigured(): boolean {
   const key = process.env.OPENROUTER_API_KEY?.trim() ?? "";

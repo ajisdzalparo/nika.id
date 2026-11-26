@@ -3,9 +3,13 @@ import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { parseCheckInCode } from "@/lib/checkin";
 import { checkChatRateLimit } from "@/lib/chat-security";
 import { prisma } from "@/lib/prisma";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 // POST /api/user/rsvp/checkin { code } — mark a guest as arrived from their QR (or a typed code)
 export async function POST(request: Request) {
+  const blocked = await featureBlockedResponse("CHECK_IN");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     if (!checkChatRateLimit(`checkin:${session.user.id}`, 120, 60_000)) {

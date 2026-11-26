@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { describePromo, PROMO_KIND_LABELS } from "@/lib/promo-shared";
 import { DatePickerField } from "@/components/common/date-time-picker";
 import { SelectField } from "@/components/ui/select";
+import { NumberInput } from "@/components/common/number-input";
 
 export interface AdminPromo {
   id: string;
@@ -87,7 +88,7 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
     <form onSubmit={submit} className="space-y-5 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] p-5 sm:p-6">
       <h2 className="font-serif text-2xl text-[#1F1A14]">Buat kode promo</h2>
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="space-y-1.5 text-xs text-[#6B5F50]">
+        <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
           Kode
           <input
             value={code}
@@ -98,28 +99,39 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
             className={`${fieldCls} font-mono uppercase tracking-wider`}
           />
         </label>
-        <label className="space-y-1.5 text-xs text-[#6B5F50]">
+        <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
           Keterangan untuk pembeli (opsional)
           <input value={description} onChange={(e) => setDescription(e.target.value.slice(0, 120))} placeholder="Diskon 20% paket Mitra pertama" className={fieldCls} />
         </label>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <label className="space-y-1.5 text-xs text-[#6B5F50]">
+        <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
           Jenis potongan
-          <SelectField value={mode} onChange={(e) => setMode(e.target.value as "PERCENT" | "AMOUNT")}>
+          <SelectField
+            value={mode}
+            onChange={(e) => {
+              setMode(e.target.value as "PERCENT" | "AMOUNT");
+              // A rupiah amount is not a valid percentage (and vice versa)
+              setValue("");
+            }}
+          >
             <option value="PERCENT">Persen (%)</option>
             <option value="AMOUNT">Rupiah (Rp)</option>
           </SelectField>
         </label>
-        <label className="space-y-1.5 text-xs text-[#6B5F50]">
+        <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
           {mode === "PERCENT" ? "Besar diskon (%)" : "Potongan (Rp)"}
-          <input value={value} onChange={(e) => setValue(e.target.value)} inputMode="numeric" placeholder={mode === "PERCENT" ? "20" : "50000"} required className={fieldCls} />
+          {mode === "PERCENT" ? (
+            <NumberInput value={value} onValueChange={setValue} max={90} suffix="%" placeholder="20" required className={fieldCls} />
+          ) : (
+            <NumberInput value={value} onValueChange={setValue} format="thousands" prefix="Rp" placeholder="50.000" required className={fieldCls} />
+          )}
         </label>
         {mode === "PERCENT" && (
-          <label className="space-y-1.5 text-xs text-[#6B5F50]">
+          <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
             Maks potongan (Rp, opsional)
-            <input value={maxDiscount} onChange={(e) => setMaxDiscount(e.target.value)} inputMode="numeric" placeholder="Tanpa batas" className={fieldCls} />
+            <NumberInput value={maxDiscount} onValueChange={setMaxDiscount} format="thousands" prefix="Rp" placeholder="Tanpa batas" className={fieldCls} />
           </label>
         )}
       </div>
@@ -145,13 +157,13 @@ function CreatePromoForm({ onCreated }: { onCreated: (p: AdminPromo) => void }) 
       </fieldset>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <label className="space-y-1.5 text-xs text-[#6B5F50]">
+        <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
           Total kuota pemakaian
-          <input value={maxUses} onChange={(e) => setMaxUses(e.target.value)} inputMode="numeric" placeholder="Tanpa batas" className={fieldCls} />
+          <NumberInput value={maxUses} onValueChange={setMaxUses} format="thousands" maxDigits={7} placeholder="Tanpa batas" className={fieldCls} />
         </label>
-        <label className="space-y-1.5 text-xs text-[#6B5F50]">
+        <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
           Maks per akun
-          <input value={perUser} onChange={(e) => setPerUser(e.target.value)} inputMode="numeric" className={fieldCls} />
+          <NumberInput value={perUser} onValueChange={setPerUser} max={100} placeholder="1" className={fieldCls} />
         </label>
         <div className="space-y-1.5 text-xs text-[#6B5F50]">
           <span className="block">Berlaku sampai (opsional)</span>

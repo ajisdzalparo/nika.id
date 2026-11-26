@@ -5,7 +5,7 @@ import { DefaultMusicManager, type AdminDefaultMusic } from "@/components/admin/
 import { SystemSettingsManager } from "@/components/admin/system-settings-manager";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { getSystemSettings } from "@/lib/system-settings";
+import { getFeatureStatuses, getSystemSettings } from "@/lib/system-settings";
 
 export default async function PengaturanPage() {
   const session = await getSession(undefined, "admin");
@@ -15,11 +15,12 @@ export default async function PengaturanPage() {
     redirect("/admin/login");
   }
 
-  const [defaultMusicRows, initialSettings] = await Promise.all([
+  const [defaultMusicRows, initialSettings, initialFeatures] = await Promise.all([
     prisma.defaultMusic.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     }),
     getSystemSettings(),
+    getFeatureStatuses(),
   ]);
 
   const initialDefaultMusic: AdminDefaultMusic[] = defaultMusicRows.map((m) => ({
@@ -43,7 +44,7 @@ export default async function PengaturanPage() {
 
           <div className="w-full space-y-6">
             <DefaultMusicManager initialItems={initialDefaultMusic} />
-            <SystemSettingsManager initialSettings={initialSettings} />
+            <SystemSettingsManager initialSettings={initialSettings} initialFeatures={initialFeatures} />
           </div>
         </div>
       </div>

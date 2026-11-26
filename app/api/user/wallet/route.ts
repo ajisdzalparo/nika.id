@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { getUserBalance, LEDGER_ACCOUNT, MIN_WITHDRAWAL, requestWithdrawal, WithdrawalError } from "@/lib/ledger";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 // GET /api/user/wallet — balance, earnings history and withdrawals of the signed-in user
 export async function GET(request: Request) {
@@ -29,12 +30,20 @@ const WithdrawInput = z.object({
   amount: z.number().int().positive(),
   method: z.enum(["BANK", "EWALLET"]),
   provider: z.string().trim().min(2, "Nama bank/e-wallet wajib diisi").max(40),
-  accountNumber: z.string().trim().min(5, "Nomor rekening/akun tidak valid").max(40),
+  accountNumber: z
+    .string()
+    .trim()
+    .regex(/^\d+$/, "Nomor rekening/akun hanya boleh berisi angka")
+    .min(5, "Nomor rekening/akun tidak valid")
+    .max(40),
   accountName: z.string().trim().min(2, "Nama pemilik wajib diisi").max(100),
 });
 
 // POST /api/user/wallet — request a withdrawal of available earnings
 export async function POST(request: Request) {
+  const blocked = await featureBlockedResponse("DOMPET");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const parsed = WithdrawInput.safeParse(await request.json());

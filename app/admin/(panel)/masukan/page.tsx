@@ -117,6 +117,7 @@ export default async function AdminFeedbackPage() {
               pagePath: r.pagePath,
               status: r.status,
               adminReply: r.adminReply,
+              repliedAt: r.repliedAt ? r.repliedAt.toISOString() : null,
               createdAt: r.createdAt.toISOString(),
               user: { name: r.user.name, email: r.user.email, accountType: r.user.accountType },
             }))}

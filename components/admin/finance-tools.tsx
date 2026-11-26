@@ -17,6 +17,10 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DatePickerField } from "@/components/common/date-time-picker";
 import { SelectField } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NumberInput } from "@/components/common/number-input";
 
 const EXPENSE_CATEGORIES = ["Server & hosting", "API AI", "Payment gateway", "Iklan & marketing", "Gaji & freelancer", "Domain & software", "Pajak", "Lainnya"];
 const INCOME_CATEGORIES = ["Penjualan offline", "Agency / B2B", "Sponsor", "Lainnya"];
@@ -26,6 +30,10 @@ const TEMPLATE_URL = "/api/admin/finance/template";
 const rupiah = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
 const field = "h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-zinc-900";
 const btn = "flex h-9 items-center gap-1.5 rounded-full border border-zinc-300 px-4 text-sm hover:bg-zinc-100";
+// Manual entry dialog: every control shares one height, radius and border so the grid lines up
+const control =
+  "h-11 w-full rounded-xl border border-[#E3D3B4] bg-white px-3.5 text-sm text-[#1F1A14] shadow-none placeholder:text-[#A89B85] focus-visible:border-[#8A6424] focus-visible:ring-[3px] focus-visible:ring-[#8A6424]/15";
+const label = "text-[13px] font-medium text-[#3D342A]";
 
 type ImportResponse = { saved: boolean; rows: number; inserted: number; duplicates: number; income: number; expense: number; errors: { row: number; message: string }[]; errorCount: number; message?: string };
 
@@ -177,59 +185,67 @@ export function ManualEntryDialog() {
           <IconPlus size={15} /> Catat
         </button>
       </DialogTrigger>
-      <DialogContent className="studio sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-(family-name:--font-landing-display) text-2xl font-medium">Catat pemasukan / pengeluaran</DialogTitle>
+      <DialogContent className="studio gap-6 sm:max-w-md">
+        <DialogHeader className="gap-1.5">
+          {/* font-serif maps to Bodoni inside dialogs (globals.css); an arbitrary font-family class gets merged away */}
+          <DialogTitle className="font-serif text-[1.7rem] font-medium leading-tight">Catat pemasukan / pengeluaran</DialogTitle>
           <DialogDescription>Untuk biaya operasional atau pemasukan di luar aplikasi.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-2 rounded-full border border-zinc-200 p-0.5 text-sm">
+        <form onSubmit={submit} className="space-y-5">
+          <div role="tablist" className="grid grid-cols-2 gap-1 rounded-full border border-[#E9DDC6] bg-[#F7F1E6] p-1 text-sm">
             {(["EXPENSE", "INCOME"] as const).map((k) => (
               <button
                 type="button"
+                role="tab"
+                aria-selected={kind === k}
                 key={k}
                 onClick={() => (setKind(k), setCategory((k === "EXPENSE" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES)[0]))}
-                className={`rounded-full py-1.5 ${kind === k ? "bg-zinc-900 text-zinc-50" : "text-zinc-600"}`}
+                className={`h-9 rounded-full font-medium transition ${kind === k ? "bg-[#1F1A14] text-[#F6EEDD] shadow-sm" : "text-[#6B5F50] hover:text-[#1F1A14]"}`}
               >
                 {k === "EXPENSE" ? "Pengeluaran" : "Pemasukan"}
               </button>
             ))}
           </div>
+
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5 text-sm">
-              <span className="block text-zinc-600">Tanggal</span>
-              <DatePickerField required value={date} max={today} onChange={setDate} compact className={field} />
+            <div className="space-y-2">
+              <Label htmlFor="entry-date" className={label}>
+                Tanggal
+              </Label>
+              <DatePickerField id="entry-date" required value={date} max={today} onChange={setDate} compact className={control} />
             </div>
-            <label className="space-y-1.5 text-sm">
-              <span className="text-zinc-600">Kategori</span>
-              <SelectField value={category} onChange={(e) => setCategory(e.target.value)}>
+            <div className="space-y-2">
+              <Label htmlFor="entry-category" className={label}>
+                Kategori
+              </Label>
+              {/* Remount when the list changes: Radix Select otherwise keeps a blank label after switching kind */}
+              <SelectField key={kind} id="entry-category" value={category} onChange={(e) => setCategory(e.target.value)} className={control}>
                 {cats.map((c) => (
-                  <option key={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </SelectField>
-            </label>
+            </div>
           </div>
-          <label className="block space-y-1.5 text-sm">
-            <span className="text-zinc-600">Jumlah (Rp)</span>
-            <input
-              inputMode="numeric"
-              required
-              placeholder="350.000"
-              value={amount}
-              onChange={(e) => {
-                const n = e.target.value.replace(/\D/g, "");
-                setAmount(n ? Number(n).toLocaleString("id-ID") : "");
-              }}
-              className={`${field} tabular-nums`}
-            />
-          </label>
-          <label className="block space-y-1.5 text-sm">
-            <span className="text-zinc-600">Keterangan (opsional)</span>
-            <input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} className={field} placeholder="VPS bulan November" />
-          </label>
-          <button disabled={busy} className="h-10 w-full rounded-full bg-zinc-900 text-sm text-zinc-50 disabled:opacity-50">
+
+          <div className="space-y-2">
+            <Label htmlFor="entry-amount" className={label}>
+              Jumlah
+            </Label>
+            <NumberInput id="entry-amount" required format="thousands" prefix="Rp" placeholder="350.000" value={amount} onValueChange={setAmount} className={control} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="entry-note" className={label}>
+              Keterangan <span className="font-normal text-[#8E8268]">(opsional)</span>
+            </Label>
+            <Input id="entry-note" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} className={control} placeholder="VPS bulan November" />
+          </div>
+
+          <Button type="submit" variant="ink" disabled={busy} className="h-11 w-full text-sm font-medium">
             {busy ? "Menyimpan…" : "Simpan"}
-          </button>
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

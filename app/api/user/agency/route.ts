@@ -4,6 +4,7 @@ import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { isValidPhoneDigits, normalizePhoneDigits } from "@/lib/phone";
 import { getUserReferralSummary } from "@/lib/referral";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 const AgencyProfileSchema = z.object({
   agencyName: z.string().trim().min(2, "Nama usaha minimal 2 karakter").max(80),
@@ -80,6 +81,9 @@ export async function GET(request: Request) {
 
 // PATCH /api/user/agency — 1-step activation & update of Agency profile
 export async function PATCH(request: Request) {
+  const blocked = await featureBlockedResponse("MITRA");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const parsed = AgencyProfileSchema.safeParse(await request.json().catch(() => ({})));

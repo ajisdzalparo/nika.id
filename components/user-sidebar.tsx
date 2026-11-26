@@ -22,8 +22,9 @@ import {
 import { useSession } from "@/lib/auth-client";
 import { getPlanLimits, type PlanType } from "@/lib/limits";
 import { BrandLogo } from "@/components/common/brand-logo";
+import { FEATURE_STATUS_BADGE, featureForPath, type FeatureStatusMap } from "@/lib/features";
 
-const groups: { label: string; items: { title: string; url: string; icon: Icon; badge?: string }[] }[] = [
+const groups: { label: string; items: { title: string; url: string; icon: Icon }[] }[] = [
   {
     label: "Undangan",
     items: [
@@ -39,7 +40,7 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon; 
     label: "Tamu",
     items: [
       { title: "Daftar Tamu", url: "/manajemen-tamu", icon: IconUsers },
-      { title: "WA Blast", url: "/wa-blast", icon: IconBrandWhatsapp, badge: "Segera" },
+      { title: "WA Blast", url: "/wa-blast", icon: IconBrandWhatsapp },
       { title: "RSVP & Ucapan", url: "/buku-tamu", icon: IconBook },
       { title: "Check-in Tamu", url: "/check-in", icon: IconScan },
     ],
@@ -58,12 +59,13 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon; 
 export function UserSidebar({
   portalUser,
   activePlan,
-  aiDesignEnabled = true,
+  featureStatuses,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   portalUser?: { name: string; email: string; avatar: string };
   activePlan?: PlanType;
-  aiDesignEnabled?: boolean;
+  /** From the admin feature settings: drives the Segera / Perbaikan badges */
+  featureStatuses?: FeatureStatusMap;
 }) {
   const { data: session } = useSession();
   const pathname = usePathname();
@@ -98,23 +100,25 @@ export function UserSidebar({
             <SidebarGroupLabel className="text-[11px] uppercase tracking-[0.18em] text-[#8E8268]">{g.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {g.items
-                  .filter((item) => aiDesignEnabled || item.url !== "/desain-ai")
-                  .map((item) => (
+                {g.items.map((item) => {
+                  const feature = featureForPath(item.url);
+                  const badge = feature && featureStatuses ? FEATURE_STATUS_BADGE[featureStatuses[feature]] : null;
+                  return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild tooltip={item.title} isActive={pathname === item.url || pathname.startsWith(`${item.url}/`)}className="relative h-10 rounded-xl transition-colors hover:bg-[#EEE2C9]/70 data-[active=true]:bg-[#1F1A14] data-[active=true]:font-medium data-[active=true]:text-[#F6EEDD] data-[active=true]:shadow-[0_8px_18px_-12px_rgba(26,21,16,.7)] data-[active=true]:before:absolute data-[active=true]:before:inset-y-2.5 data-[active=true]:before:left-0 data-[active=true]:before:w-[3px] data-[active=true]:before:rounded-full data-[active=true]:before:bg-[linear-gradient(180deg,#E6CB86,#B8903F)] [&[data-active=true]>svg]:text-[#D9B56A]">
                       <Link href={item.url}>
                         <item.icon stroke={1.6} />
                         <span className="truncate">{item.title}</span>
-                        {item.badge && (
+                        {badge && (
                           <span className="ml-auto rounded-full bg-[#F6EEDF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#8A6424] group-data-[collapsible=icon]:hidden">
-                            {item.badge}
+                            {badge}
                           </span>
                         )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

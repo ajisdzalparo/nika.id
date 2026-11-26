@@ -15,6 +15,7 @@ import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/common/number-input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,7 +63,9 @@ export function MarketplaceSellDialog({
   const [name, setName] = useState(initialName);
   const [category, setCategory] = useState<(typeof CATALOG_CATEGORIES)[number]>("Elegan");
   const [description, setDescription] = useState(initialDescription);
-  const [price, setPrice] = useState(29000);
+  // Digits as typed, so the field can be cleared and retyped; the range is checked on submit
+  const [priceText, setPriceText] = useState("29000");
+  const price = Number(priceText) || 0;
   const [checking, setChecking] = useState(false);
   const [report, setReport] = useState<PlagiarismReport | null>(null);
   const [checkError, setCheckError] = useState<string | null>(null);
@@ -113,6 +116,10 @@ export function MarketplaceSellDialog({
     if (!theme) return;
     if (report?.verdict === "PLAGIAT") {
       toast.error("Template terindikasi plagiasi. Ubah desain terlebih dahulu agar orisinal.");
+      return;
+    }
+    if (price < MARKETPLACE_MIN_PRICE || price > MARKETPLACE_MAX_PRICE) {
+      toast.error(`Harga harus antara ${rupiah(MARKETPLACE_MIN_PRICE)} dan ${rupiah(MARKETPLACE_MAX_PRICE)}.`);
       return;
     }
     setSubmitting(true);
@@ -306,15 +313,14 @@ export function MarketplaceSellDialog({
               </SelectField>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="mkt-sell-price">Harga Jual (Rp)</Label>
-              <Input
+              <Label htmlFor="mkt-sell-price">Harga Jual</Label>
+              <NumberInput
                 id="mkt-sell-price"
-                type="number"
-                min={MARKETPLACE_MIN_PRICE}
+                format="thousands"
+                prefix="Rp"
                 max={MARKETPLACE_MAX_PRICE}
-                step={1000}
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value) || MARKETPLACE_MIN_PRICE)}
+                value={priceText}
+                onValueChange={setPriceText}
                 required
                 disabled={isBlocked}
               />

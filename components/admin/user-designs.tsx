@@ -33,7 +33,16 @@ export function UserDesigns({ rows }: { rows: UserDesignRow[] }) {
     }
   };
 
-  if (!rows.length) return <p className="py-16 text-center text-zinc-500">Belum ada desain AI dari user.</p>;
+  if (!rows.length)
+    return (
+      <div className="mx-auto max-w-md space-y-1.5 py-16 text-center">
+        <p className="font-medium text-zinc-700">Belum ada desain AI dari user.</p>
+        <p className="text-sm text-zinc-500">
+          Di sini hanya muncul desain yang dibuat lewat Desain AI. Template katalog yang dipilih user tidak ditampilkan karena
+          sudah ada di koleksi.
+        </p>
+      </div>
+    );
 
   return (
     <div className="grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">

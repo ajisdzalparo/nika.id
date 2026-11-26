@@ -1,7 +1,18 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
-import { IconCopy, IconLayersSubtract, IconLock, IconLockOpen, IconRefresh, IconSparkles, IconStackForward, IconTrash } from "@tabler/icons-react";
+import { Fragment, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  IconCopy,
+  IconFlipHorizontal,
+  IconFlipVertical,
+  IconLayersSubtract,
+  IconLock,
+  IconLockOpen,
+  IconRefresh,
+  IconSparkles,
+  IconStackForward,
+  IconTrash,
+} from "@tabler/icons-react";
 import { getPresetOrnament } from "@/lib/ai-design/ornament-library";
 import type { AiTheme, CanvasLayer, CanvasSectionId, LayerAnimation, SectionEntrance } from "@/lib/ai-design/schema";
 import type { ParticleKind } from "@/lib/ai-design/schema";
@@ -29,6 +40,8 @@ export interface CanvasEditorBridge {
   onMoveLayer: (layerId: string, x: number, y: number) => void;
   onResizeLayer?: (layerId: string, size: number) => void;
   onRotateLayer?: (layerId: string, rotation: number) => void;
+  /** Mirror a layer left↔right ("x") or top↕bottom ("y") */
+  onFlipLayer?: (layerId: string, axis: "x" | "y") => void;
   onLockLayer?: (layerId: string) => void;
   onDuplicateLayer?: (layerId: string) => void;
   onDeleteLayer?: (layerId: string) => void;
@@ -39,6 +52,26 @@ export interface CanvasEditorBridge {
 }
 
 type Ornament = AiTheme["ornament"];
+
+/** Rotation + mirroring of a canvas layer, shared by the published invitation and the editor. */
+export function layerTransform(layer: Pick<CanvasLayer, "rotation" | "flipX" | "flipY">): string {
+  return `translate(-50%, -50%) rotate(${layer.rotation}deg) scale(${layer.flipX ? -1 : 1}, ${layer.flipY ? -1 : 1})`;
+}
+
+/**
+ * Position of the floating toolbar of a selected layer, in the section's coordinates (it is a sibling of the
+ * layer, so rotation and flips never touch it). Centred above the layer, but clamped so it never leaves the
+ * artboard (which clips overflow) at the sides or the top.
+ */
+function layerToolbarStyle(layer: Pick<CanvasLayer, "x" | "y" | "size" | "heightRatio" | "kind">, buttonCount: number): CSSProperties {
+  const halfWidth = Math.round((12 + buttonCount * 30) / 2);
+  const halfHeight = layer.kind === "text" ? 20 : Math.round((layer.size * (layer.heightRatio ?? 1)) / 2);
+  return {
+    left: `clamp(${halfWidth + 6}px, ${layer.x}%, calc(100% - ${halfWidth + 6}px))`,
+    top: `max(6px, calc(${layer.y}% - ${halfHeight}px - 44px))`,
+    transform: "translateX(-50%)",
+  };
+}
 
 function shade(hex: string, amount: number) {
   const n = parseInt(hex.replace("#", "").padEnd(6, "0").slice(0, 6), 16);
@@ -578,7 +611,7 @@ export function StaticSectionLayers({ theme, section, data, className = "" }: { 
             width: `${layer.size}px`,
             height: `${Math.round(layer.size * (layer.heightRatio ?? 1))}px`,
             opacity: layer.opacity,
-            transform: `translate(-50%, -50%) rotate(${layer.rotation}deg) scaleX(${layer.flipX ? -1 : 1})`,
+            transform: layerTransform(layer),
             zIndex: layer.zIndex ?? idx + 1,
           }}
         >
@@ -617,6 +650,7 @@ export function CanvasSectionFrame({
 
   const behindLayers = layers.filter((l) => (l.zIndex ?? 10) <= 5);
   const frontLayers = layers.filter((l) => (l.zIndex ?? 10) > 5);
+  const selectedLayer = canvasEditor ? layers.find((l) => l.id === canvasEditor.selectedLayerId) : undefined;
 
   const isActive = canvasEditor?.activeSection === section;
   const secStyle = theme.sectionStyles?.[section];
@@ -668,8 +702,7 @@ export function CanvasSectionFrame({
 
   const renderLayerItem = (layer: CanvasLayer, idx: number) => {
     const isSelected = canvasEditor?.selectedLayerId === layer.id;
-    const isBehind = (layer.zIndex ?? 10) <= 5;
-    const transform = `translate(-50%, -50%) rotate(${layer.rotation}deg) scaleX(${layer.flipX ? -1 : 1})`;
+    const transform = layerTransform(layer);
     const boxHeight = layer.kind === "text" ? "auto" : `${Math.round(layer.size * (layer.heightRatio ?? 1))}px`;
     return (
       <div
@@ -754,69 +787,6 @@ export function CanvasSectionFrame({
 
         {canvasEditor && isSelected && (
           <>
-            {/* Canva-style floating action pill above selected layer */}
-            <div
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-              style={{ transform: `translateX(-50%) rotate(${-layer.rotation}deg) scaleX(${layer.flipX ? -1 : 1})` }}
-              className="absolute -top-11 left-1/2 z-40 flex items-center gap-0.5 rounded-full border border-[#E6DFD3] bg-[#FFFDF9] px-1.5 py-1 text-[#15130F] shadow-md"
-            >
-              {canvasEditor.onLockLayer && (
-                <button
-                  type="button"
-                  title={layer.locked ? "Buka kunci" : "Kunci posisi"}
-                  onClick={() => canvasEditor.onLockLayer?.(layer.id)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6] ${
-                    layer.locked ? "bg-[#F4EAD6] text-[#8A6A2F]" : ""
-                  }`}
-                >
-                  {layer.locked ? <IconLock size={14} /> : <IconLockOpen size={14} />}
-                </button>
-              )}
-              {canvasEditor.onToggleLayerDepth && (
-                <button
-                  type="button"
-                  title={isBehind ? "Pindah ke depan teks" : "Taruh di belakang teks (background)"}
-                  onClick={() => canvasEditor.onToggleLayerDepth?.(layer.id)}
-                  className={`flex h-7 items-center gap-1 rounded-full px-2 text-[10px] font-medium transition hover:bg-[#F4EAD6] ${
-                    isBehind ? "bg-[#F4EAD6] text-[#8A6A2F]" : ""
-                  }`}
-                >
-                  <IconLayersSubtract size={13} />
-                  <span>{isBehind ? "Belakang" : "Depan"}</span>
-                </button>
-              )}
-              {canvasEditor.onShiftLayerForward && (
-                <button
-                  type="button"
-                  title="Majukan layer"
-                  onClick={() => canvasEditor.onShiftLayerForward?.(layer.id)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6]"
-                >
-                  <IconStackForward size={14} />
-                </button>
-              )}
-              {canvasEditor.onDuplicateLayer && (
-                <button
-                  type="button"
-                  title="Duplikat"
-                  onClick={() => canvasEditor.onDuplicateLayer?.(layer.id)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6]"
-                >
-                  <IconCopy size={14} />
-                </button>
-              )}
-              {canvasEditor.onDeleteLayer && !layer.locked && (
-                <button
-                  type="button"
-                  title="Hapus"
-                  onClick={() => canvasEditor.onDeleteLayer?.(layer.id)}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-red-600 transition hover:bg-red-50"
-                >
-                  <IconTrash size={14} />
-                </button>
-              )}
-            </div>
 
             {!layer.locked &&
               canvasEditor.onResizeLayer &&
@@ -840,7 +810,8 @@ export function CanvasSectionFrame({
                       id: layer.id,
                       startClientX: e.clientX,
                       startSize: layer.size,
-                      sign: h.sign,
+                      // A horizontally mirrored layer shows its left handles on the right: flip the drag direction
+                      sign: (layer.flipX ? -h.sign : h.sign) as 1 | -1,
                     };
                   }}
                   onPointerMove={(e) => {
@@ -894,6 +865,108 @@ export function CanvasSectionFrame({
               </button>
             )}
           </>
+        )}
+      </div>
+    );
+  };
+
+  // Floating actions for the selected layer. Rendered once in its own overlay above every layer and the
+  // section content, so a layer placed behind the text still gets a toolbar that is visible and clickable.
+  const renderLayerToolbar = (layer: CanvasLayer) => {
+    if (!canvasEditor) return null;
+    const isBehind = (layer.zIndex ?? 10) <= 5;
+    // Icon buttons shown in the toolbar (the depth toggle counts as ~2.5 for its label)
+    const toolbarButtons =
+      (canvasEditor?.onLockLayer ? 1 : 0) +
+      (canvasEditor?.onToggleLayerDepth ? 2.5 : 0) +
+      (canvasEditor?.onFlipLayer && layer.kind !== "text" ? 2 : 0) +
+      (canvasEditor?.onShiftLayerForward ? 1 : 0) +
+      (canvasEditor?.onDuplicateLayer ? 1 : 0) +
+      (canvasEditor?.onDeleteLayer && !layer.locked ? 1 : 0);
+    const toolbarStyle = layerToolbarStyle(layer, toolbarButtons);
+    return (
+      <div
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        style={toolbarStyle}
+        className="pointer-events-auto absolute flex items-center gap-0.5 whitespace-nowrap rounded-full border border-[#E6DFD3] bg-[#FFFDF9] px-1.5 py-1 text-[#15130F] shadow-md"
+      >
+        {canvasEditor.onLockLayer && (
+          <button
+            type="button"
+            title={layer.locked ? "Buka kunci" : "Kunci posisi"}
+            onClick={() => canvasEditor.onLockLayer?.(layer.id)}
+            className={`flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6] ${
+              layer.locked ? "bg-[#F4EAD6] text-[#8A6A2F]" : ""
+            }`}
+          >
+            {layer.locked ? <IconLock size={14} /> : <IconLockOpen size={14} />}
+          </button>
+        )}
+        {canvasEditor.onToggleLayerDepth && (
+          <button
+            type="button"
+            title={isBehind ? "Pindah ke depan teks" : "Taruh di belakang teks (background)"}
+            onClick={() => canvasEditor.onToggleLayerDepth?.(layer.id)}
+            className={`flex h-7 items-center gap-1 rounded-full px-2 text-[10px] font-medium transition hover:bg-[#F4EAD6] ${
+              isBehind ? "bg-[#F4EAD6] text-[#8A6A2F]" : ""
+            }`}
+          >
+            <IconLayersSubtract size={13} />
+            <span>{isBehind ? "Belakang" : "Depan"}</span>
+          </button>
+        )}
+        {canvasEditor.onFlipLayer && layer.kind !== "text" && (
+          <>
+            <button
+              type="button"
+              title="Balik horizontal (kiri ↔ kanan)"
+              aria-pressed={Boolean(layer.flipX)}
+              onClick={() => canvasEditor.onFlipLayer?.(layer.id, "x")}
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6] ${layer.flipX ? "bg-[#F4EAD6] text-[#8A6A2F]" : ""}`}
+            >
+              <IconFlipVertical size={14} />
+            </button>
+            <button
+              type="button"
+              title="Balik vertikal (atas ↕ bawah)"
+              aria-pressed={Boolean(layer.flipY)}
+              onClick={() => canvasEditor.onFlipLayer?.(layer.id, "y")}
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6] ${layer.flipY ? "bg-[#F4EAD6] text-[#8A6A2F]" : ""}`}
+            >
+              <IconFlipHorizontal size={14} />
+            </button>
+          </>
+        )}
+        {canvasEditor.onShiftLayerForward && (
+          <button
+            type="button"
+            title="Majukan layer"
+            onClick={() => canvasEditor.onShiftLayerForward?.(layer.id)}
+            className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6]"
+          >
+            <IconStackForward size={14} />
+          </button>
+        )}
+        {canvasEditor.onDuplicateLayer && (
+          <button
+            type="button"
+            title="Duplikat"
+            onClick={() => canvasEditor.onDuplicateLayer?.(layer.id)}
+            className="flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-[#F4EAD6]"
+          >
+            <IconCopy size={14} />
+          </button>
+        )}
+        {canvasEditor.onDeleteLayer && !layer.locked && (
+          <button
+            type="button"
+            title="Hapus"
+            onClick={() => canvasEditor.onDeleteLayer?.(layer.id)}
+            className="flex h-7 w-7 items-center justify-center rounded-full text-red-600 transition hover:bg-red-50"
+          >
+            <IconTrash size={14} />
+          </button>
         )}
       </div>
     );
@@ -1010,6 +1083,10 @@ export function CanvasSectionFrame({
         <div className="pointer-events-none absolute inset-0 z-20">
           {frontLayers.map(renderLayerItem)}
         </div>
+      )}
+
+      {canvasEditor && selectedLayer && (
+        <div className="pointer-events-none absolute inset-0 z-40">{renderLayerToolbar(selectedLayer)}</div>
       )}
 
       {canvasEditor && dropPoint && (

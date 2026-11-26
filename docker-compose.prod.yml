@@ -3,8 +3,10 @@ services:
     image: ghcr.io/ajisdzalparo/satumoment:latest
     container_name: nikaid-app
     restart: unless-stopped
+    # Pick the environment with `--env-file`: docker compose --env-file .env.staging -f docker-compose.prod.yml up -d
+    # (that file sets APP_ENV_FILE to itself). Without the flag this stays `.env`, as the CI deploy expects.
     env_file:
-      - .env
+      - ${APP_ENV_FILE:-.env}
     environment:
       NODE_OPTIONS: "--dns-result-order=ipv4first"
     depends_on:

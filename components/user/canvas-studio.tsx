@@ -19,6 +19,7 @@ import {
   IconDeviceMobile,
   IconFilePlus,
   IconFlipHorizontal,
+  IconFlipVertical,
   IconItalic,
   IconLayersSubtract,
   IconLayout,
@@ -1930,10 +1931,20 @@ export function CanvasStudio({
                             <button
                               type="button"
                               onClick={() => updateLayer(selectedLayer.id, { flipX: !selectedLayer.flipX })}
-                              title="Balik horizontal"
-                              className="flex h-8 items-center gap-1 rounded-lg border border-[#E9DDC6] bg-white px-2 text-xs"
+                              title="Balik horizontal (kiri ↔ kanan)"
+                              aria-pressed={Boolean(selectedLayer.flipX)}
+                              className={`flex h-8 items-center gap-1 rounded-lg border px-2 text-xs ${selectedLayer.flipX ? "border-[#8A6424] bg-[#FCF5E6] text-[#8A6424]" : "border-[#E9DDC6] bg-white"}`}
                             >
-                              <IconFlipHorizontal size={14} /> Balik
+                              <IconFlipVertical size={14} /> Balik ↔
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateLayer(selectedLayer.id, { flipY: !selectedLayer.flipY })}
+                              title="Balik vertikal (atas ↕ bawah)"
+                              aria-pressed={Boolean(selectedLayer.flipY)}
+                              className={`flex h-8 items-center gap-1 rounded-lg border px-2 text-xs ${selectedLayer.flipY ? "border-[#8A6424] bg-[#FCF5E6] text-[#8A6424]" : "border-[#E9DDC6] bg-white"}`}
+                            >
+                              <IconFlipHorizontal size={14} /> Balik ↕
                             </button>
                             <button
                               type="button"
@@ -1961,7 +1972,7 @@ export function CanvasStudio({
                         {selectedLayer.kind === "preset" && getPresetOrnament(selectedLayer.value)?.photoMask && (
                           <div className="rounded-xl border border-[#EDE3CF] bg-white p-3">
                             <label className="block space-y-1 text-xs">
-                              <span className="font-medium text-[#40372B]">Foto di Dalam Bingkai (otomatis terisi data undangan pembeli)</span>
+                              <span className="block font-medium text-[#40372B]">Foto di Dalam Bingkai (otomatis terisi data undangan pembeli)</span>
                               <SelectField size="sm"
                                 value={selectedLayer.frameSlot ?? ""}
                                 onChange={(e) =>
@@ -1986,7 +1997,7 @@ export function CanvasStudio({
                           <div className="min-w-0 space-y-3 overflow-hidden rounded-xl border border-[#EDE3CF] bg-white p-3">
                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                               <label className="block min-w-0 space-y-1 text-xs">
-                                <span className="font-medium text-[#40372B]">Isi Teks</span>
+                                <span className="block font-medium text-[#40372B]">Isi Teks</span>
                                 <Input
                                   value={selectedLayer.value}
                                   onChange={(e) => updateLayer(selectedLayer.id, { value: e.target.value })}
@@ -1994,7 +2005,7 @@ export function CanvasStudio({
                                 />
                               </label>
                               <label className="block min-w-0 space-y-1 text-xs">
-                                <span className="font-medium text-[#40372B]">Font Layer Teks</span>
+                                <span className="block font-medium text-[#40372B]">Font Layer Teks</span>
                                 <SelectField size="sm"
                                   value={selectedLayer.font || theme.typography.display}
                                   onChange={(e) =>
@@ -2093,7 +2104,7 @@ export function CanvasStudio({
                         )}
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <label className="space-y-1 text-xs">
+                          <label className="block space-y-1 text-xs">
                             <span className="flex justify-between">
                               <span>{selectedLayer.kind === "text" ? "Ukuran Teks" : "Lebar"}</span>
                               <span>{selectedLayer.size}px</span>
@@ -2108,7 +2119,7 @@ export function CanvasStudio({
                             />
                           </label>
                           {selectedLayer.kind !== "text" ? (
-                            <label className="space-y-1 text-xs">
+                            <label className="block space-y-1 text-xs">
                               <span className="flex justify-between">
                                 <span>Rasio Tinggi</span>
                                 <span>{Math.round((selectedLayer.heightRatio ?? 1) * 100)}%</span>
@@ -2123,7 +2134,7 @@ export function CanvasStudio({
                               />
                             </label>
                           ) : (
-                            <label className="space-y-1 text-xs">
+                            <label className="block space-y-1 text-xs">
                               <span className="flex justify-between">
                                 <span>Spasi Huruf</span>
                                 <span>{(selectedLayer.letterSpacing ?? 0).toFixed(2)}em</span>
@@ -2138,7 +2149,7 @@ export function CanvasStudio({
                               />
                             </label>
                           )}
-                          <label className="space-y-1 text-xs">
+                          <label className="block space-y-1 text-xs">
                             <span className="flex justify-between">
                               <span>Rotasi</span>
                               <span>{selectedLayer.rotation}°</span>
@@ -2152,7 +2163,7 @@ export function CanvasStudio({
                               className="w-full accent-[#8A6424]"
                             />
                           </label>
-                          <label className="space-y-1 text-xs">
+                          <label className="block space-y-1 text-xs">
                             <span className="flex justify-between">
                               <span>Opasitas</span>
                               <span>{Math.round(selectedLayer.opacity * 100)}%</span>
@@ -2166,8 +2177,8 @@ export function CanvasStudio({
                               className="w-full accent-[#8A6424]"
                             />
                           </label>
-                          <label className="space-y-1 text-xs">
-                            <span>Warna Layer</span>
+                          <label className="block space-y-1 text-xs">
+                            <span className="block">Warna Layer</span>
                             <div className="flex items-center gap-2">
                               <input
                                 type="color"
@@ -2184,8 +2195,8 @@ export function CanvasStudio({
                               </button>
                             </div>
                           </label>
-                          <label className="space-y-1 text-xs sm:col-span-2">
-                            <span>Animasi Layer</span>
+                          <label className="block space-y-1 text-xs sm:col-span-2">
+                            <span className="block">Animasi Layer</span>
                             <SelectField size="sm"
                               value={selectedLayer.animation ?? "none"}
                               onChange={(e) =>
@@ -2203,7 +2214,7 @@ export function CanvasStudio({
                             </SelectField>
                           </label>
                           {selectedLayer.animation && selectedLayer.animation !== "none" && (
-                            <label className="space-y-1 text-xs">
+                            <label className="block space-y-1 text-xs">
                               <span className="flex justify-between">
                                 <span>Kecepatan Animasi</span>
                                 <span>{selectedLayer.animationDuration ?? 4}d</span>
@@ -2797,6 +2808,10 @@ export function CanvasStudio({
                       onMoveLayer: (id, x, y) => updateLayer(id, { x, y }),
                       onResizeLayer: (id, size) => updateLayer(id, { size }),
                       onRotateLayer: (id, rotation) => updateLayer(id, { rotation }),
+                      onFlipLayer: (id, axis) => {
+                        const target = layers.find((l) => l.id === id);
+                        if (target) updateLayer(id, axis === "x" ? { flipX: !target.flipX } : { flipY: !target.flipY });
+                      },
                       onLockLayer: (id) => {
                         const target = layers.find((l) => l.id === id);
                         if (target) updateLayer(id, { locked: !target.locked });

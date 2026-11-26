@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PhoneInput } from "@/components/common/phone-input";
+import { NumberInput } from "@/components/common/number-input";
 import { Panel, StatTile } from "@/components/common/studio-ui";
 import { PlanType, getMaxGuests, getPlanLimits } from "@/lib/limits";
 import { waLink } from "@/lib/phone";
@@ -799,12 +800,12 @@ export function GuestList({
 
               <label className="block space-y-1.5">
                 <span className="block text-xs font-medium text-[#1F1A14]">Jumlah Tamu</span>
-                <Input
-                  type="number"
-                  min={1}
+                <NumberInput
                   max={20}
-                  value={form.maxGuests}
-                  onChange={(e) => setForm((f) => ({ ...f, maxGuests: e.target.value }))}
+                  maxDigits={2}
+                  placeholder="1"
+                  value={String(form.maxGuests)}
+                  onValueChange={(maxGuests) => setForm((f) => ({ ...f, maxGuests }))}
                   className="h-10 rounded-xl border-[#E9DDC6] bg-white"
                 />
                 <span className="block text-[11px] text-[#8E8268]">Batas maksimal jumlah tamu untuk 1 undangan ini.</span>

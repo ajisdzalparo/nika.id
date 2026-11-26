@@ -34,6 +34,7 @@ import { CATALOG_CATEGORIES, type TemplateDefaultMusic } from "@/lib/catalog-sha
 import { ImageUploadField } from "./image-upload-field";
 import { ReferenceUploader } from "@/components/common/reference-uploader";
 import { MusicSourcePicker } from "@/components/common/music-source-picker";
+import { NumberInput } from "@/components/common/number-input";
 import { SelectField } from "@/components/ui/select";
 
 export interface CatalogDraft {
@@ -95,7 +96,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 function Select<T extends string>({ value, options, onChange }: { value: T; options: readonly T[]; onChange: (v: T) => void }) {
   return (
-    <SelectField value={value} onChange={(e) => onChange(e.target.value as T)} className="px-3.5 text-[15px] data-[size=default]:h-11">
+    <SelectField value={value} onChange={(e) => onChange(e.target.value as T)} className="h-11 px-3.5 text-[15px]">
 
       {options.map((o) => (
         <option key={o} value={o}>
@@ -293,7 +294,7 @@ export function CatalogEditor({ initial }: { initial: CatalogDraft }) {
               <Select value={d.tier} options={["Gratis", "Premium"] as const} onChange={(v) => set("tier", v)} />
             </Field>
             <Field label="Urutan" hint="Kecil = tampil lebih dulu.">
-              <input type="number" className={input} value={d.sortOrder} onChange={(e) => set("sortOrder", Number(e.target.value))} />
+              <NumberInput className={input} maxDigits={4} value={String(d.sortOrder)} onValueChange={(v) => set("sortOrder", Number(v || 0))} />
             </Field>
           </div>
           <Field label="Link referensi inspirasi (opsional)" hint="Catatan internal untuk admin, tidak tampil ke publik. Pakai sebagai inspirasi gaya, jangan menyalin desain orang lain.">

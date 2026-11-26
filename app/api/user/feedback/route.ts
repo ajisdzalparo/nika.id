@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createNotification } from "@/lib/notifications";
 import { getActiveInvitation } from "@/lib/active-invitation";
 import { FEEDBACK_CATEGORIES, FEEDBACK_FEATURES, FEEDBACK_MESSAGE_MAX, FEEDBACK_MESSAGE_MIN, labelOf } from "@/lib/feedback-shared";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 const categoryIds = FEEDBACK_CATEGORIES.map((c) => c.id) as [string, ...string[]];
 const featureIds = FEEDBACK_FEATURES.map((f) => f.id) as [string, ...string[]];
@@ -40,6 +41,9 @@ export async function GET(request: Request) {
 
 // POST /api/user/feedback — submit a new feedback entry
 export async function POST(request: Request) {
+  const blocked = await featureBlockedResponse("MASUKAN");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const parsed = FeedbackSchema.safeParse(await request.json().catch(() => null));

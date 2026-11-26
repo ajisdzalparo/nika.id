@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { DEFAULT_OPENROUTER_CHAT_MODEL, isOpenRouterConfigured, openRouterChat } from "@/lib/openrouter";
+import { DEFAULT_OPENROUTER_CHECK_MODEL, isOpenRouterConfigured, openRouterChat } from "@/lib/openrouter";
 import { prisma } from "@/lib/prisma";
 import { normalizeTheme } from "./color";
 import { resolveArtKit } from "./art-kits";
@@ -164,7 +164,8 @@ export async function checkTemplatePlagiarism(
     return structural;
   }
 
-  const model = (process.env.OPENROUTER_CHAT_MODEL || DEFAULT_OPENROUTER_CHAT_MODEL).trim();
+  // Its own cheap model, independent of the support-chat model
+  const model = (process.env.OPENROUTER_CHECK_MODEL || DEFAULT_OPENROUTER_CHECK_MODEL).trim();
   const payload = {
     candidate: summarizeDesignForAi(candidate.name || normalized.name || "Kandidat Baru", candidate.slug || "kandidat", normalized),
     topCatalogMatches: matches.map((m) => ({

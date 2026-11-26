@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
 import { getUserReferralSummary, updateUserReferralCode } from "@/lib/referral";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 // GET /api/user/referral — returns referral code, stats, and commission history
 export async function GET(request: Request) {
@@ -15,6 +16,9 @@ export async function GET(request: Request) {
 
 // PATCH /api/user/referral { code } — customize user's referral code
 export async function PATCH(request: Request) {
+  const blocked = await featureBlockedResponse("DOMPET");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const body = await request.json().catch(() => ({}));

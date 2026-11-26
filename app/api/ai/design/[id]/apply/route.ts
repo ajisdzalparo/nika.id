@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import { getActiveInvitation } from "@/lib/active-invitation";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 // POST /api/ai/design/[id]/apply — use this AI design as the active invitation's template
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const blocked = await featureBlockedResponse("DESAIN_AI");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const { id } = await params;

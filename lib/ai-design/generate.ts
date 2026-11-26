@@ -5,6 +5,7 @@ import { normalizeTheme } from "./color";
 import { pickArtKit } from "./art-kits";
 import {
   DEFAULT_OPENROUTER_DESIGN_MODEL,
+  cachedSystemMessage,
   OpenRouterError,
   openRouterChat,
   type OpenRouterContentPart,
@@ -87,7 +88,8 @@ export async function generateAiTheme(
       temperature: 0.7,
       jsonMode: true,
       messages: [
-        { role: "system", content: systemPrompt },
+        // Instructions + JSON Schema (~2.9k tokens) are the same every call: cache them
+        cachedSystemMessage(model, systemPrompt),
         { role: "user", content: [...images, { type: "text", text }] },
       ],
     });

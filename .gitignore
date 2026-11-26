@@ -32,7 +32,9 @@ yarn-error.log*
 
 # env files
 .env*
+# Templates are committed; the real .env / .env.staging / .env.prod never are
 !.env.example
+!.env.*.example
 
 # vercel
 .vercel

@@ -14,6 +14,7 @@ import {
   IconWallet,
 } from "@tabler/icons-react";
 import { SiteHeader } from "@/components/site-header";
+import { NumberInput } from "@/components/common/number-input";
 
 interface ReferralSummary {
   code: string;
@@ -376,18 +377,26 @@ export default function DompetPage() {
                       <input className={field} placeholder={form.method === "BANK" ? "Contoh: BCA" : "Contoh: GoPay"} value={form.provider} onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))} required />
                     </label>
                     <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B5F50]">{form.method === "BANK" ? "Nomor rekening" : "Nomor HP e-wallet"}</span>
-                      <input className={field} inputMode="numeric" value={form.accountNumber} onChange={(e) => setForm((f) => ({ ...f, accountNumber: e.target.value }))} required />
+                      <NumberInput
+                        className={field}
+                        maxDigits={20}
+                        placeholder={form.method === "BANK" ? "1234567890" : "081234567890"}
+                        value={form.accountNumber}
+                        onValueChange={(accountNumber) => setForm((f) => ({ ...f, accountNumber }))}
+                        required
+                      />
                     </label>
                     <label className="block space-y-1.5"><span className="block text-xs font-medium text-[#6B5F50]">Nama pemilik</span>
                       <input className={field} placeholder="Sesuai buku tabungan / akun" value={form.accountName} onChange={(e) => setForm((f) => ({ ...f, accountName: e.target.value }))} required />
                     </label>
-                    <input
+                    <NumberInput
                       className={field}
+                      format="thousands"
+                      prefix="Rp"
                       aria-label={`Jumlah penarikan, minimal ${rupiah(data.minWithdrawal)}`}
-                      placeholder={`Jumlah (min ${rupiah(data.minWithdrawal)})`}
-                      inputMode="numeric"
-                      value={form.amount ? Number(form.amount.replace(/\D/g, "") || 0).toLocaleString("id-ID") : ""}
-                      onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value.replace(/\D/g, "") }))}
+                      placeholder={`Jumlah (min ${rupiah(data.minWithdrawal).replace(/^Rp\s?/, "")})`}
+                      value={form.amount}
+                      onValueChange={(amount) => setForm((f) => ({ ...f, amount }))}
                       required
                     />
                     <button type="submit" disabled={!canWithdraw || sending} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-zinc-900 text-sm font-medium text-zinc-50 disabled:opacity-50">

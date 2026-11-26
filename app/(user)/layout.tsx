@@ -11,7 +11,7 @@ import { getActiveInvitation, listUserInvitations } from "@/lib/active-invitatio
 import { getAiQuota } from "@/lib/ai-design/server";
 import type { PlanType } from "@/lib/limits";
 import { shellTokens, studioClass } from "@/lib/studio";
-import { isAiDesignEnabled, isMaintenanceMode } from "@/lib/system-settings";
+import { getFeatureStatuses, isMaintenanceMode } from "@/lib/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +19,11 @@ export default async function UserLayout({ children }: { children: React.ReactNo
   const session = await getSession(undefined, "user");
   if (!session) redirect("/api/portal/exit?portal=user");
 
-  const [active, allInvitations, maintenance, aiDesignEnabled] = await Promise.all([
+  const [active, allInvitations, maintenance, featureStatuses] = await Promise.all([
     getActiveInvitation(session.user.id),
     listUserInvitations(session.user.id),
     isMaintenanceMode(),
-    isAiDesignEnabled(),
+    getFeatureStatuses(),
   ]);
 
   if (maintenance) {
@@ -80,7 +80,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
               avatar: session.user.image || "",
             }}
             activePlan={activeItem.plan}
-            aiDesignEnabled={aiDesignEnabled}
+            featureStatuses={featureStatuses}
           />
           <SidebarInset className="min-w-0 overflow-x-hidden bg-[#FCF8F1]">
             {children}

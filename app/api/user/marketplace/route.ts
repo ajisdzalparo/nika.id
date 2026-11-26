@@ -10,6 +10,7 @@ import { CATALOG_CATEGORIES } from "@/lib/catalog-shared";
 import { DEFAULT_MARKETPLACE_FEE_PCT, MARKETPLACE_MAX_PRICE, MARKETPLACE_MIN_PRICE } from "@/lib/limits";
 import { createNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 /** Open submissions a creator may have waiting for review at the same time */
 const MAX_PENDING_SUBMISSIONS = 3;
@@ -70,6 +71,9 @@ export async function GET(request: Request) {
 
 // POST /api/user/marketplace — submit a custom Canvas/AI design to be sold on the Template Marketplace
 export async function POST(request: Request) {
+  const blocked = await featureBlockedResponse("MARKETPLACE");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const parsed = SubmitMarketplaceSchema.safeParse(await request.json().catch(() => ({})));

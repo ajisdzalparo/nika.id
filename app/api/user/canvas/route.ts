@@ -6,6 +6,7 @@ import { normalizeTheme } from "@/lib/ai-design/color";
 import { getAiQuota } from "@/lib/ai-design/server";
 import type { PlanType } from "@/lib/limits";
 import { prisma } from "@/lib/prisma";
+import { featureBlockedResponse } from "@/lib/feature-guard";
 
 // GET /api/user/canvas — returns saved canvas/AI designs, quota, and active invitation theme
 export async function GET(request: Request) {
@@ -59,6 +60,9 @@ export async function GET(request: Request) {
 
 // POST /api/user/canvas { designId?, name?, theme, apply? } — saves custom canvas design (0 AI credits)
 export async function POST(request: Request) {
+  const blocked = await featureBlockedResponse("KANVAS");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const active = await getActiveInvitation(session.user.id);
@@ -125,6 +129,9 @@ export async function POST(request: Request) {
 
 // DELETE /api/user/canvas?id=... — removes a saved design owned by the current user
 export async function DELETE(request: Request) {
+  const blocked = await featureBlockedResponse("KANVAS");
+  if (blocked) return blocked;
+
   try {
     const session = await requireAuth(request);
     const id = new URL(request.url).searchParams.get("id")?.trim() ?? "";

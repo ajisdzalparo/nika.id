@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { IconStarFilled } from "@tabler/icons-react";
+import { IconPencil, IconStarFilled } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { FEEDBACK_CATEGORIES, FEEDBACK_FEATURES, FEEDBACK_STATUSES, labelOf } from "@/lib/feedback-shared";
 import { SelectField } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface AdminFeedbackItem {
   id: string;
@@ -15,6 +17,7 @@ export interface AdminFeedbackItem {
   pagePath: string | null;
   status: string;
   adminReply: string | null;
+  repliedAt: string | null;
   createdAt: string;
   user: { name: string | null; email: string; accountType: string };
 }
@@ -36,11 +39,36 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
+const STATUS_TONE: Record<string, string> = {
+  BARU: "border-[#E9DDC6] bg-[#FFFDF9] text-[#4A443B]",
+  DITINJAU: "border-[#E6D5B2] bg-[#F7F0E1] text-[#6E4F1C]",
+  DIRENCANAKAN: "border-[#D9C7F0] bg-[#F4EEFB] text-[#4F3A78]",
+  SELESAI: "border-[#BFDCC7] bg-[#EEF7F0] text-[#23603A]",
+  DITOLAK: "border-[#EBC4BA] bg-[#FBEDE8] text-[#9A3B2A]",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span className={`inline-flex h-7 items-center rounded-full border px-3 text-xs font-medium ${STATUS_TONE[status] ?? STATUS_TONE.BARU}`}>
+      {labelOf(FEEDBACK_STATUSES, status)}
+    </span>
+  );
+}
+
 function FeedbackCard({ item, onSaved }: { item: AdminFeedbackItem; onSaved: (next: AdminFeedbackItem) => void }) {
   const [status, setStatus] = useState(item.status);
   const [reply, setReply] = useState(item.adminReply ?? "");
   const [busy, setBusy] = useState(false);
+  // Handled feedback (replied or moved past "Baru") reads as a closed ticket; the form only opens on Edit
+  const handled = Boolean(item.adminReply) || item.status !== "BARU";
+  const [editing, setEditing] = useState(!handled);
   const dirty = status !== item.status || reply.trim() !== (item.adminReply ?? "");
+
+  const cancelEdit = () => {
+    setStatus(item.status);
+    setReply(item.adminReply ?? "");
+    setEditing(false);
+  };
 
   const save = async () => {
     setBusy(true);
@@ -55,7 +83,13 @@ function FeedbackCard({ item, onSaved }: { item: AdminFeedbackItem; onSaved: (ne
         toast.error(data.message || "Gagal menyimpan.");
         return;
       }
-      onSaved({ ...item, status: data.item.status, adminReply: data.item.adminReply });
+      onSaved({
+        ...item,
+        status: data.item.status,
+        adminReply: data.item.adminReply,
+        repliedAt: data.item.repliedAt ?? null,
+      });
+      setEditing(false);
       toast.success("Tersimpan. Pengguna mendapat notifikasi.");
     } finally {
       setBusy(false);
@@ -88,40 +122,63 @@ function FeedbackCard({ item, onSaved }: { item: AdminFeedbackItem; onSaved: (ne
 
       <p className="whitespace-pre-line text-[15px] leading-relaxed text-[#1F1A14]">{item.message}</p>
 
-      <div className="grid gap-3 border-t border-[#F3EBDB] pt-4 md:grid-cols-[200px_minmax(0,1fr)_auto] md:items-start">
-        <label className="space-y-1.5 text-xs text-[#6B5F50]">
-          Status
-          <SelectField
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="w-full"
-          >
-            {FEEDBACK_STATUSES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
-              </option>
-            ))}
-          </SelectField>
-        </label>
-        <label className="space-y-1.5 text-xs text-[#6B5F50]">
-          Balasan untuk pengguna (opsional)
-          <textarea
-            value={reply}
-            onChange={(e) => setReply(e.target.value.slice(0, 2000))}
-            rows={2}
-            placeholder="Terima kasih, ini sudah kami catat untuk pembaruan berikutnya…"
-            className="block w-full rounded-xl border border-[#DDD5C7] bg-white px-3 py-2 text-sm text-[#1F1A14] outline-none placeholder:text-[#A59B8C] focus:border-[#8A6424]"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() => void save()}
-          disabled={!dirty || busy}
-          className="h-10 rounded-full bg-[#1F1A14] px-5 text-sm font-medium text-[#FCF8F1] disabled:opacity-40 md:mt-[22px]"
-        >
-          {busy ? "Menyimpan..." : "Simpan"}
-        </button>
-      </div>
+      {!editing ? (
+        // Ticket view: what was decided and what the user was told, read-only
+        <div className="space-y-3 border-t border-[#F3EBDB] pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-[#7D7468]">
+              <StatusBadge status={item.status} />
+              {item.repliedAt && <span>Dibalas {dateFmt.format(new Date(item.repliedAt))}</span>}
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => setEditing(true)} className="h-8 rounded-full border-[#E9DDC6] bg-[#FFFDF9] px-3 text-xs">
+              <IconPencil size={14} /> Edit
+            </Button>
+          </div>
+          {item.adminReply ? (
+            <div className="rounded-xl border-l-2 border-[#8A6424] bg-[#F7F1E6] px-4 py-3">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8A6424]">Balasan admin</p>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-[#1F1A14]">{item.adminReply}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-[#7D7468]">Status diperbarui tanpa balasan tertulis.</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3 border-t border-[#F3EBDB] pt-4">
+          <div className="grid gap-3 md:grid-cols-[200px_minmax(0,1fr)]">
+            <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
+              Status
+              <SelectField value={status} onChange={(e) => setStatus(e.target.value)} className="w-full">
+                {FEEDBACK_STATUSES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </SelectField>
+            </label>
+            <label className="flex flex-col gap-1.5 text-xs text-[#6B5F50]">
+              Balasan untuk pengguna (opsional)
+              <Textarea
+                value={reply}
+                onChange={(e) => setReply(e.target.value.slice(0, 2000))}
+                rows={3}
+                placeholder="Terima kasih, ini sudah kami catat untuk pembaruan berikutnya…"
+                className="min-h-20 rounded-xl border-[#DDD5C7] bg-white text-sm"
+              />
+            </label>
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            {handled && (
+              <Button type="button" variant="ghost" onClick={cancelEdit} disabled={busy} className="h-10 rounded-full px-4 text-sm">
+                Batal
+              </Button>
+            )}
+            <Button type="button" variant="ink" onClick={() => void save()} disabled={!dirty || busy} className="h-10 px-5 text-sm font-medium">
+              {busy ? "Menyimpan..." : handled ? "Simpan perubahan" : "Kirim"}
+            </Button>
+          </div>
+        </div>
+      )}
     </li>
   );
 }
