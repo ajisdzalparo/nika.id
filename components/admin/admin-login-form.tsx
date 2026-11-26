@@ -99,7 +99,7 @@ export function AdminLoginForm() {
               className={field}
               type="email"
               autoComplete="username"
-              placeholder="admin@satumoment.id"
+              placeholder="admin@satumoment.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

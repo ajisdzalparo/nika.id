@@ -1,13 +1,14 @@
 name: CI/CD Build and Deploy
 
+# dev = local only (no CI). staging -> staging image, prod -> production image + VPS deploy
 on:
   push:
     branches:
-      - dev
+      - staging
       - prod
   pull_request:
     branches:
-      - dev
+      - staging
       - prod
 
 env:
@@ -36,9 +37,10 @@ jobs:
         run: bunx eslint app components lib
 
   build-and-push:
-    name: Build & Push Docker Image
+    # staging -> staging image, prod -> production image (NEXT_PUBLIC_* is baked in at build time, so each needs its own build)
+    name: Build & Push Docker Image (${{ github.ref == 'refs/heads/prod' && 'production' || 'staging' }})
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/prod' || github.ref == 'refs/heads/staging')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,9 +50,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Lowercase IMAGE_NAME
+      # Separate GHCR packages: prod -> <owner>/satumoment, staging -> <owner>/satumoment-staging
+      - name: Pick environment and image name
         run: |
-          echo "IMAGE_NAME_LC=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          BASE="$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')"
+          if [ "${{ github.ref }}" = "refs/heads/prod" ]; then
+            echo "DEPLOY_ENV=production" >> $GITHUB_ENV
+            echo "IMAGE_NAME_LC=$BASE" >> $GITHUB_ENV
+            echo "APP_URL=https://satumoment.com" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
+            echo "IMAGE_NAME_LC=$BASE-staging" >> $GITHUB_ENV
+            echo "APP_URL=https://satumoment-staging.ajisdzalparo.com" >> $GITHUB_ENV
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -67,6 +79,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}
+          # Each package gets: latest + sha-<short sha>
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -79,10 +92,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            NEXT_PUBLIC_APP_URL=https://undanginyuk.ajisdzalparo.com
+            NEXT_PUBLIC_APP_URL=${{ env.APP_URL }}
             NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED=true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ env.DEPLOY_ENV }}
+          cache-to: type=gha,mode=max,scope=${{ env.DEPLOY_ENV }}
 
   deploy:
     name: Deploy to VPS

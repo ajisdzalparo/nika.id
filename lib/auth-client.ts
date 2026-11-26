@@ -5,7 +5,7 @@ export const authClient = createAuthClient({
   baseURL:
     typeof window !== "undefined"
       ? window.location.origin
-      : process.env.NEXT_PUBLIC_APP_URL || "https://undanginyuk.ajisdzalparo.com",
+      : process.env.NEXT_PUBLIC_APP_URL || "https://satumoment.com",
   plugins: [adminClient()],
 });
 

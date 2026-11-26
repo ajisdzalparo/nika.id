@@ -20,7 +20,7 @@ const mono = JetBrains_Mono({
 });
 
 // Absolute base for Open Graph / WhatsApp preview images; without it Next falls back to localhost
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://undanginyuk.ajisdzalparo.com";
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://satumoment.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -145,11 +145,12 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  baseURL: process.env.BETTER_AUTH_URL || "https://undanginyuk.ajisdzalparo.com",
+  baseURL: process.env.BETTER_AUTH_URL || "https://satumoment.com",
   trustedOrigins: [
     process.env.BETTER_AUTH_URL,
     process.env.NEXT_PUBLIC_APP_URL,
-    "https://undanginyuk.ajisdzalparo.com",
+    "https://satumoment.com",
+    "https://www.satumoment.com",
     // Local development is always allowed, even if .env carries production URLs
     ...(process.env.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
     // A local `next start` (any port) is trusted too; never applies when BETTER_AUTH_URL is a real domain

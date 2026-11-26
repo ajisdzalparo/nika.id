@@ -1,6 +1,6 @@
 import * as Minio from "minio";
 
-const minioEndpoint = (process.env.MINIO_ENDPOINT || "undanginyuk.ajisdzalparo.com").replace(/^https?:\/\//, "");
+const minioEndpoint = (process.env.MINIO_ENDPOINT || "satumoment.com").replace(/^https?:\/\//, "");
 
 const minioClient = new Minio.Client({
   endPoint: minioEndpoint,

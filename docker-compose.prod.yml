@@ -1,6 +1,7 @@
 services:
   app:
-    image: ghcr.io/ajisdzalparo/satumoment:latest
+    # `satumoment` = prod branch, `satumoment-staging` = staging branch. Staging: set APP_IMAGE=ghcr.io/ajisdzalparo/satumoment-staging:latest in .env.staging
+    image: ${APP_IMAGE:-ghcr.io/ajisdzalparo/satumoment:latest}
     container_name: nikaid-app
     restart: unless-stopped
     # Pick the environment with `--env-file`: docker compose --env-file .env.staging -f docker-compose.prod.yml up -d
