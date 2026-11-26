@@ -53,21 +53,24 @@ model User {
 
   activeAiDesignId String?
 
-  accounts          Account[]
-  aiDesigns         AiDesign[]
-  guests            Guest[]
-  messages          GuestMessage[]
-  invitations       Invitation[]
-  rsvps             RSVP[]
-  sessions          Session[]
-  supportThread     SupportThread?
-  feedbacks         Feedback[]
-  surveys           SurveyResponse[]
-  transactions      Transaction[]
-  ledgerEntries     LedgerEntry[]
-  withdrawals       WithdrawalRequest[]
-  createdTemplates  CatalogTemplate[]   @relation("CreatedTemplates")
-  templatePurchases TemplatePurchase[]
+  accounts            Account[]
+  aiDesigns           AiDesign[]
+  guests              Guest[]
+  messages            GuestMessage[]
+  invitations         Invitation[]
+  rsvps               RSVP[]
+  sessions            Session[]
+  supportThread       SupportThread?
+  feedbacks           Feedback[]
+  surveys             SurveyResponse[]
+  marketplaceInterest MarketplaceInterest?
+  mitraApplications   MitraApplication[]
+  invitationAccess    InvitationMember[]
+  transactions        Transaction[]
+  ledgerEntries       LedgerEntry[]
+  withdrawals         WithdrawalRequest[]
+  createdTemplates    CatalogTemplate[]    @relation("CreatedTemplates")
+  templatePurchases   TemplatePurchase[]
 }
 
 model Session {
@@ -120,6 +123,7 @@ model Verification {
 
 model Invitation {
   id                String             @id @default(cuid())
+  members           InvitationMember[]
   userId            String
   slug              String?            @unique
   title             String             @default("Undangan Pernikahan")
@@ -135,6 +139,10 @@ model Invitation {
   clientName        String?
   clientWhatsapp    String?
   clientEditToken   String?            @unique
+  /// Mitra sales report: what the mitra charged the client, what activating cost the mitra, and when it went live
+  clientPrice       Int?
+  mitraCost         Int?
+  activatedAt       DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -469,7 +477,7 @@ model PromoCode {
   id           String    @id @default(cuid())
   code         String    @unique
   description  String?
-  percentOff   Int? // 1–90; either percentOff or amountOff
+  percentOff   Int? // 1–100; either percentOff or amountOff (100 = free order, e.g. a mitra trial)
   amountOff    Int? // fixed rupiah off
   maxDiscount  Int? // cap for percentOff
   appliesTo    String    @default("ALL") // ALL or comma list of PLAN,GUEST_ADDON,AI_CREDIT,AGENCY_QUOTA
@@ -480,6 +488,8 @@ model PromoCode {
   startsAt     DateTime?
   expiresAt    DateTime?
   isActive     Boolean   @default(true)
+  /// Only this account may use the code (a mitra's trial code); null = anyone
+  forUserId    String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
@@ -501,4 +511,58 @@ model SurveyResponse {
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+}
+
+/// Interest survey shown while the template marketplace is "Segera hadir" (one answer per user, editable)
+model MarketplaceInterest {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  role      String // BELI | JUAL | KEDUANYA | TIDAK
+  priceBand String? // UNDER_25 | 25_50 | 50_100 | OVER_100: what they would pay / charge for one template
+  note      String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([role])
+}
+
+/// Request to join the Mitra program (landing page form or /mitra). Only an admin turns an account into a mitra.
+model MitraApplication {
+  id            String    @id @default(cuid())
+  userId        String? // linked account (set when submitted while logged in, or matched by email on approval)
+  name          String
+  email         String
+  whatsapp      String
+  applicantType String    @default("USAHA") // USAHA | PERORANGAN
+  businessName  String?
+  businessKind  String? // WO | MUA | FOTO | PERCETAKAN | LAINNYA
+  instagram     String?
+  city          String?
+  note          String?   @db.Text
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  adminNote     String?   @db.Text
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@index([userId])
+}
+
+/// Extra account with access to an invitation besides its owner: the client of a mitra sees their own
+/// guests, RSVP, wishes and check-in, while the mitra (owner) keeps full access.
+model InvitationMember {
+  id           String     @id @default(cuid())
+  invitationId String
+  userId       String
+  role         String     @default("CLIENT") // CLIENT
+  createdAt    DateTime   @default(now())
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([invitationId, userId])
+  @@index([userId])
 }
