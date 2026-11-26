@@ -185,7 +185,10 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendVerificationEmail: async ({ user, url }: { user: { name: string; email: string }; url: string }) => {
+    sendVerificationEmail: async ({ user, url, token }) => {
+      // Send people to the app's /verify-email page instead of the raw API link: that page verifies the
+      // token, then opens the user portal (cookie) so the auto sign-in actually lands on the dashboard.
+      const verifyPageUrl = `${new URL(url).origin}/verify-email?token=${encodeURIComponent(token)}`;
       await sendAuthEmail({
         to: user.email,
         subject: "Verifikasi Email Anda - SatuMoment",
@@ -193,12 +196,14 @@ export const auth = betterAuth({
         greetingName: user.name || "Pengguna",
         message: "Terima kasih telah mendaftar di SatuMoment. Klik tombol di bawah untuk memverifikasi alamat email Anda dan mulai membuat undangan pernikahan digital.",
         ctaLabel: "Verifikasi Email Saya",
-        ctaUrl: url,
+        ctaUrl: verifyPageUrl,
         footerNote: "Email ini dikirim oleh SatuMoment. Jika Anda tidak mendaftar, abaikan email ini.",
         consoleLabel: "EMAIL VERIFICATION LINK",
       });
     },
     sendOnSignUp: true,
+    // Signing in with an unverified account sends a fresh activation link (the old one may have expired)
+    sendOnSignIn: true,
     autoSignInAfterVerification: true,
   },
   ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET

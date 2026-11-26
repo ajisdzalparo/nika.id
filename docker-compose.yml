@@ -1,4 +1,3 @@
-version: "3.8"
 # Fixed project name so volume and container names don't depend on the folder name
 name: satumoment
 

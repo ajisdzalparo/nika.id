@@ -15,20 +15,23 @@ enum Plan {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  email          String    @unique
-  emailVerified  Boolean   @default(false)
-  name           String?
-  image          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  invitationSlug String?   @unique
-  partnerName    String?
-  weddingDate    DateTime?
-  role           String    @default("USER")
-  banned         Boolean   @default(false)
-  views          Int       @default(0)
-  templateSlug   String?
+  id              String    @id @default(cuid())
+  email           String    @unique
+  emailVerified   Boolean   @default(false)
+  name            String?
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  invitationSlug  String?   @unique
+  partnerName     String?
+  weddingDate     DateTime?
+  role            String    @default("USER")
+  banned          Boolean   @default(false)
+  // Better Auth admin plugin (ban details); required by its schema check since better-auth 1.7
+  banReason       String?
+  banExpires      DateTime?
+  views           Int       @default(0)
+  templateSlug    String?
   plan            Plan      @default(FREE)
   planExpiresAt   DateTime?
   extraGuestQuota Int       @default(0)
@@ -50,52 +53,55 @@ model User {
 
   activeAiDesignId String?
 
-  accounts     Account[]
-  aiDesigns    AiDesign[]
-  guests       Guest[]
-  messages     GuestMessage[]
-  invitations   Invitation[]
-  rsvps         RSVP[]
-  sessions      Session[]
-  supportThread SupportThread?
-  feedbacks     Feedback[]
-  surveys       SurveyResponse[]
+  accounts          Account[]
+  aiDesigns         AiDesign[]
+  guests            Guest[]
+  messages          GuestMessage[]
+  invitations       Invitation[]
+  rsvps             RSVP[]
+  sessions          Session[]
+  supportThread     SupportThread?
+  feedbacks         Feedback[]
+  surveys           SurveyResponse[]
   transactions      Transaction[]
   ledgerEntries     LedgerEntry[]
   withdrawals       WithdrawalRequest[]
-  createdTemplates  CatalogTemplate[] @relation("CreatedTemplates")
+  createdTemplates  CatalogTemplate[]   @relation("CreatedTemplates")
   templatePurchases TemplatePurchase[]
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  expiresAt DateTime
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  token     String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  userId         String
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  token          String   @unique
+  // Better Auth admin plugin: id of the admin impersonating this session
+  impersonatedBy String?
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Account {
-  id                   String    @id @default(cuid())
-  userId               String
-  accountId            String
-  providerId           String
-  accessToken          String?   @db.Text
-  refreshToken         String?   @db.Text
-  idToken              String?   @db.Text
-  accessTokenExpiresAt DateTime?
-  scope                String?
-  expiresAt            DateTime?
-  password             String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  expiresAt             DateTime?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
   @@index([userId])
@@ -113,28 +119,28 @@ model Verification {
 }
 
 model Invitation {
-  id               String         @id @default(cuid())
-  userId           String
-  slug             String?        @unique
-  title            String         @default("Undangan Pernikahan")
-  weddingDate      DateTime?
-  templateSlug     String?
-  activeAiDesignId String?
-  plan             Plan           @default(FREE)
-  planExpiresAt    DateTime?
-  extraGuestQuota  Int            @default(0)
-  views            Int            @default(0)
-  isPublic         Boolean        @default(true)
-  data             Json           @default("{}")
-  clientName       String?
-  clientWhatsapp   String?
-  clientEditToken  String?        @unique
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guests           Guest[]
-  rsvps            RSVP[]
-  messages         GuestMessage[]
+  id                String             @id @default(cuid())
+  userId            String
+  slug              String?            @unique
+  title             String             @default("Undangan Pernikahan")
+  weddingDate       DateTime?
+  templateSlug      String?
+  activeAiDesignId  String?
+  plan              Plan               @default(FREE)
+  planExpiresAt     DateTime?
+  extraGuestQuota   Int                @default(0)
+  views             Int                @default(0)
+  isPublic          Boolean            @default(true)
+  data              Json               @default("{}")
+  clientName        String?
+  clientWhatsapp    String?
+  clientEditToken   String?            @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guests            Guest[]
+  rsvps             RSVP[]
+  messages          GuestMessage[]
   transactions      Transaction[]
   visitLogs         InvitationVisit[]
   templatePurchases TemplatePurchase[]
@@ -219,11 +225,11 @@ model GuestMessage {
 }
 
 model Transaction {
-  id            String      @id @default(cuid())
-  userId        String
-  invitationId  String?
-  amount        Int
-  status        String      @default("PENDING") // PENDING, SUCCESS, FAILED
+  id               String      @id @default(cuid())
+  userId           String
+  invitationId     String?
+  amount           Int
+  status           String      @default("PENDING") // PENDING, SUCCESS, FAILED
   kind             String      @default("PLAN") // PLAN | GUEST_ADDON | AI_CREDIT | AGENCY_QUOTA | MARKETPLACE
   addonUnits       Int         @default(0)
   snapToken        String?
@@ -233,12 +239,12 @@ model Transaction {
   promoCodeUsed    String?
   discountAmount   Int         @default(0)
   paymentProof     String? // URL to the uploaded image (for manual)
-  paymentMethod String?
-  notes         String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invitation    Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  paymentMethod    String?
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation       Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([invitationId])
@@ -261,32 +267,32 @@ model AiDesign {
 
 /// Template catalog managed from the admin CMS.
 model CatalogTemplate {
-  id            String   @id @default(cuid())
-  slug          String   @unique
-  name          String
-  description   String   @default("")
-  category      String
-  tier          String   @default("Gratis") // Gratis | Premium
-  kind          String   @default("ENGINE") // ENGINE: theme JSON rendered by the AI theme engine; CODE: component in components/templates
-  theme         Json?
-  defaultMusic  Json? // { type: "youtube" | "upload", url: string, title?: string }
-  componentSlug String?
-  thumbnail     String?
-  referenceUrl  String? // inspiration note for admins, never shown publicly
-  isActive      Boolean  @default(true)
-  isFeatured    Boolean  @default(false)
-  isNew         Boolean  @default(false)
-  sortOrder     Int      @default(0)
-  usageCount    Int      @default(0)
-  creatorId     String?
-  creator       User?    @relation("CreatedTemplates", fields: [creatorId], references: [id], onDelete: SetNull)
-  price         Int      @default(0) // 0 = included in plan; > 0 = paid Marketplace template
-  platformFeePct Int     @default(30) // Owner commission % per sale
-  reviewStatus  String   @default("APPROVED") // PENDING_REVIEW | APPROVED | REJECTED
-  reviewNote    String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  purchases     TemplatePurchase[]
+  id             String             @id @default(cuid())
+  slug           String             @unique
+  name           String
+  description    String             @default("")
+  category       String
+  tier           String             @default("Gratis") // Gratis | Premium
+  kind           String             @default("ENGINE") // ENGINE: theme JSON rendered by the AI theme engine; CODE: component in components/templates
+  theme          Json?
+  defaultMusic   Json? // { type: "youtube" | "upload", url: string, title?: string }
+  componentSlug  String?
+  thumbnail      String?
+  referenceUrl   String? // inspiration note for admins, never shown publicly
+  isActive       Boolean            @default(true)
+  isFeatured     Boolean            @default(false)
+  isNew          Boolean            @default(false)
+  sortOrder      Int                @default(0)
+  usageCount     Int                @default(0)
+  creatorId      String?
+  creator        User?              @relation("CreatedTemplates", fields: [creatorId], references: [id], onDelete: SetNull)
+  price          Int                @default(0) // 0 = included in plan; > 0 = paid Marketplace template
+  platformFeePct Int                @default(30) // Owner commission % per sale
+  reviewStatus   String             @default("APPROVED") // PENDING_REVIEW | APPROVED | REJECTED
+  reviewNote     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  purchases      TemplatePurchase[]
 
   @@index([isActive, sortOrder])
   @@index([creatorId])
@@ -336,9 +342,9 @@ model SystemSetting {
 
 model Notification {
   id        String   @id @default(cuid())
-  audience  String   // "USER" | "ADMIN" | "ALL_USERS"
-  userId    String?  // targeted user ID when audience = "USER"
-  type      String   // "TEMPLATE" | "TRANSACTION" | "RSVP" | "SYSTEM"
+  audience  String // "USER" | "ADMIN" | "ALL_USERS"
+  userId    String? // targeted user ID when audience = "USER"
+  type      String // "TEMPLATE" | "TRANSACTION" | "RSVP" | "SYSTEM"
   title     String
   message   String
   href      String?
@@ -378,7 +384,7 @@ model SupportThread {
 model SupportMessage {
   id        String        @id @default(cuid())
   threadId  String
-  sender    String        // "USER" | "AI" | "ADMIN" | "SYSTEM"
+  sender    String // "USER" | "AI" | "ADMIN" | "SYSTEM"
   content   String        @db.Text
   createdAt DateTime      @default(now())
   thread    SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)

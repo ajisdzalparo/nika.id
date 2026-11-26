@@ -103,7 +103,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
       toast.success("Berhasil masuk sebagai user");
 
       // Force reload to switch context to that user
-      window.location.href = "/";
+      window.location.assign(new URL("/", window.location.origin));
     } catch (error) {
       console.error(error);
       toast.error("Gagal melakukan impersonasi");
