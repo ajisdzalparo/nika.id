@@ -10,31 +10,41 @@ export interface PortalPayload {
   cookieValue: string;
 }
 
-function secret() {
-  return process.env.BETTER_AUTH_SECRET || "undangin-yuk-portal-gate";
-}
+// Portal cookies carry the Better Auth session token, so they are encrypted (AES-256-GCM), not just signed:
+// a copied cookie value no longer reveals the token. GCM's auth tag also rejects any tampered cookie.
+const TOKEN_PREFIX = "v2";
 
-function hmac(encoded: string): string {
-  return crypto.createHmac("sha256", secret()).update(encoded).digest("hex");
+let cachedKey: Buffer | null = null;
+function key(): Buffer {
+  if (cachedKey) return cachedKey;
+  const secret = process.env.BETTER_AUTH_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") throw new Error("BETTER_AUTH_SECRET is required");
+    console.warn("[portal-gate] BETTER_AUTH_SECRET is not set; using an insecure development key");
+  }
+  cachedKey = crypto.createHash("sha256").update(`portal-gate:${secret || "dev-only-portal-gate"}`).digest();
+  return cachedKey;
 }
 
 export function signPortalPayload(payload: PortalPayload): string {
-  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-  return `${encoded}.${hmac(encoded)}`;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key(), iv);
+  const data = Buffer.concat([cipher.update(JSON.stringify(payload), "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return [TOKEN_PREFIX, iv.toString("base64url"), data.toString("base64url"), tag.toString("base64url")].join(".");
 }
 
 export function verifyPortalPayload(token: string | undefined | null, portal: "user" | "admin"): PortalPayload | null {
   if (!token) return null;
-  const dot = token.lastIndexOf(".");
-  if (dot <= 0) return null;
-  const encoded = token.slice(0, dot);
-  const sig = token.slice(dot + 1);
-  const expected = hmac(encoded);
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  const parts = token.split(".");
+  // Older signed-only cookies are rejected, so those sessions simply log in again once
+  if (parts.length !== 4 || parts[0] !== TOKEN_PREFIX) return null;
   try {
-    const parsed = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as PortalPayload;
+    const [, ivRaw, dataRaw, tagRaw] = parts;
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key(), Buffer.from(ivRaw, "base64url"));
+    decipher.setAuthTag(Buffer.from(tagRaw, "base64url"));
+    const json = Buffer.concat([decipher.update(Buffer.from(dataRaw, "base64url")), decipher.final()]).toString("utf8");
+    const parsed = JSON.parse(json) as PortalPayload;
     if (parsed.portal !== portal || !parsed.sessionId || !parsed.cookieName || !parsed.cookieValue) return null;
     return parsed;
   } catch {

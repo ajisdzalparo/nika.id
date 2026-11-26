@@ -3,6 +3,8 @@ import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { landingDisplay, landingSans } from "@/lib/studio";
+// Absolute base for canonical URLs and Open Graph / WhatsApp preview images; without it Next falls back to localhost
+import { SITE_URL } from "@/lib/site";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -19,8 +21,6 @@ const mono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-// Absolute base for Open Graph / WhatsApp preview images; without it Next falls back to localhost
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || "https://satumoment.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

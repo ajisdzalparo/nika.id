@@ -4,6 +4,7 @@ import { LegalPage, SUPPORT_EMAIL } from "@/components/landing/legal-page";
 export const metadata: Metadata = {
   title: "Garansi 7 Hari · SatuMoment",
   description: "Uang kembali penuh dalam 7 hari selama undangan belum dibagikan.",
+  alternates: { canonical: "/garansi" },
 };
 
 export default function GaransiPage() {

@@ -4,6 +4,7 @@ import { LegalPage, SUPPORT_EMAIL } from "@/components/landing/legal-page";
 export const metadata: Metadata = {
   title: "Kebijakan Privasi · SatuMoment",
   description: "Data apa yang SatuMoment kumpulkan, untuk apa, dan bagaimana kami menjaganya.",
+  alternates: { canonical: "/kebijakan-privasi" },
 };
 
 export default function KebijakanPrivasiPage() {

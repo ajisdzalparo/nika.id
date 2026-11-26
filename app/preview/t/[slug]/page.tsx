@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { IconArrowLeft } from "@tabler/icons-react";
@@ -5,6 +6,20 @@ import { getCatalogItem } from "@/lib/catalog";
 import { resolveTemplateMusic } from "@/lib/template-music";
 import { MOCK_WEDDING_DATA } from "@/lib/constants/mock-wedding-data";
 import AiDesignTemplate from "@/components/templates/ai-design";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const item = await getCatalogItem(slug);
+  if (!item) return { title: "Template tidak ditemukan · SatuMoment", robots: { index: false } };
+  const title = `Template ${item.name} · Undangan pernikahan digital · SatuMoment`;
+  const description = `Coba template undangan pernikahan digital ${item.name} (${item.category}) dengan contoh data, langsung di HP.`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/preview/t/${item.slug}` },
+    openGraph: { title, description },
+  };
+}
 
 // Public preview of a catalog template with sample data.
 export default async function CatalogPreviewPage({ params }: { params: Promise<{ slug: string }> }) {

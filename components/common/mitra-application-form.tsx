@@ -109,7 +109,9 @@ export function MitraApplicationForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    // Columns follow the form's own width (container query), not the viewport: in the dashboard side
+    // column the form is ~400px wide and two columns squeeze the WhatsApp field.
+    <form onSubmit={submit} className="@container space-y-4">
       <div role="radiogroup" aria-label="Jenis pendaftar" className="grid grid-cols-2 gap-2">
         {APPLICANT_TYPES.map((t) => (
           <button
@@ -133,7 +135,7 @@ export function MitraApplicationForm({
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @lg:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="mitra-name" className={labelCls}>Nama kamu</Label>
           <Input
@@ -176,7 +178,7 @@ export function MitraApplicationForm({
       </div>
 
       {applicantType === "USAHA" && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 @lg:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="mitra-business" className={labelCls}>Nama usaha</Label>
             <Input
@@ -202,7 +204,7 @@ export function MitraApplicationForm({
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @lg:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="mitra-wa" className={labelCls}>WhatsApp</Label>
           <PhoneInput id="mitra-wa" value={whatsapp} onChange={setWhatsapp} required className={`h-11 ${fieldCls}`} />

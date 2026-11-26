@@ -7,7 +7,9 @@ import {
   buildRedirectUrl,
   extractCookieFromHeader,
   signPortalPayload,
+  verifyPortalPayload,
 } from "@/lib/portal-gate";
+import { prisma } from "@/lib/prisma";
 
 function safeNext(raw: string | null | undefined, fallback: string) {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/admin")) {
@@ -116,10 +118,23 @@ export async function POST(request: Request) {
   return res;
 }
 
-// DELETE /api/portal/enter?portal=user|admin — clear only the specified portal's session cookie
+// Logging out must end the session on the server too: deleting only the cookie would leave a copied
+// session token usable until it expires.
+async function revokePortalSession(request: Request, portal: "user" | "admin") {
+  const cookieName = portal === "admin" ? ADMIN_PORTAL_COOKIE : USER_PORTAL_COOKIE;
+  const payload = verifyPortalPayload(extractCookieFromHeader(request.headers.get("cookie"), cookieName), portal);
+  if (!payload) return;
+  await prisma.session.deleteMany({ where: { id: payload.sessionId } }).catch((error) => {
+    console.error("[portal] failed to revoke session on logout", error);
+  });
+}
+
+// DELETE /api/portal/enter?portal=user|admin — log out of that portal: revoke its server session and clear its cookie
 export async function DELETE(request: Request) {
   const url = new URL(request.url);
   const portal = url.searchParams.get("portal");
+  const portals: ("user" | "admin")[] = portal === "admin" ? ["admin"] : portal === "user" ? ["user"] : ["user", "admin"];
+  await Promise.all(portals.map((p) => revokePortalSession(request, p)));
   const res = NextResponse.json({ success: true });
   if (portal === "admin") {
     res.cookies.delete(ADMIN_PORTAL_COOKIE);

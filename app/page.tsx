@@ -10,6 +10,8 @@ import { getManualPaymentInfo } from "@/lib/payment";
 import { prisma } from "@/lib/prisma";
 import { getPlanPrices } from "@/lib/system-settings";
 import { landingFontClass } from "@/lib/studio";
+import { JsonLd } from "@/components/common/json-ld";
+import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "SatuMoment · Undangan pernikahan digital dengan Desain AI",
   description: "Rancang undangan pernikahan digital sesuai konsep kalian dengan AI. RSVP, amplop digital, musik, galeri, dan kirim ke tamu lewat WhatsApp.",
+  alternates: { canonical: "/" },
 };
 
 export default async function Home() {
@@ -41,8 +44,34 @@ export default async function Home() {
       agencyInstagram: p.agencyInstagram,
       agencyVerified: p.agencyVerified,
     }));
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: absoluteUrl("/brand/apple-touch-icon.png"),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: SITE_URL,
+      inLanguage: "id-ID",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: cms.faq.items.map((qa) => ({
+        "@type": "Question",
+        name: qa.question,
+        acceptedAnswer: { "@type": "Answer", text: qa.answer },
+      })),
+    },
+  ];
   return (
     <div className={`${landingFontClass} min-h-screen antialiased`} style={{ background: L.bg, color: L.ink }}>
+      <JsonLd data={structuredData} />
       <LandingNavbar />
       <main>
         <Hero content={cms.hero} />

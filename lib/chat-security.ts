@@ -118,9 +118,18 @@ export function isOwnSafeChatImageUrl(url: unknown): url is string {
   }
 }
 
-/** Client IP behind the reverse proxy, for rate-limit keys on public endpoints. */
+/**
+ * Client IP behind the reverse proxy, for rate-limit keys on public endpoints.
+ * With the Cloudflare proxy on, X-Forwarded-For only carries Cloudflare's edge IP (shared by many guests),
+ * so the visitor's address from CF-Connecting-IP comes first.
+ */
 export function clientIp(request: Request): string {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+  return (
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
 }
 
 const RATE_BUCKET_MAX_KEYS = 5_000;
