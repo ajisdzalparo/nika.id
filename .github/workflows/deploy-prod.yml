@@ -50,14 +50,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Lowercase IMAGE_NAME and pick environment
+      # Separate GHCR packages: prod -> <owner>/satumoment, staging -> <owner>/satumoment-staging
+      - name: Pick environment and image name
         run: |
-          echo "IMAGE_NAME_LC=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          BASE="$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')"
           if [ "${{ github.ref }}" = "refs/heads/prod" ]; then
             echo "DEPLOY_ENV=production" >> $GITHUB_ENV
+            echo "IMAGE_NAME_LC=$BASE" >> $GITHUB_ENV
             echo "APP_URL=https://satumoment.com" >> $GITHUB_ENV
           else
             echo "DEPLOY_ENV=staging" >> $GITHUB_ENV
+            echo "IMAGE_NAME_LC=$BASE-staging" >> $GITHUB_ENV
             echo "APP_URL=https://satumoment-staging.ajisdzalparo.com" >> $GITHUB_ENV
           fi
 
@@ -76,11 +79,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}
-          # production: latest, production, production-<sha> · staging: staging, staging-<sha>
+          # Each package gets: latest + sha-<short sha>
           tags: |
-            type=raw,value=latest,enable=${{ env.DEPLOY_ENV == 'production' }}
-            type=raw,value=${{ env.DEPLOY_ENV }}
-            type=sha,format=short,prefix=${{ env.DEPLOY_ENV }}-
+            type=raw,value=latest
+            type=sha,format=short
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
