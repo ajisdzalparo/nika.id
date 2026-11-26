@@ -1,3 +1,6 @@
+# Fixed project name: networks/volumes no longer depend on the VPS folder name
+name: satumoment
+
 services:
   app:
     # `satumoment` = prod branch, `satumoment-staging` = staging branch. Staging: set APP_IMAGE=ghcr.io/ajisdzalparo/satumoment-staging:latest in .env.staging
@@ -16,11 +19,8 @@ services:
       minio:
         condition: service_started
     networks:
-      internal:
-      caddy_net:
-        # Old name kept as an alias so a Caddyfile still pointing at nikaid-app keeps working
-        aliases:
-          - nikaid-app
+      - internal
+      - caddy_net
 
   postgres:
     image: postgres:16-alpine
@@ -35,7 +35,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-nikaid}
     volumes:
-      - nikaid_postgres_data:/var/lib/postgresql/data
+      - satumoment_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nikaid} -d ${POSTGRES_DB:-nikaid}"]
       interval: 10s
@@ -57,23 +57,19 @@ services:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY in .env}
     volumes:
-      - nikaid_minio_data:/data
+      - satumoment_minio_data:/data
     networks:
-      internal:
-      caddy_net:
-        aliases:
-          - nikaid-minio
+      - internal
+      - caddy_net
 
 networks:
   internal:
   caddy_net:
     external: true
 
-# Pinned to the real volume names on the VPS (compose prefixed them with the folder name `undangin-yuk`),
-# so renaming containers or moving the folder never points the app at a new, empty volume.
-# Never change these without migrating the data; override per server with POSTGRES_VOLUME / MINIO_VOLUME.
+# Explicit names so they never pick up a folder prefix. Never change them without migrating the data.
 volumes:
-  nikaid_postgres_data:
-    name: ${POSTGRES_VOLUME:-undangin-yuk_nikaid_postgres_data}
-  nikaid_minio_data:
-    name: ${MINIO_VOLUME:-undangin-yuk_nikaid_minio_data}
+  satumoment_postgres_data:
+    name: ${POSTGRES_VOLUME:-satumoment_postgres_data}
+  satumoment_minio_data:
+    name: ${MINIO_VOLUME:-satumoment_minio_data}

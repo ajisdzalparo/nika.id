@@ -89,7 +89,7 @@ Model bisnis, harga, dan keputusan pemilik produk: [`docs/ROADMAP-BISNIS.md`](RO
 - **Souvenir / barang fisik**, **akun Instagram SatuMoment**, **brosur** — ditunda, bukan pekerjaan kode.
 - **WA Blast resmi** (WhatsApp Cloud API / gateway) — UI "Segera" + daftar tunggu sudah ada.
 - **Domain kustom** (CNAME) untuk Eksklusif/Mitra, analitik trafik per undangan.
-- Infra tertunda: ganti nama image/domain final, tutup port DB yang terbuka di VPS, container prod `satumoment-*` (alias lama `nikaid-*`), volume tetap `undangin-yuk_nikaid_*` (dikunci di compose), folder VPS `~/projects/undangin-yuk`.
+- Infra tertunda: ganti nama image/domain final, tutup port DB yang terbuka di VPS, prod di VPS: folder `~/projects/satumoment`, compose project `satumoment`, container `satumoment-*`, volume `satumoment_postgres_data` / `satumoment_minio_data`. Role & DB Postgres masih `nikaid`.
 
 ---
 

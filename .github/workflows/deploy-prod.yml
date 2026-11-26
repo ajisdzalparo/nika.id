@@ -125,7 +125,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-            cd ~/projects/undangin-yuk
+            # VPS folder moved undangin-yuk -> satumoment; fall back while migrating
+            cd ~/projects/satumoment 2>/dev/null || cd ~/projects/undangin-yuk
             COMPOSE_FILE="docker-compose.prod.yml"
             [ -f "$COMPOSE_FILE" ] || COMPOSE_FILE="docker-compose.yml"
             # The repo was renamed nika.id -> satumoment; point the VPS compose at the new image (no-op once done)
