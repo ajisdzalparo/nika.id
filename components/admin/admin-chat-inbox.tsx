@@ -367,7 +367,7 @@ export function AdminChatInbox({
             </button>
           </div>
 
-          <div className="flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:thin] sm:flex-wrap sm:overflow-visible">
+          <div className="flex gap-2.5 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
             {queueThreads.map((q) => {
               const name = q.user?.name || q.user?.email || "User";
               return (
@@ -456,7 +456,7 @@ export function AdminChatInbox({
             </div>
           </div>
 
-          <div className="flex-1 divide-y divide-[#F3EBDB] overflow-y-auto [scrollbar-width:thin]">
+          <div className="flex-1 divide-y divide-[#F3EBDB] overflow-y-auto">
             {filteredThreads.length === 0 ? (
               <div className="px-4 py-14 text-center text-xs text-[#6B5F50]">
                 Tidak ada percakapan di filter ini.
@@ -613,7 +613,7 @@ export function AdminChatInbox({
               </header>
 
               {/* Messages Thread */}
-              <div className="flex-1 space-y-4 overflow-y-auto bg-[#FCF8F1] px-5 py-5 [scrollbar-width:thin] sm:px-6">
+              <div className="flex-1 space-y-4 overflow-y-auto bg-[#FCF8F1] px-5 py-5 sm:px-6">
                 {messages.map((m) => {
                   if (m.sender === "SYSTEM") {
                     return (

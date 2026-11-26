@@ -56,10 +56,10 @@ export const FEATURES = [
   },
   {
     id: "MARKETPLACE",
-    label: "Jual Template (Marketplace)",
-    description: "User menjual desain mereka sebagai template.",
+    label: "Marketplace Template Kreator",
+    description: "User menjual desain sebagai template dan membeli template kreator. Saat Segera hadir, user mengisi survei minat.",
     paths: [],
-    defaultStatus: "ACTIVE",
+    defaultStatus: "COMING_SOON",
   },
   {
     id: "DAFTAR_TAMU",

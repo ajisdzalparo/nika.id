@@ -115,7 +115,7 @@ export function StatTile({
           </span>
         )}
       </div>
-      <p className={cn("mt-3 font-(family-name:--font-landing-display) text-4xl tabular-nums lining-nums text-[#1F1A14]", dense && "mt-1.5 text-3xl sm:mt-3 sm:text-4xl")}>{value}</p>
+      <p className={cn("mt-3 font-(family-name:--font-landing-display) text-2xl leading-tight tabular-nums lining-nums text-[#1F1A14] sm:text-[1.9rem]", dense && "mt-1.5 text-2xl sm:mt-3 sm:text-[1.9rem]")}>{value}</p>
       {hint && <p className={cn("mt-1 text-xs text-[#8E8268]", dense && "hidden sm:block")}>{hint}</p>}
     </>
   );

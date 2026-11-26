@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { IconArrowRight, IconArrowsExchange, IconCalendarEvent, IconCheck, IconEye, IconHeartHandshake, IconLeaf, IconMessageHeart, IconPalette, IconPencil, IconSparkles, IconUserCheck, IconUsers } from "@tabler/icons-react";
+import { IconArrowRight, IconArrowsExchange, IconCalendarEvent, IconCheck, IconEye, IconHeartHandshake, IconLeaf, IconMessageHeart, IconPalette, IconPencil, IconUserCheck, IconUsers } from "@tabler/icons-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Panel, PanelTitle } from "@/components/common/studio-ui";
 import { SiteHeader } from "@/components/site-header";
@@ -231,7 +231,7 @@ export default async function UserDashboardPage() {
             })}
             <Link href="/desain-ai" className="block border-b border-r border-[#F3EBDB] px-4 py-4 transition-colors hover:bg-[#FCF8F1] sm:px-5">
               <span className="flex items-center gap-1.5 text-xs text-[#6B5F50]">
-                <IconSparkles size={15} stroke={1.7} className="text-[#8A6424]" /> Kredit desain AI
+                <IconPalette size={15} stroke={1.7} className="text-[#8A6424]" /> Kredit desain AI
               </span>
               <span className="mt-1.5 block font-(family-name:--font-landing-display) text-[1.7rem] tabular-nums lining-nums leading-none text-[#1F1A14]">
                 {aiQuota ? fmt.format(aiQuota.remaining) : 0}

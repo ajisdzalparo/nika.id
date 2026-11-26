@@ -4,9 +4,10 @@ import { BrandLogo } from "@/components/common/brand-logo";
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon, IconReportMoney, IconMessageCircleHeart, IconTicket } from "@tabler/icons-react";
+import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon, IconReportMoney, IconMessageCircleHeart, IconTicket, IconBuildingStore } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
+import { SIDEBAR_NAV_ITEM_CLASS } from "@/components/common/sidebar-styles";
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +31,7 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
     items: [
       { title: "Template", url: "/admin/templates", icon: IconTemplate },
       { title: "Pengguna", url: "/admin/users", icon: IconUsers },
+      { title: "Pengajuan Mitra", url: "/admin/mitra", icon: IconBuildingStore },
       { title: "Moderasi Ucapan", url: "/admin/moderasi", icon: IconMessage },
       { title: "Transaksi", url: "/admin/transaksi", icon: IconCurrencyDollar },
       { title: "Keuangan", url: "/admin/keuangan", icon: IconReportMoney },
@@ -88,7 +90,7 @@ export function AdminSidebar({
                   const active = item.url === "/admin" ? pathname === "/admin" : pathname.startsWith(item.url);
                   return (
                     <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton asChild tooltip={item.title} isActive={active} className="relative h-10 rounded-xl transition-colors hover:bg-[#EEE2C9]/70 data-[active=true]:bg-[#1F1A14] data-[active=true]:font-medium data-[active=true]:text-[#F6EEDD] data-[active=true]:shadow-[0_8px_18px_-12px_rgba(26,21,16,.7)] data-[active=true]:before:absolute data-[active=true]:before:inset-y-2.5 data-[active=true]:before:left-0 data-[active=true]:before:w-[3px] data-[active=true]:before:rounded-full data-[active=true]:before:bg-[linear-gradient(180deg,#E6CB86,#B8903F)] [&[data-active=true]>svg]:text-[#D9B56A]">
+                      <SidebarMenuButton asChild tooltip={item.title} isActive={active} className={SIDEBAR_NAV_ITEM_CLASS}>
                         <Link href={item.url}>
                           <item.icon stroke={1.6} />
                           <span>{item.title}</span>

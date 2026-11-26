@@ -57,7 +57,14 @@ function StatusSegments({
 }
 
 /** Admin control for every feature in lib/features.ts: Aktif / Maintenance / Segera hadir, saved on change. */
-export function FeatureStatusManager({ initialStatuses }: { initialStatuses: FeatureStatusMap }) {
+export function FeatureStatusManager({
+  initialStatuses,
+  notes,
+}: {
+  initialStatuses: FeatureStatusMap;
+  /** Extra line under a feature (e.g. survey results), keyed by feature id */
+  notes?: Partial<Record<FeatureId, string>>;
+}) {
   const [statuses, setStatuses] = useState(initialStatuses);
   const [saving, setSaving] = useState<FeatureId | null>(null);
 
@@ -125,6 +132,7 @@ export function FeatureStatusManager({ initialStatuses }: { initialStatuses: Fea
                     {saving === f.id && <IconLoader2 size={14} className="animate-spin text-[#8A6424]" />}
                   </p>
                   <p className="mt-0.5 text-[13px] text-[#7D7468]">{f.description}</p>
+                  {notes?.[f.id] && <p className="mt-1 text-xs font-medium text-[#8A6424]">{notes[f.id]}</p>}
                 </div>
                 <StatusSegments label={f.label} value={status} disabled={saving === f.id} onChange={(s) => void change(f.id, s)} />
               </li>

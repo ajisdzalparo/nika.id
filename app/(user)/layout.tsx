@@ -12,6 +12,8 @@ import { getAiQuota } from "@/lib/ai-design/server";
 import type { PlanType } from "@/lib/limits";
 import { shellTokens, studioClass } from "@/lib/studio";
 import { getFeatureStatuses, isMaintenanceMode } from "@/lib/system-settings";
+import { prisma } from "@/lib/prisma";
+import { getUsableAgencyQuota } from "@/lib/limits";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +21,15 @@ export default async function UserLayout({ children }: { children: React.ReactNo
   const session = await getSession(undefined, "user");
   if (!session) redirect("/api/portal/exit?portal=user");
 
-  const [active, allInvitations, maintenance, featureStatuses] = await Promise.all([
+  const [active, allInvitations, maintenance, featureStatuses, account] = await Promise.all([
     getActiveInvitation(session.user.id),
     listUserInvitations(session.user.id),
     isMaintenanceMode(),
     getFeatureStatuses(),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true, agencyQuota: true, agencyQuotaExpiresAt: true } }),
   ]);
+  // Mitra is granted by an admin; the sidebar shows a mitra workspace instead of the couple menu
+  const mitra = account?.accountType === "AGENCY" ? { quota: getUsableAgencyQuota(account) } : null;
 
   if (maintenance) {
     return (
@@ -52,6 +57,8 @@ export default async function UserLayout({ children }: { children: React.ReactNo
     slug: inv.slug,
     plan: (inv.plan ?? "FREE") as PlanType,
     isPublic: inv.isPublic,
+    clientName: inv.clientName ?? null,
+    weddingDate: inv.weddingDate ? inv.weddingDate.toISOString() : null,
   }));
 
   const activeItem: SwitchableInvitation = {
@@ -60,6 +67,8 @@ export default async function UserLayout({ children }: { children: React.ReactNo
     slug: active.slug,
     plan: (active.plan ?? "FREE") as PlanType,
     isPublic: active.isPublic,
+    clientName: active.clientName ?? null,
+    weddingDate: active.weddingDate ? active.weddingDate.toISOString() : null,
   };
 
   return (
@@ -70,7 +79,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
         image: session.user.image,
       }}
     >
-      <ActiveInvitationProvider active={activeItem} invitations={switchableList} aiCredits={aiCredits}>
+      <ActiveInvitationProvider active={activeItem} invitations={switchableList} aiCredits={aiCredits} isMitra={Boolean(mitra)}>
         <SidebarProvider style={shellTokens} className={`${studioClass} bg-[#F4EDDF]`}>
           <UserSidebar
             variant="inset"
@@ -81,6 +90,8 @@ export default async function UserLayout({ children }: { children: React.ReactNo
             }}
             activePlan={activeItem.plan}
             featureStatuses={featureStatuses}
+            mitra={mitra}
+            client={account?.accountType === "CLIENT"}
           />
           <SidebarInset className="min-w-0 overflow-x-hidden bg-[#FCF8F1]">
             {children}
