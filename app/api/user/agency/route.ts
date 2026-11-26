@@ -79,7 +79,7 @@ export async function GET(request: Request) {
   }
 }
 
-// PATCH /api/user/agency — 1-step activation & update of Agency profile
+// PATCH /api/user/agency — update the business profile of an approved mitra
 export async function PATCH(request: Request) {
   const blocked = await featureBlockedResponse("MITRA");
   if (blocked) return blocked;
@@ -94,6 +94,15 @@ export async function PATCH(request: Request) {
       );
     }
 
+    // Only an admin turns an account into a mitra (application form or WhatsApp); this only edits the profile
+    const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true } });
+    if (me?.accountType !== "AGENCY") {
+      return NextResponse.json(
+        { error: "NOT_MITRA", message: "Akun ini belum Mitra. Kirim pengajuan Mitra dan tunggu persetujuan admin." },
+        { status: 403 },
+      );
+    }
+
     const cleanWa = normalizePhoneDigits(parsed.data.agencyWhatsapp);
     if (!isValidPhoneDigits(cleanWa)) {
       return NextResponse.json({ error: "INVALID_WHATSAPP", message: "Nomor WhatsApp bisnis tidak valid." }, { status: 400 });
@@ -104,7 +113,6 @@ export async function PATCH(request: Request) {
     const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        accountType: "AGENCY",
         agencyName: parsed.data.agencyName,
         agencyWhatsapp: cleanWa,
         agencyInstagram: cleanIg,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
-import { getActiveInvitation } from "@/lib/active-invitation";
+import { getActiveInvitation, invitationAccessWhere } from "@/lib/active-invitation";
 import { normalizeTheme } from "@/lib/ai-design/color";
 import { getAiQuota } from "@/lib/ai-design/server";
 import type { PlanType } from "@/lib/limits";
@@ -149,7 +149,7 @@ export async function DELETE(request: Request) {
 
     await prisma.$transaction([
       prisma.invitation.updateMany({
-        where: { userId: session.user.id, activeAiDesignId: id },
+        where: { ...invitationAccessWhere(session.user.id), activeAiDesignId: id },
         data: { activeAiDesignId: null, templateSlug: "minimal" },
       }),
       prisma.aiDesign.delete({ where: { id } }),

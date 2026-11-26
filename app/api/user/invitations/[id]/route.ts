@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { apiErrorResponse, requireAuth } from "@/lib/auth-helpers";
-import { ACTIVE_INVITATION_COOKIE, getActiveInvitationIdFromCookie, isSlugTaken, sanitizeSlug } from "@/lib/active-invitation";
+import { ACTIVE_INVITATION_COOKIE, getActiveInvitationIdFromCookie, invitationAccessWhere, isSlugTaken, sanitizeSlug } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAuth(request);
     const { id } = await params;
-    const existing = await prisma.invitation.findFirst({ where: { id, userId: session.user.id } });
+    const existing = await prisma.invitation.findFirst({ where: { id, ...invitationAccessWhere(session.user.id) } });
     if (!existing) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
     const body = await request.json().catch(() => ({}));
@@ -29,6 +29,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         return NextResponse.json({ error: "SLUG_TAKEN", message: "Slug tautan sudah dipakai." }, { status: 409 });
       }
       update.slug = nextSlug;
+    }
+    // Mitra sales report: what the client paid the mitra (null clears it)
+    if (body?.clientPrice !== undefined && existing.userId === session.user.id) {
+      const price = body.clientPrice === null || body.clientPrice === "" ? null : Number(body.clientPrice);
+      if (price !== null && (!Number.isInteger(price) || price < 0 || price > 100_000_000)) {
+        return NextResponse.json({ error: "INVALID_PRICE", message: "Harga jual harus angka rupiah." }, { status: 400 });
+      }
+      update.clientPrice = price;
     }
     if (body?.weddingDate !== undefined) {
       update.weddingDate = body.weddingDate ? new Date(body.weddingDate) : null;

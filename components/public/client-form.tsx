@@ -141,7 +141,7 @@ export function ClientForm({ token, invitationTitle, agencyName, agencyWhatsapp,
                 href={waLink(agencyWhatsapp, `Halo ${agencyName}, data undangan "${invitationTitle}" sudah kami lengkapi.`) ?? undefined}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 font-semibold text-emerald-800 underline underline-offset-4"
+                className="inline-flex items-center gap-1.5 font-semibold text-[#8A6424] underline underline-offset-4 hover:text-[#1F1A14]"
               >
                 <IconBrandWhatsapp size={16} /> Kabari via WhatsApp
               </a>

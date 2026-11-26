@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-helpers";
-import { ACTIVE_INVITATION_COOKIE } from "@/lib/active-invitation";
+import { ACTIVE_INVITATION_COOKIE, invitationAccessWhere } from "@/lib/active-invitation";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     const found = await prisma.invitation.findFirst({
-      where: { id: invitationId, userId: session.user.id },
+      where: { id: invitationId, ...invitationAccessWhere(session.user.id) },
       select: { id: true },
     });
     if (!found) {
