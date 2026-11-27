@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import AiDesignTemplate from "@/components/templates/ai-design";
 import { MOCK_WEDDING_DATA } from "@/lib/constants/mock-wedding-data";
 import type { AiTheme } from "@/lib/ai-design/schema";
@@ -84,16 +84,113 @@ export function Rule({ light = false, className = "" }: { light?: boolean; class
  * A phone showing a real invitation rendered by the AI theme engine.
  * `zoom` keeps scrolling and hit-testing correct (unlike transform: scale).
  */
-export function Phone({ theme, zoom = 0.78, interactive = false, className = "", guestName = "Bapak & Ibu Tamu", data }: { theme: AiTheme; zoom?: number; interactive?: boolean; className?: string; guestName?: string; data?: WeddingData }) {
+const AUTOPLAY_SPEED = 70; // px per second inside the phone
+const AUTOPLAY_HOLD_TOP_MS = 2200;
+const AUTOPLAY_HOLD_BOTTOM_MS = 1600;
+const AUTOPLAY_FADE_MS = 450;
+
+/**
+ * Scrolls an element from top to bottom and loops, like a screen recording. Runs only while the element
+ * is on screen and the tab is visible; with reduced motion it stays still on the cover.
+ * Returns the current opacity so the jump back to the top can fade.
+ */
+function useAutoScroll(ref: RefObject<HTMLDivElement | null>, enabled: boolean) {
+  const [faded, setFaded] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!enabled || !el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let visible = false;
+    let raf = 0;
+    let last = 0;
+    let holdUntil = performance.now() + AUTOPLAY_HOLD_TOP_MS;
+    let resetting = false;
+    let position = 0;
+    const timers: number[] = [];
+
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      const dt = last ? Math.min(now - last, 250) : 0;
+      last = now;
+      if (!visible || document.hidden || resetting || now < holdUntil) return;
+      const max = el.scrollHeight - el.clientHeight;
+      if (max <= 0) return;
+      position = Math.min(max, position + (AUTOPLAY_SPEED * dt) / 1000);
+      el.scrollTop = position;
+      if (position >= max) {
+        resetting = true;
+        timers.push(
+          window.setTimeout(() => {
+            setFaded(true);
+            timers.push(
+              window.setTimeout(() => {
+                position = 0;
+                el.scrollTop = 0;
+                setFaded(false);
+                resetting = false;
+                holdUntil = performance.now() + AUTOPLAY_HOLD_TOP_MS;
+              }, AUTOPLAY_FADE_MS),
+            );
+          }, AUTOPLAY_HOLD_BOTTOM_MS),
+        );
+      }
+    };
+
+    const io = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+    });
+    io.observe(el);
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+      timers.forEach((t) => window.clearTimeout(t));
+    };
+  }, [ref, enabled]);
+  return faded;
+}
+
+/**
+ * Phone mockup with a live invitation inside.
+ * - default: a still cover (decorative).
+ * - `autoplay`: the opened invitation scrolls itself in a loop. It never takes touches, so on phones
+ *   the page keeps scrolling when a finger lands on the mockup.
+ * - `interactive`: the visitor scrolls and taps inside (avoid on mobile-heavy pages: it traps the scroll).
+ */
+export function Phone({
+  theme,
+  zoom = 0.78,
+  interactive = false,
+  autoplay = false,
+  className = "",
+  guestName = "Bapak & Ibu Tamu",
+  data,
+}: {
+  theme: AiTheme;
+  zoom?: number;
+  interactive?: boolean;
+  autoplay?: boolean;
+  className?: string;
+  guestName?: string;
+  data?: WeddingData;
+}) {
   const width = Math.round(375 * zoom);
   const height = Math.round(720 * zoom);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const live = interactive && !autoplay;
+  const faded = useAutoScroll(scrollRef, autoplay);
   return (
     <div className={`relative shrink-0 rounded-[38px] bg-[#111] p-[7px] shadow-[0_30px_60px_-20px_rgba(26,21,16,.45)] ${className}`} style={{ width: width + 14 }}>
       <div className="absolute left-1/2 top-[13px] z-20 h-[18px] w-[76px] -translate-x-1/2 rounded-full bg-[#111]" />
-      <div className={`overflow-hidden rounded-[31px] bg-white ${interactive ? "" : "pointer-events-none select-none"}`} style={{ width, height }}>
-        <div className={`h-full ${interactive ? "overflow-y-auto overscroll-contain [scrollbar-width:none]" : "overflow-hidden"}`}>
+      <div className={`overflow-hidden rounded-[31px] bg-white ${live ? "" : "pointer-events-none select-none"}`} style={{ width, height }} aria-hidden={autoplay || undefined}>
+        <div
+          ref={scrollRef}
+          className={`h-full transition-opacity ease-out ${live ? "overflow-y-auto overscroll-contain [scrollbar-width:none]" : "overflow-hidden"}`}
+          style={{ opacity: faded ? 0 : 1, transitionDuration: `${AUTOPLAY_FADE_MS}ms` }}
+        >
           <div style={{ zoom, width: 375 }}>
-            <AiDesignTemplate data={{ ...(data ?? MOCK_WEDDING_DATA), guestName }} theme={theme} embedded />
+            <AiDesignTemplate data={{ ...(data ?? MOCK_WEDDING_DATA), guestName }} theme={theme} embedded forceOpened={autoplay} />
           </div>
         </div>
       </div>
