@@ -109,9 +109,9 @@ export function AiDemo() {
 
         <Reveal delay={100} direction="scale" className="flex flex-col items-center gap-4">
           <div key={current.key} className="animate-in fade-in zoom-in-95 duration-500">
-            <Phone theme={theme} zoom={0.8} interactive />
+            <Phone theme={theme} zoom={0.8} autoplay />
           </div>
-          <p className="text-xs text-[#A89470]">Tema: {theme.name} · ketuk “Buka Undangan” untuk melihat isinya</p>
+          <p className="text-xs text-[#A89470]">Tema: {theme.name} · pilih konsep lain untuk melihat tema berbeda</p>
         </Reveal>
       </div>
     </section>
