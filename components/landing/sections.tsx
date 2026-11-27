@@ -823,11 +823,8 @@ export function StickyCta() {
   }, []);
   return (
     <div className={`fixed inset-x-0 bottom-0 z-40 p-3 transition-transform duration-300 md:hidden ${show ? "translate-y-0" : "translate-y-full"}`}>
-      <Link href="/register" className="uy-sheen flex h-13 items-center justify-between rounded-full pl-6 pr-2 text-[15px] font-semibold shadow-[0_14px_30px_-12px_rgba(176,138,62,.8)]" style={{ background: L.foil, color: L.ink }}>
+      <Link href="/register" className="uy-sheen flex h-13 items-center justify-center rounded-full px-6 text-[15px] font-semibold shadow-[0_14px_30px_-12px_rgba(176,138,62,.8)]" style={{ background: L.foil, color: L.ink }}>
         Buat undangan kalian
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1F1A14] text-[#F6EEDD]">
-          <IconArrowRight size={18} />
-        </span>
       </Link>
     </div>
   );
