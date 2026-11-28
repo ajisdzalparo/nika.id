@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { emitNotificationChanged } from "@/lib/notification-realtime";
 
 export type NotificationAudience = "USER" | "ADMIN" | "ALL_USERS";
 export type NotificationCategory = "TEMPLATE" | "TRANSACTION" | "RSVP" | "SYSTEM";
@@ -66,6 +67,7 @@ export async function createNotification(input: CreateNotificationInput): Promis
           href: input.href ?? null,
         },
       });
+      emitNotificationChanged(input.audience, input.userId);
       return;
     }
 
@@ -74,6 +76,7 @@ export async function createNotification(input: CreateNotificationInput): Promis
       INSERT INTO "Notification" ("id", "audience", "userId", "type", "title", "message", "href", "createdAt")
       VALUES (${id}, ${input.audience}, ${input.userId ?? null}, ${input.type}, ${input.title.slice(0, 140)}, ${input.message.slice(0, 320)}, ${input.href ?? null}, NOW())
     `;
+    emitNotificationChanged(input.audience, input.userId);
   } catch (err) {
     console.error("Notification create skipped:", err);
   }
