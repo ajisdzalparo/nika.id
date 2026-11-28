@@ -23,6 +23,42 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Full history so the migration check below can diff against the previous commit / base branch
+          fetch-depth: 0
+
+      # Stops the pipeline when a new migration can delete data (DROP TABLE/COLUMN, column type changes,
+      # TRUNCATE, DELETE). If the change is intended and its data is handled (copied, backed up), add the line
+      # `-- destructive-ok: <reason>` to that migration.sql to let it through.
+      - name: Check new migrations for data loss
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            RANGE="origin/$BASE_REF...HEAD"
+          elif [ -n "$BEFORE_SHA" ] && ! echo "$BEFORE_SHA" | grep -qE '^0+$'; then
+            RANGE="$BEFORE_SHA..HEAD"
+          else
+            echo "No previous commit to compare; skipping migration check"; exit 0
+          fi
+          NEW=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'prisma/migrations/*/migration.sql' || true)
+          [ -n "$NEW" ] || { echo "No new migrations"; exit 0; }
+          FAIL=0
+          for f in $NEW; do
+            if grep -qi 'destructive-ok' "$f"; then
+              echo "::warning file=$f::Destructive statements acknowledged with destructive-ok"
+              continue
+            fi
+            HITS=$(grep -nEi 'DROP[[:space:]]+(TABLE|COLUMN|SCHEMA)|ALTER[[:space:]]+COLUMN[[:space:]]+[^[:space:]]+[[:space:]]+(SET[[:space:]]+DATA[[:space:]]+)?TYPE|TRUNCATE|DELETE[[:space:]]+FROM' "$f" || true)
+            if [ -n "$HITS" ]; then
+              echo "::error file=$f::Migration may delete production data:"
+              echo "$HITS"
+              FAIL=1
+            fi
+          done
+          [ "$FAIL" -eq 0 ] || { echo "Review these migrations. If intended, add '-- destructive-ok: <reason>' to the file."; exit 1; }
+          echo "New migrations are additive: $NEW"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -131,9 +167,24 @@ jobs:
             [ -f "$COMPOSE_FILE" ] || COMPOSE_FILE="docker-compose.yml"
             # The repo was renamed nika.id -> satumoment; point the VPS compose at the new image (no-op once done)
             sed -i 's#ghcr.io/ajisdzalparo/nika.id:#ghcr.io/ajisdzalparo/satumoment:#' "$COMPOSE_FILE"
+
+            # Back up the database before anything changes. The new container applies migrations on start
+            # (Dockerfile CMD -> scripts/db-migrate.mjs), so this dump is the restore point if one goes wrong.
+            # A failed or empty dump stops the deploy (set -e). Keeps the newest 14, readable by this user only.
+            # Restore: docker compose -f "$COMPOSE_FILE" exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists' < FILE.dump
+            umask 077
+            BACKUP_DIR="$HOME/backups/satumoment"
+            mkdir -p "$BACKUP_DIR"
+            BACKUP_FILE="$BACKUP_DIR/pre-deploy-$(date +%Y%m%d-%H%M%S).dump"
+            docker compose -f "$COMPOSE_FILE" exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$BACKUP_FILE"
+            [ -s "$BACKUP_FILE" ] || { echo "Database backup is empty; deploy aborted"; exit 1; }
+            echo "Database backed up to $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
+            ls -1t "$BACKUP_DIR"/pre-deploy-*.dump | tail -n +15 | xargs -r rm --
+
             docker compose -f "$COMPOSE_FILE" pull app
             docker compose -f "$COMPOSE_FILE" up -d
-            docker compose -f "$COMPOSE_FILE" exec -T app sh -c 'npx --yes prisma@6 db push --skip-generate || bunx prisma@6 db push --skip-generate' || true
+            # No `prisma db push` here: schema changes go only through the recorded migrations applied at
+            # container start. db push would change the database outside that history and hide its errors.
             docker image prune -f
 
       - name: Trigger Dokploy Redeploy
