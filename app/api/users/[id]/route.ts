@@ -1,9 +1,32 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notifyMitraGranted } from "@/lib/mitra";
 import { apiErrorResponse, requireAdmin } from "@/lib/auth-helpers";
 
 const VALID_ROLES = ["USER", "admin"];
+
+class LastAdminError extends Error {}
+const LAST_ADMIN_RESPONSE = { error: "LAST_ADMIN", message: "Harus tersisa minimal satu admin." };
+
+/**
+ * Runs a change that removes admin rights from `targetId` (delete or demote) only if another admin remains.
+ * Serializable isolation: if two admins remove each other at the same moment, one transaction fails instead of
+ * both succeeding and leaving no admin at all.
+ */
+async function withOtherAdminRemaining<T>(targetId: string, change: (tx: Prisma.TransactionClient) => Promise<T>) {
+  return prisma.$transaction(
+    async (tx) => {
+      const target = await tx.user.findUnique({ where: { id: targetId }, select: { role: true } });
+      if (target?.role?.toLowerCase() === "admin") {
+        const others = await tx.user.count({ where: { role: { equals: "admin", mode: "insensitive" }, id: { not: targetId } } });
+        if (others === 0) throw new LastAdminError();
+      }
+      return change(tx);
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
 
 // GET /api/users/[id] - get user details
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -77,14 +100,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "NO_UPDATES" }, { status: 400 });
     }
 
-    const user = await prisma.user.update({
-      where: { id },
-      data,
-    });
+    const user =
+      data.role && data.role !== "admin"
+        ? await withOtherAdminRemaining(id, (tx) => tx.user.update({ where: { id }, data }))
+        : await prisma.user.update({ where: { id }, data });
     if (grantingMitra) await notifyMitraGranted(id);
 
     return NextResponse.json(user);
   } catch (error) {
+    if (error instanceof LastAdminError) return NextResponse.json(LAST_ADMIN_RESPONSE, { status: 400 });
     return apiErrorResponse(error, "Gagal memperbarui pengguna");
   }
 }
@@ -100,12 +124,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ error: "CANNOT_DELETE_SELF" }, { status: 400 });
     }
 
-    await prisma.user.delete({
-      where: { id },
-    });
+    await withOtherAdminRemaining(id, (tx) => tx.user.delete({ where: { id } }));
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof LastAdminError) return NextResponse.json(LAST_ADMIN_RESPONSE, { status: 400 });
     return apiErrorResponse(error, "Gagal menghapus pengguna");
   }
 }

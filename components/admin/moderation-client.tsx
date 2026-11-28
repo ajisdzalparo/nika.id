@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { CheckCircle, Trash2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { TablePagination, useUrlPagination, useUrlSort } from "@/components/common/table-pagination";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, TableCard, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export interface GuestMessage {
@@ -25,10 +26,16 @@ export interface GuestMessage {
 
 interface ModerationClientProps {
   initialMessages: GuestMessage[];
+  currentPage: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }
 
-export function ModerationClient({ initialMessages }: ModerationClientProps) {
+export function ModerationClient({ initialMessages, currentPage, pageSize, totalCount, totalPages }: ModerationClientProps) {
   const router = useRouter();
+  const paging = useUrlPagination();
+  const { sort, onSort } = useUrlSort(paging.setParams, paging.searchParams);
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleApprove = async (id: string) => {
@@ -72,14 +79,14 @@ export function ModerationClient({ initialMessages }: ModerationClientProps) {
   };
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <TableCard>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Tamu & Undangan</TableHead>
+            <SortableTableHead sortKey="guestName" sort={sort} onSort={onSort}>Tamu & Undangan</SortableTableHead>
             <TableHead>Pesan Ucapan</TableHead>
-            <TableHead>Waktu</TableHead>
-            <TableHead>Status</TableHead>
+            <SortableTableHead sortKey="createdAt" sort={sort} onSort={onSort}>Waktu</SortableTableHead>
+            <SortableTableHead sortKey="status" sort={sort} onSort={onSort}>Status</SortableTableHead>
             <TableHead className="text-right">Aksi</TableHead>
           </TableRow>
         </TableHeader>
@@ -170,6 +177,16 @@ export function ModerationClient({ initialMessages }: ModerationClientProps) {
           )}
         </TableBody>
       </Table>
-    </div>
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={paging.onPageChange}
+        onPageSizeChange={paging.onPageSizeChange}
+        disabled={paging.isPending}
+              className="border-t border-[#F3EBDB] px-4"
+      />
+    </TableCard>
   );
 }

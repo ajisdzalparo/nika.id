@@ -16,7 +16,10 @@ import {
   IconMusic,
   IconPhoto,
   IconPlus,
+  IconStarFilled,
 } from "@tabler/icons-react";
+import type { LandingTestimonial } from "@/lib/testimonials";
+import type { LandingStat } from "@/lib/landing-stats";
 import { AI_THEME_PRESETS } from "@/lib/ai-design/presets";
 import type { CatalogItem } from "@/lib/catalog-shared";
 import { CoverThumb } from "@/components/templates/ai-design/cover-thumb";
@@ -539,137 +542,143 @@ export interface PartnerVendor {
   agencyVerified: boolean;
 }
 
-/** Below this many partners the logos sit still instead of running. */
-const MARQUEE_MIN = 6;
+/** Logos repeat until one copy of the strip has at least this many, so a short list still fills a wide screen. */
+const STRIP_MIN_ITEMS = 10;
 
-/** One partner in the strip: uniform stationery badge with prominent logo (or gold monogram), business name, and IG handle. */
-function PartnerLogo({ partner, focusable }: { partner: PartnerVendor; focusable: boolean }) {
-  const initials = partner.agencyName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("") || "M";
-  const igHandle = partner.agencyInstagram ? `@${partner.agencyInstagram.replace(/^@/, "")}` : null;
-
-  const badge = (
-    <div className="flex h-24 items-center gap-4 rounded-2xl border border-[#E9DDC6] bg-[#FFFDF9] px-5 py-3 shadow-[0_1px_2px_rgba(26,21,16,.04)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-[#C9A24E] group-hover:shadow-[0_16px_34px_-22px_rgba(26,21,16,.4)]">
-      {partner.agencyLogo ? (
-        <span className="flex h-16 min-w-16 max-w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#EFE6D4] bg-[#FCF8F1] p-1.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={partner.agencyLogo}
-            alt={partner.agencyName}
-            loading="lazy"
-            className="h-full w-auto max-w-full object-contain mix-blend-multiply"
-          />
-        </span>
-      ) : (
-        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-[#E6D5B2] bg-[#F7F0E1] font-(family-name:--font-landing-display) text-2xl font-medium tracking-tight text-[#8A6424]">
-          {initials}
+/** A partner as a bare logo in the strip: their logo, or their name set as a wordmark when they have none. */
+function PartnerMark({ partner, focusable }: { partner: PartnerVendor; focusable: boolean }) {
+  const handle = partner.agencyInstagram?.replace(/^@/, "") || null;
+  // A wide logo is already a wordmark, so it stands alone; a square mark gets the name beside it
+  const [wide, setWide] = useState(false);
+  const mark = (
+    <span className="flex h-10 items-center gap-3">
+      {partner.agencyLogo && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={partner.agencyLogo}
+          alt={wide ? partner.agencyName : ""}
+          loading="lazy"
+          // A cached image can finish loading before hydration (no onLoad), so the ref checks it too
+          ref={(el) => {
+            if (el?.complete && el.naturalWidth) setWide(el.naturalWidth / Math.max(1, el.naturalHeight) >= 2);
+          }}
+          onLoad={(e) => setWide(e.currentTarget.naturalWidth / Math.max(1, e.currentTarget.naturalHeight) >= 2)}
+          // Multiply drops a white logo background into the page; opacity here would break that blend
+          className={`object-contain mix-blend-multiply grayscale transition duration-300 group-hover:grayscale-0 ${wide ? "h-10 w-auto max-w-[180px]" : "size-9"}`}
+        />
+      )}
+      {!wide && (
+        <span className="whitespace-nowrap text-lg font-semibold tracking-tight text-[#1F1A14]/55 transition-colors duration-300 group-hover:text-[#1F1A14]">
+          {partner.agencyName}
         </span>
       )}
-      <div className="min-w-0 pr-1 text-left">
-        <p className="whitespace-nowrap font-(family-name:--font-landing-display) text-xl leading-tight text-[#1F1A14]">
-          {partner.agencyName}
-        </p>
-        <p className="mt-1 whitespace-nowrap text-xs text-[#7D7161]">
-          {igHandle ?? (partner.agencyVerified ? "Mitra Terverifikasi" : "Mitra SatuMoment")}
-        </p>
-      </div>
-    </div>
+    </span>
   );
   const title = partner.agencyVerified ? `${partner.agencyName} · Mitra terverifikasi` : partner.agencyName;
-
-  return partner.agencyInstagram ? (
-    <a
-      href={`https://instagram.com/${partner.agencyInstagram.replace(/^@/, "")}`}
-      target="_blank"
-      rel="noreferrer"
-      title={title}
-      tabIndex={focusable ? undefined : -1}
-      className="group inline-flex rounded-2xl outline-offset-4"
-    >
-      {badge}
+  const cls = "group flex items-center px-4 outline-offset-4 sm:px-12";
+  return handle ? (
+    <a href={`https://instagram.com/${handle}`} target="_blank" rel="noreferrer" title={title} tabIndex={focusable ? undefined : -1} className={cls}>
+      {mark}
     </a>
   ) : (
-    <span title={title} className="group inline-flex">
-      {badge}
+    <span title={title} className={cls}>
+      {mark}
     </span>
   );
 }
 
-export function PartnerVendors({ partners }: { partners: PartnerVendor[] }) {
-  return (
-    <section id="mitra" className="scroll-mt-16 border-t py-20 md:py-24" style={{ borderColor: L.line }}>
-      <div className="mx-auto max-w-6xl space-y-10 px-4 md:px-6">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div className="space-y-3">
-            <Eyebrow>Mitra &amp; Vendor</Eyebrow>
-            <Display className="text-[2.1rem] sm:text-4xl">Wedding Organizer &amp; vendor rekanan.</Display>
-            <p className="max-w-xl text-[15px]" style={{ color: L.muted }}>
-              Vendor yang terdaftar di program Mitra SatuMoment otomatis tampil di sini untuk menjangkau lebih banyak calon pengantin.
-            </p>
-          </div>
-          <a
-            href="#gabung-mitra"
-            className="inline-flex h-11 w-fit shrink-0 items-center gap-2 rounded-full border px-5 text-sm font-medium transition-colors hover:bg-black/5"
-            style={{ borderColor: L.line, color: L.ink }}
-          >
-            Gabung jadi Mitra <IconArrowRight size={16} />
-          </a>
-        </div>
+/** Rounds down to a friendly figure: 1.284 → "1.280+", 42.170 → "42,1 rb+", 4.230.000 → "4,2 jt+". */
+function statFigure(n: number) {
+  const f = (v: number) => (Math.floor(v * 10) / 10).toLocaleString("id-ID");
+  if (n >= 1_000_000) return `${f(n / 1_000_000)} jt+`;
+  if (n >= 10_000) return `${f(n / 1_000)} rb+`;
+  if (n < 100) return n.toLocaleString("id-ID");
+  return `${(Math.floor(n / 10) * 10).toLocaleString("id-ID")}+`;
+}
 
-        {partners.length > 0 ? (
-          partners.length >= MARQUEE_MIN ? (
-            // Enough partners: a slow running strip (pauses on hover/focus, static for reduced motion)
-            <div
-              className="uy-marquee-viewport -mx-4 overflow-hidden md:mx-0"
-              style={{
-                maskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
-                WebkitMaskImage: "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
-              }}
-            >
-              <div className="uy-marquee flex w-max" style={{ ["--uy-marquee-duration" as string]: `${Math.max(30, partners.length * 5)}s` }}>
-                {[0, 1].map((copy) => (
-                  <ul key={copy} aria-hidden={copy === 1 ? true : undefined} className="flex shrink-0 items-center gap-4 pr-4">
-                    {partners.map((p) => (
-                      <li key={p.id} className="shrink-0">
-                        <PartnerLogo partner={p} focusable={copy === 0} />
-                      </li>
-                    ))}
-                  </ul>
-                ))}
-              </div>
-            </div>
-          ) : (
-            // Few partners: a calm static row; looping 1–3 logos looks thin
-            <ul className="flex flex-wrap items-center justify-center gap-3.5 py-2 sm:justify-start">
-              {partners.map((p) => (
-                <li key={p.id}>
-                  <PartnerLogo partner={p} focusable />
-                </li>
-              ))}
-            </ul>
-          )
-        ) : (
-          <div
-            className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-dashed p-6 sm:flex-row sm:items-center"
-            style={{ borderColor: L.line, background: L.surface }}
-          >
-            <p className="text-sm" style={{ color: L.muted }}>
-              Punya usaha Wedding Organizer, MUA, fotografer, atau percetakan? Setelah disetujui jadi Mitra, logo usaha Anda tampil di sini.
-            </p>
-            <a
-              href="#gabung-mitra"
-              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-5 text-xs font-medium"
-              style={{ background: L.ink, color: L.bg }}
-            >
-              Ajukan jadi Mitra <IconArrowRight size={14} />
-            </a>
-          </div>
-        )}
+/** Below this many partners the logos sit still in one centred row; a running strip would show the same few on repeat. */
+const MARQUEE_MIN_PARTNERS = 6;
+
+export function PartnerVendors({ partners }: { partners: PartnerVendor[] }) {
+  // No partners yet: show nothing right under the hero; recruiting has its own section (MitraJoin) further down
+  if (!partners.length) return null;
+  const running = partners.length >= MARQUEE_MIN_PARTNERS;
+  // Repeat the list so one copy is long enough to loop seamlessly
+  const reps = running ? Math.ceil(STRIP_MIN_ITEMS / partners.length) : 0;
+  const strip = Array.from({ length: reps }, (_, r) => partners.map((p) => ({ p, key: `${r}-${p.id}`, first: r === 0 }))).flat();
+
+  return (
+    // One centred column: caption, logos, then the Mitra button, so the eye reads straight down
+    <section id="mitra" className="scroll-mt-16 py-12 md:py-16">
+      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 pb-6 md:px-6">
+        <span className="h-px flex-1" style={{ background: L.line }} aria-hidden="true" />
+        <p className="shrink text-center text-sm" style={{ color: L.muted }}>
+          Dipakai <span className="font-medium" style={{ color: L.ink }}>wedding organizer &amp; vendor</span> untuk undangan klien mereka
+        </p>
+        <span className="h-px flex-1" style={{ background: L.line }} aria-hidden="true" />
       </div>
+
+      {running ? (
+        <div
+          className="uy-marquee-viewport overflow-hidden border-y py-7"
+          style={{
+            borderColor: L.line,
+            maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+            WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+          }}
+        >
+          {/* The moving track is its own blend group (transform), so it carries the page colour for the logos to multiply onto */}
+          <div className="uy-marquee flex w-max" style={{ ["--uy-marquee-duration" as string]: `${Math.max(30, strip.length * 4)}s`, background: L.bg }}>
+            {[0, 1].map((copy) => (
+              <ul key={copy} aria-hidden={copy === 1 ? true : undefined} className="flex shrink-0 items-center">
+                {strip.map(({ p, key, first }) => (
+                  <li key={key} className="shrink-0">
+                    <PartnerMark partner={p} focusable={copy === 0 && first} />
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
+        </div>
+      ) : (
+        // Few partners: one calm centred row, each shown once
+        <ul className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-y-3 px-2 py-2 md:px-6">
+          {partners.map((p) => (
+            <li key={p.id}>
+              <PartnerMark partner={p} focusable />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-7 flex justify-center px-4">
+        <a
+          href="#gabung-mitra"
+          // Colours as classes, not inline style: an inline colour would override the hover colour and hide the text
+          className="inline-flex h-11 items-center gap-2 rounded-full border border-[#D9C8A4] px-5 text-sm font-medium text-[#8A6424] transition-colors hover:border-[#8A6424] hover:bg-[#8A6424] hover:text-[#FCF8F1]"
+        >
+          Punya usaha WO? Gabung jadi Mitra <IconArrowRight size={15} />
+        </a>
+      </div>
+    </section>
+  );
+}
+
+/** Platform totals band. Sits beside the testimonials, where the figures back up what couples say. */
+export function StatsBand({ stats }: { stats: LandingStat[] }) {
+  if (!stats.length) return null;
+  return (
+    <section aria-label="SatuMoment dalam angka" style={{ background: L.accent, color: L.nightText }}>
+      <dl className="mx-auto grid max-w-6xl grid-cols-2 gap-x-5 gap-y-8 px-4 py-10 lg:grid-cols-4 lg:gap-0 md:px-6 md:py-14">
+        {stats.map((s, i) => (
+          <div key={s.id} className={`flex flex-col gap-2 lg:px-7 ${i > 0 ? "lg:border-l" : ""}`} style={{ borderColor: "rgba(246,238,221,.35)" }}>
+            <dd className="font-(family-name:--font-landing-display) text-[2rem] leading-none lining-nums sm:text-[2.4rem]">{statFigure(s.value)}</dd>
+            <dt className="text-[13px] leading-relaxed sm:text-sm" style={{ color: "#F3E6C8" }}>
+              {s.label}
+            </dt>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }
@@ -712,6 +721,82 @@ export function MitraJoin({ whatsapp }: { whatsapp?: string | null }) {
             <MitraApplicationForm tone="dark" adminWhatsapp={whatsapp} />
           </div>
         </Reveal>
+      </div>
+    </section>
+  );
+}
+
+// ─── Testimoni ("Apa kata mereka") ──────────────────────────────────────
+
+export function Testimonials({ items, userCount }: { items: LandingTestimonial[]; userCount: number | null }) {
+  if (!items.length) return null;
+  const onlySamples = items.every((t) => t.isSample);
+  return (
+    <section id="testimoni" className="scroll-mt-16 py-20 md:py-28" style={{ background: L.night, color: L.nightText }}>
+      <div className="mx-auto max-w-6xl px-4 md:px-6">
+        <Reveal className="mx-auto max-w-2xl space-y-4 text-center">
+          <p className="text-[11px] font-medium uppercase tracking-[0.26em]" style={{ color: L.accentBright }}>
+            Apa kata mereka
+          </p>
+          <Display className="text-[2.1rem] text-[#F6EEDD] sm:text-5xl">
+            {userCount ? (
+              <>
+                Dipercaya <em style={{ color: L.accentBright }}>{statFigure(userCount)}</em> pasangan
+              </>
+            ) : (
+              "Cerita dari para pengantin"
+            )}
+          </Display>
+          <p className="text-[15px] leading-relaxed" style={{ color: L.nightMuted }}>
+            Bagaimana SatuMoment membantu persiapan pernikahan mereka jadi lebih praktis.
+          </p>
+        </Reveal>
+
+        <div className="mt-12 grid gap-5 md:grid-cols-3">
+          {items.slice(0, 6).map((t, i) => (
+            <Reveal key={t.id} delay={i * 90} className="h-full">
+              <figure className="flex h-full flex-col rounded-3xl border p-6 sm:p-7" style={{ borderColor: L.nightLine, background: "rgba(255,255,255,.03)" }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex gap-1" style={{ color: L.accentBright }} aria-label={`${t.rating} dari 5 bintang`}>
+                    {Array.from({ length: t.rating }, (_, k) => (
+                      <IconStarFilled key={k} size={15} />
+                    ))}
+                  </span>
+                  {t.isSample && (
+                    <span className="rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em]" style={{ borderColor: L.nightLine, color: L.nightMuted }}>
+                      Contoh
+                    </span>
+                  )}
+                </div>
+                <blockquote className="mt-5 flex-1 text-[15px] italic leading-relaxed" style={{ color: "#E8DCC2" }}>
+                  &ldquo;{t.message}&rdquo;
+                </blockquote>
+                <figcaption className="mt-6 flex items-center gap-3 border-t pt-5" style={{ borderColor: L.nightLine }}>
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full border font-(family-name:--font-landing-display) text-base"
+                    style={{ borderColor: "#6B5530", background: "#2A2318", color: L.accentBright }}
+                    aria-hidden="true"
+                  >
+                    {t.displayName.trim()[0]?.toUpperCase()}
+                  </span>
+                  <span>
+                    <span className="block text-sm font-semibold text-[#F6EEDD]">{t.displayName}</span>
+                    {t.city && (
+                      <span className="block text-xs" style={{ color: L.nightMuted }}>
+                        {t.city}
+                      </span>
+                    )}
+                  </span>
+                </figcaption>
+              </figure>
+            </Reveal>
+          ))}
+        </div>
+        {onlySamples && (
+          <p className="mt-6 text-center text-xs" style={{ color: L.nightMuted }}>
+            Kartu di atas adalah contoh. Testimoni asli dari pasangan akan tampil di sini.
+          </p>
+        )}
       </div>
     </section>
   );

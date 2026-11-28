@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { prisma } from "@/lib/prisma";
 import { TransactionsClient } from "@/components/admin/transaksi-client";
+import { readPagination, readSearch, readSort } from "@/lib/pagination";
 
 interface TransactionWithUser {
   id: string;
@@ -22,9 +23,28 @@ interface TransactionWithUser {
   };
 }
 
-export default async function TransaksiPage() {
-  const transactions = await prisma.transaction.findMany({
-    orderBy: { createdAt: "desc" },
+export default async function TransaksiPage(props: { searchParams: Promise<{ q?: string; page?: string; limit?: string; sort?: string; dir?: string }> }) {
+  const searchParams = await props.searchParams;
+  const q = readSearch(searchParams.q);
+  const { page, pageSize, skip, take } = readPagination(searchParams);
+  const sort = readSort(searchParams, ["user", "id", "amount", "status", "createdAt"] as const);
+  const orderBy: import("@prisma/client").Prisma.TransactionOrderByWithRelationInput[] = [
+    ...(sort ? [sort.key === "user" ? { user: { name: sort.dir } } : { [sort.key]: sort.dir }] : []),
+    { createdAt: "desc" },
+  ];
+  const where: import("@prisma/client").Prisma.TransactionWhereInput = q
+    ? {
+        OR: [
+          { id: { contains: q, mode: "insensitive" } },
+          { user: { name: { contains: q, mode: "insensitive" } } },
+          { user: { email: { contains: q, mode: "insensitive" } } },
+        ],
+      }
+    : {};
+  const [transactions, totalCount] = await Promise.all([
+    prisma.transaction.findMany({
+    where,
+    orderBy,
     include: {
       user: {
         select: {
@@ -34,8 +54,11 @@ export default async function TransaksiPage() {
         },
       },
     },
-    take: 50,
-  });
+    skip,
+    take,
+  }),
+    prisma.transaction.count({ where }),
+  ]);
 
   const serializedTransactions = transactions.map((t: TransactionWithUser) => ({
     ...t,
@@ -53,7 +76,13 @@ export default async function TransaksiPage() {
             <p className="text-muted-foreground">Verifikasi pembayaran dan pantau pendapatan</p>
           </div>
 
-          <TransactionsClient initialTransactions={serializedTransactions} />
+          <TransactionsClient
+            initialTransactions={serializedTransactions}
+            currentPage={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            totalPages={Math.max(1, Math.ceil(totalCount / pageSize))}
+          />
         </div>
       </div>
     </>

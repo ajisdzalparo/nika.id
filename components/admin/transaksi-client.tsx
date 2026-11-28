@@ -9,8 +9,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, Table, TableBody, TableCard, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { TablePagination, useUrlPagination, useUrlSearch, useUrlSort } from "@/components/common/table-pagination";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Transaction {
@@ -35,14 +36,21 @@ interface Transaction {
 
 interface TransactionsClientProps {
   initialTransactions: Transaction[];
+  currentPage: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }
 
-export function TransactionsClient({ initialTransactions }: TransactionsClientProps) {
+export function TransactionsClient({ initialTransactions, currentPage, pageSize, totalCount, totalPages }: TransactionsClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const paging = useUrlPagination();
+  // Search runs on the server across every transaction (not just this page), debounced
+  const search = useUrlSearch(paging.setParams, paging.searchParams);
+  const { sort, onSort } = useUrlSort(paging.setParams, paging.searchParams);
 
-  const filteredTransactions = initialTransactions.filter((t) => t.user.name?.toLowerCase().includes(search.toLowerCase()) || t.user.email.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase()));
+  const filteredTransactions = initialTransactions;
 
   const handleUpdateStatus = async (id: string, status: "SUCCESS" | "FAILED") => {
     setLoading(id);
@@ -87,19 +95,19 @@ export function TransactionsClient({ initialTransactions }: TransactionsClientPr
       <div className="flex items-center justify-between">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input type="search" aria-label="Cari transaksi" placeholder="Cari user, email, atau ID..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input type="search" aria-label="Cari transaksi" placeholder="Cari user, email, atau ID..." className="pl-9" {...search} />
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card overflow-hidden">
+      <TableCard>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User / Email</TableHead>
-              <TableHead>ID Transaksi</TableHead>
-              <TableHead>Nominal</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Waktu</TableHead>
+              <SortableTableHead sortKey="user" sort={sort} onSort={onSort}>User / Email</SortableTableHead>
+              <SortableTableHead sortKey="id" sort={sort} onSort={onSort}>ID Transaksi</SortableTableHead>
+              <SortableTableHead sortKey="amount" sort={sort} onSort={onSort}>Nominal</SortableTableHead>
+              <SortableTableHead sortKey="status" sort={sort} onSort={onSort}>Status</SortableTableHead>
+              <SortableTableHead sortKey="createdAt" sort={sort} onSort={onSort}>Waktu</SortableTableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -224,7 +232,17 @@ export function TransactionsClient({ initialTransactions }: TransactionsClientPr
             )}
           </TableBody>
         </Table>
-      </div>
+        <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={paging.onPageChange}
+        onPageSizeChange={paging.onPageSizeChange}
+        disabled={paging.isPending}
+                className="border-t border-[#F3EBDB] px-4"
+        />
+      </TableCard>
     </div>
   );
 }

@@ -102,13 +102,22 @@ export function NotificationBell({ portal }: { portal: "admin" | "user" }) {
         })
         .catch(() => {});
     };
+
+    // Push, no polling: the server sends `changed` over SSE when a notification for this viewer is created.
+    // `open` also fires after an automatic reconnect, so anything sent while disconnected is fetched then.
+    // The first load doesn't wait for the stream: if SSE is blocked or refused, the bell still shows its list.
     sync();
-    const timer = setInterval(sync, 15_000);
-    window.addEventListener("focus", sync);
+    const es = new EventSource(`/api/notifications/stream?portal=${portal}`);
+    let opened = false;
+    // The first `open` follows the load above; only a later one (a reconnect) needs to catch up
+    es.addEventListener("open", () => {
+      if (opened) sync();
+      opened = true;
+    });
+    es.addEventListener("changed", sync);
     return () => {
       active = false;
-      clearInterval(timer);
-      window.removeEventListener("focus", sync);
+      es.close();
     };
   }, [portal]);
 

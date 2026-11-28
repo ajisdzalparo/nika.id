@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { FeedbackForm } from "@/components/user/feedback-form";
+import { TestimonialForm } from "@/components/user/testimonial-form";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { FEEDBACK_FEATURES, type FeedbackFeature } from "@/lib/feedback-shared";
@@ -10,11 +11,16 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Pro
   if (!session) redirect("/login");
   const { fitur, dari } = await searchParams;
 
-  const rows = await prisma.feedback.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  const [rows, testimonial, owner] = await Promise.all([
+    prisma.feedback.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+    prisma.testimonial.findUnique({ where: { userId: session.user.id } }),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { accountType: true, name: true, partnerName: true } }),
+  ]);
+  const defaultName = [owner?.name, owner?.partnerName].filter(Boolean).join(" & ");
   const initialFeature = FEEDBACK_FEATURES.some((f) => f.id === fitur) ? (fitur as FeedbackFeature) : undefined;
   const fromPath = typeof dari === "string" && dari.startsWith("/") ? dari.slice(0, 200) : undefined;
 
@@ -31,6 +37,25 @@ export default async function FeedbackPage({ searchParams }: { searchParams: Pro
               dapat kabar saat statusnya berubah.
             </p>
           </header>
+          {owner?.accountType !== "CLIENT" && (
+            <TestimonialForm
+              defaultName={defaultName}
+              initial={
+                testimonial
+                  ? {
+                      id: testimonial.id,
+                      displayName: testimonial.displayName,
+                      city: testimonial.city,
+                      rating: testimonial.rating,
+                      message: testimonial.message,
+                      status: testimonial.status,
+                      adminNote: testimonial.adminNote,
+                      createdAt: testimonial.createdAt.toISOString(),
+                    }
+                  : null
+              }
+            />
+          )}
           <FeedbackForm
             initialFeature={initialFeature}
             fromPath={fromPath}

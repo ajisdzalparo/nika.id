@@ -4,7 +4,8 @@ import { BrandLogo } from "@/components/common/brand-logo";
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon, IconReportMoney, IconMessageCircleHeart, IconTicket, IconBuildingStore } from "@tabler/icons-react";
+import { IconArrowLeft, IconCurrencyDollar, IconFileText, IconHeadset, IconHome, IconMessage, IconSettings, IconTemplate, IconUsers, type Icon, IconReportMoney, IconMessageCircleHeart,
+  IconQuote, IconTicket, IconBuildingStore } from "@tabler/icons-react";
 
 import { NavUser } from "@/components/nav-user";
 import { SIDEBAR_NAV_ITEM_CLASS } from "@/components/common/sidebar-styles";
@@ -38,6 +39,7 @@ const groups: { label: string; items: { title: string; url: string; icon: Icon }
       { title: "Kode Promo", url: "/admin/promo", icon: IconTicket },
       { title: "Customer Chat", url: "/admin/chat", icon: IconHeadset },
       { title: "Masukan Pengguna", url: "/admin/masukan", icon: IconMessageCircleHeart },
+      { title: "Testimoni", url: "/admin/testimoni", icon: IconQuote },
     ],
   },
   {

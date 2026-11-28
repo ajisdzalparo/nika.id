@@ -26,7 +26,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SelectField } from "@/components/ui/select";
+import { TablePagination } from "@/components/common/table-pagination";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import { DatePickerField } from "@/components/common/date-time-picker";
 import { PhoneInput } from "@/components/common/phone-input";
@@ -136,7 +136,9 @@ export function AgencyHub({
   const [creating, setCreating] = useState(false);
 
   const isAgency = agency.accountType === "AGENCY";
-  const quotaExpired = Boolean(agency.agencyQuotaExpiresAt && new Date(agency.agencyQuotaExpiresAt).getTime() <= Date.now());
+  // Read the clock once per mount, not on every render
+  const [mountedAt] = useState(() => Date.now());
+  const quotaExpired = Boolean(agency.agencyQuotaExpiresAt && new Date(agency.agencyQuotaExpiresAt).getTime() <= mountedAt);
   const usableQuota = quotaExpired ? 0 : agency.agencyQuota;
 
   const filtered = useMemo(() => {
@@ -942,55 +944,18 @@ export function AgencyHub({
                     })}
                   </ul>
 
-                  {/* Pagination */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#F3EBDB] px-4 py-3 text-xs text-[#6B5F50]">
-                    <div className="flex items-center gap-2">
-                      <SelectField
-                        value={String(perPage)}
-                        onChange={(e) => {
-                          setPerPage(Number(e.target.value));
-                          setPage(1);
-                        }}
-                        size="sm"
-                        aria-label="Baris per halaman"
-                        className="w-20"
-                      >
-                        {[10, 20, 50].map((n) => (
-                          <option key={n} value={String(n)}>
-                            {n}
-                          </option>
-                        ))}
-                      </SelectField>
-                      <span>
-                        {(current - 1) * perPage + 1}–{Math.min(current * perPage, filtered.length)} dari {filtered.length} undangan
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={current <= 1}
-                        onClick={() => setPage(current - 1)}
-                        className="h-9 rounded-full border-[#E9DDC6] text-xs"
-                      >
-                        Sebelumnya
-                      </Button>
-                      <span className="px-2 tabular-nums">
-                        {current}/{pages}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={current >= pages}
-                        onClick={() => setPage(current + 1)}
-                        className="h-9 rounded-full border-[#E9DDC6] text-xs"
-                      >
-                        Berikutnya
-                      </Button>
-                    </div>
-                  </div>
+                  <TablePagination
+                    currentPage={current}
+                    totalPages={pages}
+                    totalCount={filtered.length}
+                    pageSize={perPage}
+                    onPageChange={setPage}
+                    onPageSizeChange={(n) => {
+                      setPerPage(n);
+                      setPage(1);
+                    }}
+                    className="border-t border-[#F3EBDB] px-4"
+                  />
                 </>
               )}
             </section>

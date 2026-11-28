@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LandingNavbar } from "@/components/landing/navbar";
 import { Hero } from "@/components/landing/hero";
-import { AiDemo, Collection, Faq, Features, FinalCta, LandingFooter, MitraJoin, PartnerVendors, Pricing, Steps, StickyCta, type PartnerVendor } from "@/components/landing/sections";
+import { AiDemo, Collection, Faq, Features, FinalCta, LandingFooter, MitraJoin, PartnerVendors, Pricing, Steps, StatsBand, StickyCta, Testimonials, type PartnerVendor } from "@/components/landing/sections";
 import { LandingChatWidget } from "@/components/landing/landing-chat-widget";
 import { L } from "@/components/landing/primitives";
 import { getCatalog } from "@/lib/catalog";
@@ -9,6 +9,8 @@ import { getLandingContent } from "@/lib/landing-content";
 import { getManualPaymentInfo } from "@/lib/payment";
 import { prisma } from "@/lib/prisma";
 import { getPlanPrices } from "@/lib/system-settings";
+import { getLandingTestimonials, USER_COUNT_MIN_TO_SHOW } from "@/lib/testimonials";
+import { getLandingStats } from "@/lib/landing-stats";
 import { landingFontClass } from "@/lib/studio";
 import { JsonLd } from "@/components/common/json-ld";
 import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [catalog, { whatsapp }, cms, partnerRows, planPrices] = await Promise.all([
+  const [catalog, { whatsapp }, cms, partnerRows, planPrices, testimonials, stats] = await Promise.all([
     getCatalog(),
     getManualPaymentInfo(),
     getLandingContent(),
@@ -34,6 +36,8 @@ export default async function Home() {
       select: { id: true, agencyName: true, agencyLogo: true, agencyInstagram: true, agencyVerified: true },
     }),
     getPlanPrices(),
+    getLandingTestimonials(),
+    getLandingStats(),
   ]);
   const partners: PartnerVendor[] = partnerRows
     .filter((p): p is typeof p & { agencyName: string } => Boolean(p.agencyName))
@@ -75,12 +79,17 @@ export default async function Home() {
       <LandingNavbar />
       <main>
         <Hero content={cms.hero} />
+        <PartnerVendors partners={partners} />
         <AiDemo />
         <Collection items={catalog} />
         <Steps content={cms.steps} />
         <Features content={cms.features} />
+        <StatsBand stats={stats} />
+        <Testimonials
+          items={testimonials.items}
+          userCount={testimonials.userCount >= USER_COUNT_MIN_TO_SHOW ? testimonials.userCount : null}
+        />
         <Pricing prices={planPrices} />
-        <PartnerVendors partners={partners} />
         <MitraJoin whatsapp={whatsapp} />
         <Faq content={cms.faq} />
         <FinalCta content={cms.finalCta} />

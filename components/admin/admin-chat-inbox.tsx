@@ -89,7 +89,7 @@ export function AdminChatInbox({
   const [sending, setSending] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<string | null>(initialActiveId);
   const lastTypingPingRef = useRef(0);
   const typingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -221,7 +221,9 @@ export function AdminChatInbox({
   }, [refresh]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Scroll only the message pane: scrollIntoView would also scroll the inbox card and the page.
+    const el = messagesRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages.length, activeId, typingByThread, attachmentUrl]);
 
   const selectThread = async (id: string) => {
@@ -406,9 +408,9 @@ export function AdminChatInbox({
       )}
 
       {/* Main Inbox Container */}
-      <div className="grid min-h-[600px] overflow-hidden rounded-2xl border border-[#E9DDC6] bg-white shadow-xs lg:h-[calc(100vh-12rem)] lg:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid min-h-[600px] overflow-hidden rounded-2xl border border-[#E9DDC6] bg-white shadow-xs lg:h-[calc(100vh-12rem)] lg:grid-cols-[340px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
         {/* Left Thread List */}
-        <aside className="flex flex-col border-b border-[#F3EBDB] bg-[#FDFBF7] lg:border-b-0 lg:border-r">
+        <aside className="flex max-h-[420px] min-h-0 flex-col border-b border-[#F3EBDB] bg-[#FDFBF7] lg:max-h-none lg:border-b-0 lg:border-r">
           <div className="space-y-3 border-b border-[#F3EBDB] p-4">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold text-[#1A1510]">Percakapan ({threads.length})</p>
@@ -456,7 +458,7 @@ export function AdminChatInbox({
             </div>
           </div>
 
-          <div className="flex-1 divide-y divide-[#F3EBDB] overflow-y-auto">
+          <div className="min-h-0 flex-1 divide-y divide-[#F3EBDB] overflow-y-auto">
             {filteredThreads.length === 0 ? (
               <div className="px-4 py-14 text-center text-xs text-[#6B5F50]">
                 Tidak ada percakapan di filter ini.
@@ -524,7 +526,7 @@ export function AdminChatInbox({
         </aside>
 
         {/* Right Active Conversation */}
-        <section className="flex min-h-0 flex-col bg-white">
+        <section className="flex min-h-[560px] flex-col bg-white lg:min-h-0">
           {activeThread ? (
             <>
               {/* Header */}
@@ -613,7 +615,7 @@ export function AdminChatInbox({
               </header>
 
               {/* Messages Thread */}
-              <div className="flex-1 space-y-4 overflow-y-auto bg-[#FCF8F1] px-5 py-5 sm:px-6">
+              <div ref={messagesRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-[#FCF8F1] px-5 py-5 sm:px-6">
                 {messages.map((m) => {
                   if (m.sender === "SYSTEM") {
                     return (
@@ -659,7 +661,6 @@ export function AdminChatInbox({
                     </div>
                   </div>
                 )}
-                <div ref={bottomRef} />
               </div>
 
               {/* Pending Image Preview */}

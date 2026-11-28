@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { TablePagination, useClientPagination } from "@/components/common/table-pagination";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, Tooltip, XAxis, YAxis } from "recharts";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import type { FinanceReport } from "@/lib/finance";
@@ -63,6 +64,7 @@ export function FinanceCharts({ report }: { report: FinanceReport }) {
   const [view, setView] = useState<"chart" | "table">("chart");
   const data = report.series;
   const hasData = data.some((d) => d.revenue || d.expense);
+  const { pageRows: tableRows, pagination: tablePagination } = useClientPagination(data.filter((d) => d.revenue || d.expense));
   const cashConfig = { revenue: { label: "Pendapatan", color: C.revenue }, expense: { label: "Pengeluaran", color: C.expense } } satisfies ChartConfig;
   const netConfig = { cumulativeNet: { label: "Laba kumulatif", color: C.net } } satisfies ChartConfig;
   const g = report.granularity;
@@ -105,7 +107,8 @@ export function FinanceCharts({ report }: { report: FinanceReport }) {
             </ChartContainer>
           </>
         ) : (
-          <div className="mt-4 max-h-72 overflow-auto rounded-lg border border-zinc-100">
+          <div className="mt-4">
+          <div className="overflow-auto rounded-lg border border-zinc-100">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-zinc-50 text-left text-xs text-zinc-500">
                 <tr>
@@ -116,9 +119,7 @@ export function FinanceCharts({ report }: { report: FinanceReport }) {
                 </tr>
               </thead>
               <tbody className="tabular-nums">
-                {data
-                  .filter((d) => d.revenue || d.expense)
-                  .map((d) => (
+                {tableRows.map((d) => (
                     <tr key={d.period} className="border-t border-zinc-100">
                       <td className="px-3 py-2">{periodLabel(d.period, true)}</td>
                       <td className="px-3 py-2 text-right">{rupiah(d.revenue)}</td>
@@ -128,6 +129,8 @@ export function FinanceCharts({ report }: { report: FinanceReport }) {
                   ))}
               </tbody>
             </table>
+          </div>
+          <TablePagination {...tablePagination} />
           </div>
         )}
       </section>
