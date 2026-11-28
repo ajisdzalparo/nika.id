@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Search, Trash2, ExternalLink, LogIn, Calendar, Heart, ChevronLeft, ChevronRight, ShieldCheck, ShieldOff } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Search, Trash2, ExternalLink, LogIn, Calendar, Heart, ShieldCheck, ShieldOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, Table, TableBody, TableCard, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { TablePagination, useUrlPagination, useUrlSearch, useUrlSort } from "@/components/common/table-pagination";
 
 export interface User {
   id: string;
@@ -33,57 +34,20 @@ interface UsersClientProps {
   totalPages: number;
   currentPage: number;
   totalCount: number;
+  pageSize: number;
   currentUserId?: string;
 }
 
-export function UsersClient({ initialUsers, totalPages, currentPage, totalCount, currentUserId }: UsersClientProps) {
+export function UsersClient({ initialUsers, totalPages, currentPage, totalCount, pageSize, currentUserId }: UsersClientProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+  const paging = useUrlPagination();
+  const { isPending, searchParams, setParams } = paging;
+  const search = useUrlSearch(setParams, searchParams);
+  const { sort, onSort } = useUrlSort(setParams, searchParams);
 
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isImpersonating, setIsImpersonating] = useState<string | null>(null);
   const [isUpdatingRole, setIsUpdatingRole] = useState<string | null>(null);
-
-  // Sync state with URL when URL changes (back/forward)
-  useEffect(() => {
-    const q = searchParams.get("q") || "";
-    if (q !== searchQuery) {
-      setSearchQuery(q);
-    }
-  }, [searchParams, searchQuery]);
-
-  // Debounced search update to URL
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const currentQ = searchParams.get("q") || "";
-      if (searchQuery === currentQ) return;
-
-      const params = new URLSearchParams(searchParams.toString());
-      if (searchQuery) {
-        params.set("q", searchQuery);
-        params.set("page", "1");
-      } else {
-        params.delete("q");
-      }
-
-      startTransition(() => {
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-      });
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, [searchQuery, pathname, router, searchParams]);
-
-  const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("page", page.toString());
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
 
   const handleImpersonate = async (userId: string) => {
     setIsImpersonating(userId);
@@ -144,7 +108,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        throw new Error(j.error || "Gagal mengubah role");
+        throw new Error(j.message || j.error || "Gagal mengubah role");
       }
       toast.success(nextRole === "admin" ? `${user.name || user.email} dijadikan admin` : `Akses admin ${user.name || user.email} dicabut`);
       router.refresh();
@@ -163,14 +127,15 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
       });
 
       if (!res.ok) {
-        throw new Error("Gagal menghapus user");
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error === "CANNOT_DELETE_SELF" ? "Akun yang sedang Anda pakai tidak bisa dihapus" : d.message || "Terjadi kesalahan saat menghapus user");
       }
 
       toast.success("User berhasil dihapus");
       router.refresh();
     } catch (error) {
       console.error(error);
-      toast.error("Terjadi kesalahan saat menghapus user");
+      toast.error(error instanceof Error ? error.message : "Terjadi kesalahan saat menghapus user");
     } finally {
       setIsDeleting(null);
     }
@@ -183,7 +148,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
         <div className="flex flex-1 flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[220px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input type="search" aria-label="Cari pengguna" placeholder="Cari nama, usaha mitra, email, atau slug..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Input type="search" aria-label="Cari pengguna" placeholder="Cari nama, usaha mitra, email, atau slug..." className="pl-9" {...search} />
           </div>
           <div className="flex gap-1.5">
             {(
@@ -199,13 +164,7 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                   type="button"
                   variant={active ? "default" : "outline"}
                   size="sm"
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString());
-                    if (k === "agency") params.set("tipe", "agency");
-                    else params.delete("tipe");
-                    params.set("page", "1");
-                    startTransition(() => router.replace(`${pathname}?${params.toString()}`));
-                  }}
+                  onClick={() => setParams({ tipe: k === "agency" ? "agency" : "" })}
                 >
                   {l}
                 </Button>
@@ -220,14 +179,14 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
       </div>
 
       {/* Users Table */}
-      <div className="rounded-lg border bg-card">
+      <TableCard>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User & Kontak</TableHead>
-              <TableHead>Pasangan & Acara</TableHead>
-              <TableHead>Design</TableHead>
-              <TableHead>Status</TableHead>
+              <SortableTableHead sortKey="name" sort={sort} onSort={onSort}>User & Kontak</SortableTableHead>
+              <SortableTableHead sortKey="weddingDate" sort={sort} onSort={onSort}>Pasangan & Acara</SortableTableHead>
+              <SortableTableHead sortKey="templateSlug" sort={sort} onSort={onSort}>Design</SortableTableHead>
+              <SortableTableHead sortKey="role" sort={sort} onSort={onSort}>Status</SortableTableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -364,6 +323,13 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                           </AlertDialogContent>
                         </AlertDialog>
                       )}
+                      {/* The signed-in admin's own row: no impersonating or deleting yourself (the API refuses too) */}
+                      {user.id === currentUserId ? (
+                        <span className="inline-flex h-8 items-center rounded-full border border-[#E9DDC6] bg-[#FCF8F1] px-3 text-xs font-medium text-[#6B5F50]">
+                          Akun Anda
+                        </span>
+                      ) : (
+                      <>
                       <Button variant="ghost" size="icon-sm" title="Masuk sebagai pengguna ini" aria-label={`Masuk sebagai ${user.name || user.email}`} onClick={() => handleImpersonate(user.id)} disabled={isImpersonating === user.id}>
                         <LogIn className={`h-4 w-4 ${isImpersonating === user.id ? "animate-pulse" : ""}`} />
                       </Button>
@@ -387,6 +353,8 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -394,26 +362,17 @@ export function UsersClient({ initialUsers, totalPages, currentPage, totalCount,
             )}
           </TableBody>
         </Table>
-      </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between py-4">
-          <div className="text-sm text-muted-foreground">
-            Halaman {currentPage} dari {totalPages}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1 || isPending}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Sebelumnya
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages || isPending}>
-              Berikutnya
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+        <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={pageSize}
+        onPageChange={paging.onPageChange}
+        onPageSizeChange={paging.onPageSizeChange}
+        disabled={isPending}
+                className="border-t border-[#F3EBDB] px-4"
+        />
+      </TableCard>
     </div>
   );
 }

@@ -38,6 +38,8 @@ import {
 import { PhoneInput } from "@/components/common/phone-input";
 import { NumberInput } from "@/components/common/number-input";
 import { Panel, StatTile } from "@/components/common/studio-ui";
+import { TablePagination, useClientPagination, useClientSort } from "@/components/common/table-pagination";
+import { SortableTableHead, TableHead } from "@/components/ui/table";
 import { CheckInQr, downloadQrCard, downloadStandardQr, renderQrCard, renderStandardQr, shareQrOnWhatsapp } from "@/components/common/qr-code";
 import { PlanType, getMaxGuests, getPlanLimits } from "@/lib/limits";
 import { waLink } from "@/lib/phone";
@@ -235,6 +237,14 @@ export function GuestList({
         .includes(term);
     });
   }, [guests, search, filterChip]);
+  // Status order for sorting: not sent yet → sent → opened
+  const { sortedRows: sortedGuests, sort: guestSort, onSort: onGuestSort } = useClientSort(filteredGuests, {
+    name: (g) => g.name,
+    status: (g) => (g.openedAt ? 2 : g.sentAt ? 1 : 0),
+    label: (g) => g.label || g.eventName,
+    quota: (g) => g.maxGuests,
+  });
+  const { pageRows: pageGuests, pagination: guestPagination } = useClientPagination(sortedGuests, 20);
 
   const openAdd = () => {
     if (isLimitReached) {
@@ -579,18 +589,18 @@ export function GuestList({
         {/* Desktop table */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-[#8E8268]">
-                <th className="px-4 py-3 font-medium">Tamu</th>
-                <th className="px-4 py-3 font-medium">Status Undangan</th>
-                <th className="px-4 py-3 font-medium">Label & Acara</th>
-                <th className="px-4 py-3 font-medium">Kuota & RSVP</th>
-                <th className="px-4 py-3 font-medium">Catatan</th>
-                {!monitoringOnly && <th className="px-4 py-3 text-right font-medium">Aksi</th>}
+            <thead className="bg-[#FBF7EF]">
+              <tr className="border-b border-[#EFE6D4]">
+                <SortableTableHead sortKey="name" sort={guestSort} onSort={onGuestSort}>Tamu</SortableTableHead>
+                <SortableTableHead sortKey="status" sort={guestSort} onSort={onGuestSort}>Status Undangan</SortableTableHead>
+                <SortableTableHead sortKey="label" sort={guestSort} onSort={onGuestSort}>Label & Acara</SortableTableHead>
+                <SortableTableHead sortKey="quota" sort={guestSort} onSort={onGuestSort}>Kuota & RSVP</SortableTableHead>
+                <TableHead>Catatan</TableHead>
+                {!monitoringOnly && <TableHead className="text-right">Aksi</TableHead>}
               </tr>
             </thead>
             <tbody>
-              {filteredGuests.map((g) => {
+              {pageGuests.map((g) => {
                 const directWa = monitoringOnly ? null : waLink(g.phone);
                 return (
                   <tr key={g.id} className="border-t border-[#F3EBDB] align-top transition-colors hover:bg-[#FCF8F1]">
@@ -729,7 +739,7 @@ export function GuestList({
 
         {/* Mobile cards */}
         <ul className="divide-y divide-[#F3EBDB] md:hidden">
-          {filteredGuests.map((g) => (
+          {pageGuests.map((g) => (
             <li key={g.id} className="space-y-2.5 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -830,6 +840,7 @@ export function GuestList({
             )}
           </div>
         )}
+        {filteredGuests.length > 0 && <TablePagination {...guestPagination} className="border-t border-[#F3EBDB] px-4" />}
       </div>
 
       {/* Add / Edit Guest Dialog */}

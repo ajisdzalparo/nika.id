@@ -18,6 +18,8 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { Panel, PanelTitle, StatTile } from "@/components/common/studio-ui";
+import { TablePagination, useClientPagination, useClientSort } from "@/components/common/table-pagination";
+import { SortableTableHead } from "@/components/ui/table";
 import { NumberInput } from "@/components/common/number-input";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
@@ -289,6 +291,16 @@ export function MitraSalesReport({
     }
   };
 
+  const { sortedRows: shownSorted, sort: salesSort, onSort: onSalesSort } = useClientSort(shown, {
+    client: (r) => r.clientName || r.title,
+    activated: (r) => new Date(r.activatedAt),
+    price: (r) => r.clientPrice,
+    cost: (r) => r.mitraCost ?? 0,
+    profit: (r) => (r.clientPrice === null ? null : r.clientPrice - (r.mitraCost ?? 0)),
+    margin: (r) => (r.clientPrice ? (r.clientPrice - (r.mitraCost ?? 0)) / r.clientPrice : null),
+  });
+  const { pageRows: shownPage, pagination: shownPagination } = useClientPagination(shownSorted);
+  const { pageRows: quotaPage, pagination: quotaPagination } = useClientPagination(quotaPurchases);
   const shownTotals = useMemo(() => {
     const revenue = shown.reduce((n, r) => n + (r.clientPrice ?? 0), 0);
     const cost = shown.reduce((n, r) => n + (r.mitraCost ?? 0), 0);
@@ -584,17 +596,17 @@ export function MitraSalesReport({
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[760px] text-sm">
                 <thead>
-                  <tr className="border-b border-[#F3EBDB] bg-[#FCF8F1]/60 text-left text-[11px] uppercase tracking-[0.12em] text-[#8E8268]">
-                    <th className="px-5 py-3 font-medium">Klien &amp; Undangan</th>
-                    <th className="px-3 py-3 font-medium">Aktif</th>
-                    <th className="px-3 py-3 font-medium">Harga Jual</th>
-                    <th className="px-3 py-3 text-right font-medium">Modal</th>
-                    <th className="px-3 py-3 text-right font-medium">Untung</th>
-                    <th className="px-5 py-3 text-right font-medium">Margin</th>
+                  <tr className="border-b border-[#EFE6D4] bg-[#FBF7EF]">
+                    <SortableTableHead sortKey="client" sort={salesSort} onSort={onSalesSort}>Klien &amp; Undangan</SortableTableHead>
+                    <SortableTableHead sortKey="activated" sort={salesSort} onSort={onSalesSort}>Aktif</SortableTableHead>
+                    <SortableTableHead sortKey="price" sort={salesSort} onSort={onSalesSort}>Harga Jual</SortableTableHead>
+                    <SortableTableHead sortKey="cost" sort={salesSort} onSort={onSalesSort} align="right" className="text-right">Modal</SortableTableHead>
+                    <SortableTableHead sortKey="profit" sort={salesSort} onSort={onSalesSort} align="right" className="text-right">Untung</SortableTableHead>
+                    <SortableTableHead sortKey="margin" sort={salesSort} onSort={onSalesSort} align="right" className="text-right">Margin</SortableTableHead>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F3EBDB]">
-                  {shown.map((r) => {
+                  {shownPage.map((r) => {
                     const cost = r.mitraCost ?? 0;
                     const profit = r.clientPrice === null ? null : r.clientPrice - cost;
                     const margin =
@@ -696,7 +708,7 @@ export function MitraSalesReport({
 
             {/* Mobile stacked rows */}
             <ul className="divide-y divide-[#F3EBDB] md:hidden">
-              {shown.map((r) => {
+              {shownPage.map((r) => {
                 const cost = r.mitraCost ?? 0;
                 const profit = r.clientPrice === null ? null : r.clientPrice - cost;
                 return (
@@ -735,6 +747,7 @@ export function MitraSalesReport({
                 );
               })}
             </ul>
+            <TablePagination {...shownPagination} className="border-t border-[#F3EBDB] px-5" />
           </>
         )}
 
@@ -777,7 +790,7 @@ export function MitraSalesReport({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#F3EBDB]">
-                {quotaPurchases.map((tx) => {
+                {quotaPage.map((tx) => {
                   const st = TX_STATUS_BADGE[tx.status] ?? { label: tx.status, cls: "bg-[#F6EEDF] text-[#6B5F50]" };
                   return (
                     <tr key={tx.id} className="hover:bg-[#FCF8F1]/60">
@@ -805,6 +818,7 @@ export function MitraSalesReport({
             </table>
           </div>
         )}
+        {quotaPurchases.length > 0 && <TablePagination {...quotaPagination} className="border-t border-[#F3EBDB] px-5" />}
       </Panel>
     </div>
   );

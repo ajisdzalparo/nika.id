@@ -23,6 +23,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SelectField } from "@/components/ui/select";
+import { TablePagination, useClientSort } from "@/components/common/table-pagination";
+import { SortableTableHead, TableHead } from "@/components/ui/table";
 import { StatTile } from "@/components/common/studio-ui";
 import { CheckInQr, downloadQrCard, downloadStandardQr, renderQrCard, renderStandardQr, shareQrOnWhatsapp } from "@/components/common/qr-code";
 import { waLink } from "@/lib/phone";
@@ -108,9 +110,16 @@ export function RsvpManager({
     return list.sort((a, b) => (sort === "nama" ? a.guestName.localeCompare(b.guestName, "id") : b.createdAt.localeCompare(a.createdAt)));
   }, [rows, q, filter, sort]);
 
-  const pages = Math.max(1, Math.ceil(shown.length / perPage));
+  // Column headers sort on top of the "Urutkan" choice; clicking a header a third time returns to it
+  const { sortedRows, sort: colSort, onSort: onColSort } = useClientSort(shown, {
+    name: (r) => r.guestName,
+    status: (r) => r.attendance,
+    guests: (r) => r.guests || 1,
+    checkin: (r) => (r.checkedInAt ? new Date(r.checkedInAt) : null),
+  });
+  const pages = Math.max(1, Math.ceil(sortedRows.length / perPage));
   const current = Math.min(page, pages);
-  const pageRows = shown.slice((current - 1) * perPage, current * perPage);
+  const pageRows = sortedRows.slice((current - 1) * perPage, current * perPage);
 
   const patch = async (id: string, body: Record<string, unknown>) => {
     const res = await fetch(`/api/user/rsvp/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -299,15 +308,15 @@ export function RsvpManager({
         {/* Table (desktop) */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-[#8E8268]">
-                <th className="px-4 py-3 font-medium">Tamu</th>
-                <th className="px-4 py-3 font-medium">Status RSVP</th>
-                <th className="px-4 py-3 font-medium">Web Undangan</th>
-                <th className="px-4 py-3 font-medium">Jumlah</th>
-                <th className="px-4 py-3 font-medium">Detail</th>
-                {qrEnabled && <th className="px-4 py-3 font-medium">Check-in</th>}
-                {!monitoringOnly && <th className="px-4 py-3 text-right font-medium">Aksi</th>}
+            <thead className="bg-[#FBF7EF]">
+              <tr className="border-b border-[#EFE6D4]">
+                <SortableTableHead sortKey="name" sort={colSort} onSort={onColSort}>Tamu</SortableTableHead>
+                <SortableTableHead sortKey="status" sort={colSort} onSort={onColSort}>Status RSVP</SortableTableHead>
+                <TableHead>Web Undangan</TableHead>
+                <SortableTableHead sortKey="guests" sort={colSort} onSort={onColSort}>Jumlah</SortableTableHead>
+                <TableHead>Detail</TableHead>
+                {qrEnabled && <SortableTableHead sortKey="checkin" sort={colSort} onSort={onColSort}>Check-in</SortableTableHead>}
+                {!monitoringOnly && <TableHead className="text-right">Aksi</TableHead>}
               </tr>
             </thead>
             <tbody>
@@ -419,42 +428,19 @@ export function RsvpManager({
           </p>
         )}
 
-        {/* Pagination */}
         {shown.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#F3EBDB] px-4 py-3 text-sm text-[#6B5F50]">
-            <div className="flex items-center gap-2">
-              <SelectField
-                value={String(perPage)}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value));
-                  setPage(1);
-                }}
-                size="sm"
-                aria-label="Baris per halaman"
-                className="w-20"
-              >
-                {[10, 20, 50].map((n) => (
-                  <option key={n} value={String(n)}>
-                    {n}
-                  </option>
-                ))}
-              </SelectField>
-              <span>
-                {(current - 1) * perPage + 1}–{Math.min(current * perPage, shown.length)} dari {fmt.format(shown.length)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button type="button" variant="outline" size="sm" disabled={current <= 1} onClick={() => setPage(current - 1)} className="h-9 rounded-full border-[#E9DDC6]">
-                Sebelumnya
-              </Button>
-              <span className="px-2 tabular-nums">
-                {current}/{pages}
-              </span>
-              <Button type="button" variant="outline" size="sm" disabled={current >= pages} onClick={() => setPage(current + 1)} className="h-9 rounded-full border-[#E9DDC6]">
-                Berikutnya
-              </Button>
-            </div>
-          </div>
+          <TablePagination
+            currentPage={current}
+            totalPages={pages}
+            totalCount={shown.length}
+            pageSize={perPage}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setPerPage(n);
+              setPage(1);
+            }}
+            className="border-t border-[#F3EBDB] px-4"
+          />
         )}
       </div>
 

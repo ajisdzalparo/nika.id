@@ -4,10 +4,19 @@ import { SiteHeader } from "@/components/site-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { prisma } from "@/lib/prisma";
 import { ModerationClient, type GuestMessage } from "@/components/admin/moderation-client";
+import { readPagination, readSort } from "@/lib/pagination";
 
-export default async function ModerasiPage() {
-  const guestMessages = await prisma.guestMessage.findMany({
-    orderBy: { createdAt: "desc" },
+export default async function ModerasiPage(props: { searchParams: Promise<{ page?: string; limit?: string; sort?: string; dir?: string }> }) {
+  const searchParams = await props.searchParams;
+  const { page, pageSize, skip, take } = readPagination(searchParams);
+  const sort = readSort(searchParams, ["guestName", "createdAt", "status"] as const);
+  const orderBy: import("@prisma/client").Prisma.GuestMessageOrderByWithRelationInput[] = [
+    ...(sort ? [{ [sort.key]: sort.dir }] : []),
+    { createdAt: "desc" },
+  ];
+  const [guestMessages, totalCount] = await Promise.all([
+    prisma.guestMessage.findMany({
+    orderBy,
     include: {
       user: {
         select: {
@@ -18,8 +27,11 @@ export default async function ModerasiPage() {
       // The invitation the wish was sent to; user.invitationSlug is only the legacy single-invitation slug
       invitation: { select: { slug: true } },
     },
-    take: 100,
-  });
+    skip,
+    take,
+  }),
+    prisma.guestMessage.count(),
+  ]);
 
   const serializedMessages = guestMessages.map((msg) => ({
     ...msg,
@@ -49,7 +61,13 @@ export default async function ModerasiPage() {
             </TabsList>
 
             <TabsContent value="messages" className="space-y-4">
-              <ModerationClient initialMessages={serializedMessages as GuestMessage[]} />
+              <ModerationClient
+            initialMessages={serializedMessages as GuestMessage[]}
+            currentPage={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            totalPages={Math.max(1, Math.ceil(totalCount / pageSize))}
+          />
             </TabsContent>
 
             <TabsContent value="media" className="space-y-4">
