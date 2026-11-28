@@ -730,7 +730,6 @@ export function MitraJoin({ whatsapp }: { whatsapp?: string | null }) {
 
 export function Testimonials({ items, userCount }: { items: LandingTestimonial[]; userCount: number | null }) {
   if (!items.length) return null;
-  const onlySamples = items.every((t) => t.isSample);
   return (
     <section id="testimoni" className="scroll-mt-16 py-20 md:py-28" style={{ background: L.night, color: L.nightText }}>
       <div className="mx-auto max-w-6xl px-4 md:px-6">
@@ -762,11 +761,6 @@ export function Testimonials({ items, userCount }: { items: LandingTestimonial[]
                       <IconStarFilled key={k} size={15} />
                     ))}
                   </span>
-                  {t.isSample && (
-                    <span className="rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em]" style={{ borderColor: L.nightLine, color: L.nightMuted }}>
-                      Contoh
-                    </span>
-                  )}
                 </div>
                 <blockquote className="mt-5 flex-1 text-[15px] italic leading-relaxed" style={{ color: "#E8DCC2" }}>
                   &ldquo;{t.message}&rdquo;
@@ -792,11 +786,6 @@ export function Testimonials({ items, userCount }: { items: LandingTestimonial[]
             </Reveal>
           ))}
         </div>
-        {onlySamples && (
-          <p className="mt-6 text-center text-xs" style={{ color: L.nightMuted }}>
-            Kartu di atas adalah contoh. Testimoni asli dari pasangan akan tampil di sini.
-          </p>
-        )}
       </div>
     </section>
   );
