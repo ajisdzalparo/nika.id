@@ -40,6 +40,7 @@ const TITLES: Record<string, string> = {
   "/admin/transaksi": "Transaksi",
   "/admin/chat": "Customer Chat",
   "/admin/masukan": "Masukan Pengguna",
+  "/admin/testimoni": "Testimoni",
   "/admin/promo": "Kode Promo",
   "/admin/cms": "CMS Landing Page",
   "/admin/pengaturan-admin": "Pengaturan",
