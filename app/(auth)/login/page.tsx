@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { signIn } from "@/lib/auth-client";
 import { IconBrandGoogle, IconEye, IconEyeOff, IconLoader2, IconMail, IconLock } from "@tabler/icons-react";
 import { toast } from "sonner";
+import { googleSignInErrorMessage } from "@/lib/oauth-errors";
 
 function LoginForm() {
   const router = useRouter();
@@ -21,8 +22,9 @@ function LoginForm() {
 
   // better-auth redirects back here with ?error=... when the Google flow fails
   useEffect(() => {
-    const error = searchParams.get("error");
-    if (error) toast.error(`Gagal masuk dengan Google (${error})`);
+    const message = googleSignInErrorMessage(searchParams.get("error"));
+    // Fixed id: the effect can run twice (Strict Mode, re-renders) but the message shows once
+    if (message) toast.error(message, { id: "google-signin-error" });
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {

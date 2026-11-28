@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
+import { SITE_URL } from "@/lib/site";
 import nodemailer from "nodemailer";
 
 // Outgoing mail. Preferred: any SMTP server (domain mailbox from the hosting provider, Zoho,
@@ -235,6 +236,45 @@ export const auth = betterAuth({
         },
       },
     },
+    account: {
+      create: {
+        // Google is being linked to an account whose email was never verified (see requireLocalEmailVerified below).
+        // Its password was set by whoever registered first, not proven to belong to the inbox owner, so remove it:
+        // otherwise someone could pre-register a victim's email and keep a password into their account
+        // ("account pre-hijacking"). The owner can set a new password with "Lupa password".
+        before: async (account) => {
+          if (account.providerId === "credential") return;
+          const owner = await prisma.user.findUnique({ where: { id: account.userId }, select: { emailVerified: true } });
+          if (owner && !owner.emailVerified) {
+            await prisma.account.deleteMany({ where: { userId: account.userId, providerId: "credential" } });
+            await prisma.session.deleteMany({ where: { userId: account.userId } });
+          }
+        },
+        // Tell the owner whenever Google gets linked to an account that already existed, so an unexpected link
+        // is noticed. A brand-new Google sign-up (user created moments ago) gets no email.
+        after: async (account) => {
+          if (account.providerId !== "google") return;
+          try {
+            const owner = await prisma.user.findUnique({ where: { id: account.userId }, select: { email: true, name: true, createdAt: true } });
+            if (!owner || Date.now() - owner.createdAt.getTime() < 2 * 60_000) return;
+            await sendAuthEmail({
+              to: owner.email,
+              subject: "Akun Google ditautkan - SatuMoment",
+              heading: "Akun Google ditautkan",
+              greetingName: owner.name || "Pengguna",
+              message:
+                "Akun Google baru saja ditautkan ke akun SatuMoment Anda, jadi Anda bisa masuk dengan tombol \"Masuk dengan Google\". Jika ini bukan Anda, segera buat password baru dan hubungi kami.",
+              ctaLabel: "Buat Password Baru",
+              ctaUrl: `${SITE_URL}/forgot-password`,
+              footerNote: "Email keamanan ini dikirim otomatis setiap kali metode masuk baru ditambahkan ke akun Anda.",
+              consoleLabel: "GOOGLE ACCOUNT LINKED",
+            });
+          } catch (err) {
+            console.error("Google link notice skipped:", err);
+          }
+        },
+      },
+    },
   },
   account: {
     accountLinking: {
@@ -242,6 +282,10 @@ export const auth = betterAuth({
       // Google verifies emails, so an existing email/password account with the
       // same address is linked instead of failing with "account not linked".
       trustedProviders: ["google"],
+      // better-auth 1.7 also refuses when the local account's email is unverified (people who registered with a
+      // password but never clicked the activation link), showing "account_not_linked". Google has verified the
+      // address, so link anyway; the account.create hook above removes the unproven password first.
+      requireLocalEmailVerified: false,
     },
   },
   session: {
